@@ -359,6 +359,34 @@ details.how{border:0;padding:0;margin:4px 0 10px}details.kmfd{border:0;padding:0
 .tiles{background:none!important;gap:0!important}.tile{border-right:1px solid var(--ln)}.tile:last-child{border-right:0}
 .kp-main .kmst{gap:4px}.kp-main .kchip{padding:5px 6px;font-size:9px;max-width:100%}
 dialog.fdlg,.mapside,.kp-main,.kp-card{border-radius:0!important}
+/* full-screen map: canvas fills the viewport; slim translucent bar + floating panels on top */
+body.mapfull{overflow:hidden;height:100dvh}
+body.mapfull .wrap{max-width:none;margin:0;padding:0}
+body.mapfull .mapmod{position:fixed!important;inset:0;width:100vw;height:100vh!important;height:100dvh!important;min-height:0!important;margin:0!important;border:0!important;z-index:1}
+body.mapfull header{position:fixed;top:0;left:0;right:0;z-index:20;height:52px;box-sizing:border-box;padding:0 16px 0 16px;align-items:center;flex-wrap:nowrap;background:rgba(10,10,10,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.1)}
+body.mapfull .logo{align-items:center}body.mapfull .logo svg{width:14px;height:21px}body.mapfull .wordmark{font-size:18px}
+body.mapfull .hdr-r{flex-direction:row;align-items:center;gap:12px;white-space:nowrap}body.mapfull #refreshed{display:none}
+body.mapfull .viewbar{position:fixed;top:0;left:136px;height:52px;margin:0;z-index:21;align-items:center}
+body.mapfull .topnav{border:0!important;width:auto}body.mapfull .topnav button{padding:17px 14px 15px!important}body.mapfull .topnav button:first-child{padding-left:14px!important}
+body.mapfull .ais,body.mapfull .aichips,body.mapfull .dealseg{display:none!important}
+body.mapfull .kp-main{top:64px;max-height:calc(100% - 300px)!important}
+body.mapfull #kmMap .maplibregl-ctrl-top-right,body.mapfull #kmMap .mapboxgl-ctrl-top-right{top:56px}
+body.mapfull #kmMap [class*=ctrl-bottom-left]{left:252px}body.mapfull #kmMap [class*=ctrl-attrib]{font-size:10px;max-width:60vw}
+@media(max-height:560px){body.mapfull .kp-leg{display:none}body.mapfull .kp-main{max-height:calc(100% - 140px)!important}}
+.kmhide{pointer-events:auto;position:absolute;left:16px;top:64px;display:none}
+body.mapfull.kmcol .kp-main{display:none}body.mapfull.kmcol .kmhide{display:inline-flex}
+.kpcol{float:right;background:none;border:0;color:var(--t3,#9a9a9a);cursor:pointer;font:10px 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;padding:0}.kpcol:hover{color:#fff}
+@media(max-width:760px){
+ body.mapfull header{padding:0 10px;height:48px}body.mapfull .wordmark{display:none}
+ body.mapfull .viewbar{left:34px;height:48px}body.mapfull .topnav button{padding:15px 10px 13px!important}
+ body.mapfull .syncst,body.mapfull #acctWho,body.mapfull .who label{display:none}
+ body.mapfull .kp-main{top:auto;max-height:34%!important}
+ body.mapfull .kp-lyr{top:56px}
+ body.mapfull #kmMap .maplibregl-ctrl-top-right,body.mapfull #kmMap .mapboxgl-ctrl-top-right{top:96px}
+ .kmhide{left:auto;right:8px;top:auto;bottom:28px}
+ body.mapfull .logo svg{display:block!important;width:12px;height:18px}body.mapfull .viewbar{left:30px}
+ body.mapfull:not(.kmcol) #kmMap [class*=ctrl-bottom-]{bottom:calc(34dvh + 4px)}body.mapfull #kmMap [class*=ctrl-scale]{display:none}body.mapfull #kmMap [class*=ctrl-bottom-left]{left:0}body.mapfull #kmMap [class*=ctrl-attrib]{max-width:calc(100vw - 24px)}
+}
 </style>
 </head>
 <body>
@@ -898,12 +926,12 @@ function lyrLegend(k){return k==='lines'?[['#B5B3AE','345 kV'],['#7A7A7A','230�
 const KS_BB=[[-102.06,36.99],[-94.59,40.0]];
 const KS_POLY=[[-102.0517,36.993],[-102.0517,40.0031],[-95.3083,40.0003],[-95.0786,39.8697],[-94.9532,39.8974],[-94.8818,39.7832],[-94.901,39.7302],[-95.0408,39.6648],[-94.9724,39.5428],[-94.8805,39.4413],[-94.6177,39.1149],[-94.6097,36.994],[-102.0517,36.993]];
 // lock the camera to Kansas: fit, then clamp zoom-out to just past the fit and panning to the fitted view plus a margin
-let KS_W=0;function ksMinZoom(map,force){const w=map.getContainer().clientWidth+'x'+map.getContainer().clientHeight;if(!force&&w===KS_W)return;KS_W=w;try{
- map.setMaxBounds(null);map.setMinZoom(3);const ph=innerWidth<=760,H=map.getContainer().clientHeight;map.fitBounds(KS_BB,{padding:ph?{top:56,left:12,right:12,bottom:Math.round(H*.42)}:16,duration:0});const z=map.getZoom(),b=map.getBounds(),dx=(b.getEast()-b.getWest())*.25,dy=(b.getNorth()-b.getSouth())*.25;
+let KS_W=0;function ksMinZoom(map,force){const w=map.getContainer().clientWidth+'x'+map.getContainer().clientHeight+document.body.classList.contains('kmcol');if(!force&&w===KS_W)return;KS_W=w;try{
+ map.setMaxBounds(null);map.setMinZoom(3);const ph=innerWidth<=760,H=map.getContainer().clientHeight;const W=map.getContainer().clientWidth,col=document.body.classList.contains('kmcol');map.fitBounds(KS_BB,{padding:ph?{top:100,left:12,right:12,bottom:col?40:Math.round(H*.36)}:{top:72,bottom:64,right:56,left:col||W<1100?24:260},duration:0});const z=map.getZoom(),b=map.getBounds(),dx=(b.getEast()-b.getWest())*.25,dy=(b.getNorth()-b.getSouth())*.25;
  map.setMinZoom(Math.max(3,z-0.25));map.setMaxBounds([[b.getWest()-dx,b.getSouth()-dy],[b.getEast()+dx,b.getNorth()+dy]])}catch(e){}}
 function kmBuild(){const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessToken=KM_TOK;
- const map=new G.Map({container:'kmMap',style:KM_MB?'mapbox://styles/mapbox/dark-v11':'https://tiles.openfreemap.org/styles/dark',bounds:KS_BB,fitBoundsOptions:{padding:16},minZoom:3,attributionControl:true,dragRotate:false,pitchWithRotate:false,cooperativeGestures:false});
- map.addControl(new G.NavigationControl({showCompass:false}),'top-right');map.addControl(new G.ScaleControl({unit:'imperial'}),'bottom-left');
+ const map=new G.Map({container:'kmMap',style:KM_MB?'mapbox://styles/mapbox/dark-v11':'https://tiles.openfreemap.org/styles/dark',bounds:KS_BB,fitBoundsOptions:{padding:16},minZoom:3,attributionControl:false,dragRotate:false,pitchWithRotate:false,cooperativeGestures:false});
+ map.addControl(new G.AttributionControl({compact:true}),'bottom-right');map.addControl(new G.NavigationControl({showCompass:false}),'top-right');map.addControl(new G.ScaleControl({unit:'imperial'}),'bottom-left');
  const pop=new G.Popup({closeButton:false,closeOnClick:false,offset:10,className:'kmpop'}),info=new G.Popup({offset:6,className:'kmpop'});
  KM_M={map,G,ready:false,pop,info,added:new Set()};
  map.on('load',()=>{map.addSource('deals',{type:'geojson',data:{type:'FeatureCollection',features:[]},cluster:true,clusterMaxZoom:11,clusterRadius:40});
@@ -932,7 +960,7 @@ async function toggleLayer(k,on){const lg=$('ml-'+k);if(lg)lg.hidden=!on;const M
   map.on('error',e=>{if(e.sourceId==='ly-'+k&&lg&&!lg.querySelector('.err'))lg.insertAdjacentHTML('beforeend','<small class="err">Layer could not load.</small>')})}
  if(M.added.has(k))map.setLayoutProperty('ly-'+k,'visibility',on&&KM_MLY.has(k)?'visible':'none')}
 function kmSide(){const seg=(attr,opts,cur)=>`<div class="seg mseg">${opts.map(([k,l])=>`<button type="button" ${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k}">${l}</button>`).join('')}</div>`;
- return `<div class="kpan kp-main"><div class="msec"><div class="lbl mono">Deals</div>${seg('data-kshow',[['land','Land'],['storage','Storage'],['both','Both']],KM.show)}</div>
+ return `<button type="button" class="tbtn kmhide" id="kmShow" aria-controls="kmSide">Filters &amp; deals</button><div class="kpan kp-main"><div class="msec"><button type="button" class="kpcol" id="kmHide" aria-label="Hide panel">Hide</button><div class="lbl mono">Deals</div>${seg('data-kshow',[['land','Land'],['storage','Storage'],['both','Both']],KM.show)}</div>
  <details class="msec kmfd" id="kmFd"${innerWidth>760?' open':''}><summary class="lbl mono">Filters <span id="kmFn"></span></summary><div id="kmF">${kmFiltHtml()}</div></details>
  <div class="msec"><span class="lbl mono" id="kmCount"></span></div></div><div class="kpan kp-leg"><div class="msec"><div class="lbl mono">Colour by</div>${seg('data-kby',kmViews(),KM.by)}<div class="mleg" id="kmLeg"></div><div class="mleg"><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #000"></i>Land site</span><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #fff"></i>Storage</span><span><i class="dot" style="background:#151515;border:1.5px solid #B5B3AE"></i>Cluster · click to expand</span></div><div class="lbl" style="margin-top:6px">Pin number = score rank (1 = highest) among shown deals</div></div>
  </div><div class="kp-lyr"><div class="lbl mono kp-lyrh">Layers</div><div class="kp-chips">${KM_LYR.map(([k,l,src])=>`<label class="chk mly kchip"><input type="checkbox" data-mly value="${k}"${KM_MLY.has(k)?' checked':''}><span class="lbl mono">${l.replace(/ \(AADT\)/,'')}</span></label>`).join('')}</div><div class="kp-lsub">${KM_LYR.map(([k,l,src])=>`<div class="mleg sub" id="ml-${k}"${KM_MLY.has(k)?'':' hidden'}>${lyrLegend(k).map(([c,t])=>`<span><i style="background:${c}"></i>${t}</span>`).join('')}<small>${src}</small></div>`).join('')}</div>
@@ -950,8 +978,10 @@ function kmSync(){document.querySelectorAll('#kmF [data-kf]').forEach(el=>{if(el
 document.addEventListener('input',e=>{const t=e.target;if(t.id==='kmAadt'){KM_AADT=+t.value||0;kmQueue();return}if(!t.dataset||!t.dataset.kf)return;const src=$(t.dataset.kf);if(!src)return;src.type==='checkbox'?src.checked=t.checked:src.value=t.value;/^s/.test(t.dataset.kf)&&SF.includes(t.dataset.kf)?sRender():render()});
 document.addEventListener('click',e=>{const c=e.target.closest('[data-kst]');if(c){const s=c.dataset.kst,on=c.classList.contains('on');[KM.show!=='storage'&&'land',KM.show!=='land'&&ST&&'storage'].filter(Boolean).forEach(v=>on?STF[v].delete(s):STF[v].add(s));stfSave();render();if(ST)sRender();return}
  if(e.target.closest('[data-kreset]')){KM_AADT=0;if(KM.show!=='storage')fReset('land');if(KM.show!=='land'&&ST)fReset('storage');$('kmF').innerHTML=kmFiltHtml();kmQueue()}});
-function kmSize(){const b=$('viewMap');if(b.hidden)return;const t=b.getBoundingClientRect().top+scrollY;b.style.height=Math.max(420,innerHeight-t-8)+'px';if(KM_M)KM_M.map.resize()}
-addEventListener('resize',kmSize);
+function kmSize(){const b=$('viewMap');if(b.hidden)return;b.style.height='';if(KM_M){KM_M.map.resize();ksMinZoom(KM_M.map)}}
+addEventListener('resize',kmSize);addEventListener('orientationchange',()=>setTimeout(kmSize,250));if(window.visualViewport)visualViewport.addEventListener('resize',kmSize);
+document.addEventListener('click',e=>{const t=e.target.closest('#kmHide,#kmShow');if(!t)return;document.body.classList.toggle('kmcol',t.id==='kmHide');try{localStorage.setItem('edks_kmcol',t.id==='kmHide'?'1':'')}catch(_){}kmSize()});
+try{if(localStorage.getItem('edks_kmcol'))document.body.classList.add('kmcol')}catch(_){}
 let KM_T=0;function kmQueue(){if(!mapOn())return;cancelAnimationFrame(KM_T);KM_T=requestAnimationFrame(drawMap)}
 let KM_SK='';async function drawMap(){if(!mapOn())return;const sk=KM.show+'|'+KM.by+'|'+!!ST;if(KM_SK!==sk){const op=$('kmFd')?$('kmFd').open:null;$('kmSide').innerHTML=kmSide();if(op!=null)$('kmFd').open=op;KM_SK=sk}kmSync();const fn=(KM.show!=='storage'?fCount('land'):0)+(KM.show!=='land'&&ST?fCount('storage'):0)+(KM_AADT&&KM.show!=='land'?1:0);$('kmFn').textContent=fn?'· '+fn:'';kmSize();
  try{await loadGL()}catch(e){$('kmMap').innerHTML='<p class="desc" style="padding:16px">The map library could not load. Check the connection and try again.</p>';return}
@@ -998,7 +1028,7 @@ const PARTS=[['demand','Demand'],['competition','Competition'],['visibility','Vi
 const ZCLS={P:'ann',S:'ann',I:'pend',C:'pend',X:'reg','?':'unc'};
 let DK='land';try{DK=localStorage.getItem('edks_dk')||'land'}catch(e){}if(DK!=='storage')DK='land';
 function vHash(v){return v==='map'?'#map':'#deals/'+v}
-function setView(v,keep){if(v==='deals')v=DK;const mp=v==='map',st=v==='storage';if(!mp){DK=v;try{localStorage.setItem('edks_dk',v)}catch(e){}}$('dealSeg').hidden=mp;document.querySelectorAll('[data-dk]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dk===v));if(!dlg.open&&location.hash!==vHash(v))history.replaceState(null,'',location.pathname+vHash(v));$('viewMap').hidden=!mp;$('viewLand').hidden=mp||st;$('viewStorage').hidden=mp||!st;if(!mp)$('view').value=st?'storage':'land';try{localStorage.setItem('edks_view',v)}catch(e){}
+function setView(v,keep){if(v==='deals')v=DK;const mp=v==='map',st=v==='storage';if(!mp){DK=v;try{localStorage.setItem('edks_dk',v)}catch(e){}}$('dealSeg').hidden=mp;document.querySelectorAll('[data-dk]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dk===v));if(!dlg.open&&location.hash!==vHash(v))history.replaceState(null,'',location.pathname+vHash(v));$('viewMap').hidden=!mp;document.body.classList.toggle('mapfull',mp);if(mp)scrollTo(0,0);$('viewLand').hidden=mp||st;$('viewStorage').hidden=mp||!st;if(!mp)$('view').value=st?'storage':'land';try{localStorage.setItem('edks_view',v)}catch(e){}
  document.querySelectorAll('[data-top]').forEach(b=>b.setAttribute('aria-selected',b.dataset.top===(mp?'map':'deals')));
  if(mp){render();if(ST)sRender();drawMap();return}
  if(st&&ST){$('refreshed').textContent='Storage refreshed '+new Date(ST.generated_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}else{$('refreshed').textContent='Last refreshed '+gen.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}
