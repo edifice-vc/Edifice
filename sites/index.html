@@ -740,14 +740,14 @@ function storFacts(r){const z=r.zoning||{},t=r.traffic||{},c=r.competition||{},d
 // ---- filters modal, stage filter, summary bar, board
 const STF={land:new Set(),storage:new Set()};try{const x=JSON.parse(localStorage.getItem('edks_stf')||'{}');['land','storage'].forEach(v=>(x[v]||[]).forEach(s=>STF[v].add(s)))}catch(e){}
 function stfSave(){try{localStorage.setItem('edks_stf',JSON.stringify({land:[...STF.land],storage:[...STF.storage]}))}catch(e){}}
-const stOK=(v,id)=>!STF[v].size||STF[v].has(stageOf(v,id));
+const stOK=(v,id)=>STF[v].size?STF[v].has(stageOf(v,id)):stageOf(v,id)!=='Passed';
 const isDef=el=>el.type==='checkbox'?el.checked===el.defaultChecked:el.tagName==='SELECT'?el.value===(([...el.options].find(o=>o.defaultSelected)||el.options[0]||{}).value):el.value===el.defaultValue;
 function fCount(v){const ids=v==='land'?F:SF;return ids.filter(k=>!/Sort$/.test(k)&&!isDef($(k))).length+(STF[v].size?1:0)+Object.keys(AI[v].x).length+AI[v].terms.length}
 function fReset(v){(v==='land'?F:SF).forEach(k=>{const el=$(k);if(/Sort$/.test(k))return;if(el.type==='checkbox')el.checked=el.defaultChecked;else if(el.tagName==='SELECT')el.value=(([...el.options].find(o=>o.defaultSelected)||el.options[0]||{}).value);else el.value=el.defaultValue});STF[v].clear();stfSave();AI[v]={chips:[],terms:[],x:{}};$('aiQ').value='';v==='land'?render():sRender()}
 function stChk(v){$(v==='land'?'fStageL':'fStageS').innerHTML=STAGES.map(s=>`<label class="chk"><input type="checkbox" data-stf="${v}" value="${esc(s)}"${STF[v].has(s)?' checked':''}><span class="lbl mono">${esc(stL(s))}</span></label>`).join('')}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.stf)return;const v=t.dataset.stf;t.checked?STF[v].add(t.value):STF[v].delete(t.value);stfSave();v==='land'?render():sRender()});
 function stageBar(v){const all=v==='land'?S:SR;const n={};STAGES.forEach(s=>n[s]=0);all.forEach(o=>n[stageOf(v,o.id)]++);
- $(v==='land'?'sbL':'sbS').innerHTML=`<button type="button" data-sall="${v}" class="${STF[v].size?'':'on'}" aria-pressed="${!STF[v].size}"><b>${(v==='land'?S:SR).length}</b><span>All</span></button>`+STAGES.map(s=>`<button type="button" data-sbar="${v}" data-st="${esc(s)}" class="${STF[v].has(s)?'on':''}${n[s]||STF[v].has(s)?'':' z'}" aria-pressed="${STF[v].has(s)}"><b>${n[s]}</b><span>${esc(stL(s))}</span></button>`).join('')}
+ $(v==='land'?'sbL':'sbS').innerHTML=`<button type="button" data-sall="${v}" class="${STF[v].size?'':'on'}" aria-pressed="${!STF[v].size}"><b>${(v==='land'?S:SR).filter(o=>stageOf(v,o.id)!=='Passed').length}</b><span>Active</span></button>`+STAGES.map(s=>`<button type="button" data-sbar="${v}" data-st="${esc(s)}" class="${STF[v].has(s)?'on':''}${n[s]||STF[v].has(s)?'':' z'}" aria-pressed="${STF[v].has(s)}"><b>${n[s]}</b><span>${esc(stL(s))}</span></button>`).join('')}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-sbar]');if(!b)return;const v=b.dataset.sbar,s=b.dataset.st;STF[v].has(s)?STF[v].delete(s):STF[v].add(s);stfSave();v==='land'?render():sRender()});
 const MODE={land:'list',storage:'list'};try{const m=JSON.parse(localStorage.getItem('edks_mode')||'{}');Object.assign(MODE,m)}catch(e){}
 function setMode(v,m){MODE[v]=m;try{localStorage.setItem('edks_mode',JSON.stringify(MODE))}catch(e){}v==='land'?render():sRender()}
