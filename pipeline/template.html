@@ -808,7 +808,7 @@ function kmBuild(){const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessT
  map.addControl(new G.NavigationControl({showCompass:false}),'top-right');map.addControl(new G.ScaleControl({unit:'imperial'}),'bottom-left');
  const pop=new G.Popup({closeButton:false,closeOnClick:false,offset:10,className:'kmpop'}),info=new G.Popup({offset:6,className:'kmpop'});
  KM_M={map,G,ready:false,pop,info,added:new Set()};
- map.on('load',()=>{map.addSource('deals',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+ map.on('load',()=>{map.addSource('deals',{type:'geojson',data:{type:'FeatureCollection',features:[]},cluster:true,clusterMaxZoom:11,clusterRadius:40});
   kmTone(map);
   map.addSource('ks-mask',{type:'geojson',data:{type:'Feature',geometry:{type:'Polygon',coordinates:[[[-180,-85],[180,-85],[180,85],[-180,85],[-180,-85]],KS_POLY.slice().reverse()]}}});
   map.addLayer({id:'ks-mask',type:'fill',source:'ks-mask',paint:{'fill-color':'#050505','fill-opacity':0.88}});
@@ -816,21 +816,27 @@ function kmBuild(){const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessT
   map.addLayer({id:'ks-line',type:'line',source:'ks-line',paint:{'line-color':'rgba(255,255,255,0.32)','line-width':1}});
   ksMinZoom(map,true);map.on('resize',()=>ksMinZoom(map));
   map.addLayer({id:'deals-halo',type:'circle',source:'deals',filter:['==',['get','id'],''],paint:{'circle-radius':['interpolate',['linear'],['zoom'],5,8,12,14],'circle-color':'rgba(0,0,0,0)','circle-stroke-color':'#F14B21','circle-stroke-width':1.5}});
-  map.addLayer({id:'deals',type:'circle',source:'deals',paint:{'circle-radius':['interpolate',['linear'],['zoom'],5,['match',['get','v'],'land',4,3.4],12,['match',['get','v'],'land',8,7]],'circle-color':['get','col'],'circle-stroke-color':'#0A0A0A','circle-stroke-width':1}},'deals-halo');
-  map.on('mousemove','deals',e=>{map.getCanvas().style.cursor='pointer';const p=e.features[0].properties;map.setFilter('deals-halo',['==',['get','id'],p.id]);pop.setLngLat(e.features[0].geometry.coordinates).setHTML(`<div class="kph">${esc(p.n)}</div><div class="mpr"><span>${p.v==='land'?'Powered land':'Storage'}</span><b>${esc(p.k)}</b></div><div class="mpr"><span>Score</span><b class="mono">${esc(p.s)}</b></div><div class="kpf">Click to open</div>`).addTo(map)});
+  const UNC=['!',['has','point_count']],KF=KM_MB?['DIN Pro Medium','Arial Unicode MS Regular']:['Noto Sans Bold'];
+  map.addLayer({id:'deals-cl',type:'circle',source:'deals',filter:['has','point_count'],paint:{'circle-radius':['step',['get','point_count'],13,10,16,30,20],'circle-color':'#151515','circle-stroke-color':'#F14B21','circle-stroke-width':1.2,'circle-opacity':0.95}},'deals-halo');
+  map.addLayer({id:'deals-cn',type:'symbol',source:'deals',filter:['has','point_count'],layout:{'text-field':['to-string',['get','point_count']],'text-font':KF,'text-size':12,'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#F2F0EB'}});
+  map.addLayer({id:'deals',type:'circle',source:'deals',filter:UNC,paint:{'circle-radius':['case',['>',['get','r'],0],['case',['>=',['get','r'],100],12,10],['match',['get','v'],'land',5,4.5]],'circle-color':['get','col'],'circle-stroke-color':['match',['get','v'],'storage','#E8E6E1','#0A0A0A'],'circle-stroke-width':1.2}},'deals-halo');
+  map.addLayer({id:'deals-rk',type:'symbol',source:'deals',filter:['all',UNC,['>',['get','r'],0]],layout:{'text-field':['to-string',['get','r']],'text-font':KF,'text-size':['case',['>=',['get','r'],100],9.5,11],'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#0A0A0A'}});
+  map.on('click','deals-cl',e=>{const f=e.features[0],src=map.getSource('deals'),go=z=>map.easeTo({center:f.geometry.coordinates,zoom:z+0.2});const r=src.getClusterExpansionZoom(f.properties.cluster_id,(err,z)=>{if(!err)go(z)});if(r&&r.then)r.then(go).catch(()=>{})});
+  map.on('mouseenter','deals-cl',()=>map.getCanvas().style.cursor='pointer');map.on('mouseleave','deals-cl',()=>map.getCanvas().style.cursor='');
+  map.on('mousemove','deals',e=>{map.getCanvas().style.cursor='pointer';const p=e.features[0].properties;map.setFilter('deals-halo',['==',['get','id'],p.id]);pop.setLngLat(e.features[0].geometry.coordinates).setHTML(`<div class="kph">${esc(p.n)}</div><div class="mpr"><span>${p.v==='land'?'Powered land':'Storage'}</span><b>${esc(p.k)}</b></div><div class="mpr"><span>Score</span><b class="mono">${esc(p.s)}</b></div><div class="mpr"><span>Rank</span><b class="mono">${p.r>0?'#'+p.r:'—'}</b></div><div class="kpf">Click to open</div>`).addTo(map)});
   map.on('mouseleave','deals',()=>{map.getCanvas().style.cursor='';pop.remove();map.setFilter('deals-halo',['==',['get','id'],''])});
   map.on('click','deals',e=>{const p=e.features[0].properties;pop.remove();kmCard(p.v,p.id);map.setFilter('deals-halo',['==',['get','id'],p.id])});
   KM_M.ready=true;KM_MLY.forEach(k=>toggleLayer(k,true));drawMap()})}
 async function toggleLayer(k,on){const lg=$('ml-'+k);if(lg)lg.hidden=!on;const M=KM_M;if(!M||!M.ready)return;const map=M.map;
  if(on&&!M.added.has(k)){M.added.add(k);map.addSource('ly-'+k,{type:'geojson',data:KM_LBASE+k+'.geojson'});map.addLayer(Object.assign({id:'ly-'+k,source:'ly-'+k,layout:{visibility:'none'}},KM_GL[k]),map.getLayer('ks-mask')?'ks-mask':'deals');
-  map.on('click','ly-'+k,e=>{if(map.queryRenderedFeatures(e.point,{layers:['deals']}).length)return;M.info.setLngLat(e.lngLat).setHTML(lyrPop(k,e.features[0].properties)).addTo(map)});
+  map.on('click','ly-'+k,e=>{if(map.queryRenderedFeatures(e.point,{layers:['deals','deals-cl']}).length)return;M.info.setLngLat(e.lngLat).setHTML(lyrPop(k,e.features[0].properties)).addTo(map)});
   map.on('mouseenter','ly-'+k,()=>map.getCanvas().style.cursor='pointer');map.on('mouseleave','ly-'+k,()=>map.getCanvas().style.cursor='');
   map.on('error',e=>{if(e.sourceId==='ly-'+k&&lg&&!lg.querySelector('.err'))lg.insertAdjacentHTML('beforeend','<small class="err">Layer could not load.</small>')})}
  if(M.added.has(k))map.setLayoutProperty('ly-'+k,'visibility',on&&KM_MLY.has(k)?'visible':'none')}
 function kmSide(){const seg=(attr,opts,cur)=>`<div class="seg mseg">${opts.map(([k,l])=>`<button type="button" ${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k}">${l}</button>`).join('')}</div>`;
  return `<div class="kpan kp-main"><div class="msec"><div class="lbl mono">Deals</div>${seg('data-kshow',[['land','Land'],['storage','Storage'],['both','Both']],KM.show)}</div>
  <details class="msec kmfd" id="kmFd"${innerWidth>760?' open':''}><summary class="lbl mono">Filters <span id="kmFn"></span></summary><div id="kmF">${kmFiltHtml()}</div></details>
- <div class="msec"><span class="lbl mono" id="kmCount"></span></div></div><div class="kpan kp-leg"><div class="msec"><div class="lbl mono">Colour by</div>${seg('data-kby',kmViews(),KM.by)}<div class="mleg" id="kmLeg"></div><div class="mleg"><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #000"></i>Land site</span><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #fff"></i>Storage</span></div></div>
+ <div class="msec"><span class="lbl mono" id="kmCount"></span></div></div><div class="kpan kp-leg"><div class="msec"><div class="lbl mono">Colour by</div>${seg('data-kby',kmViews(),KM.by)}<div class="mleg" id="kmLeg"></div><div class="mleg"><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #000"></i>Land site</span><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #fff"></i>Storage</span><span><i class="dot" style="background:#151515;border:1.5px solid #F14B21"></i>Cluster · click to expand</span></div><div class="lbl" style="margin-top:6px">Pin number = score rank (1 = highest) among shown deals</div></div>
  </div><div class="kp-lyr"><div class="lbl mono kp-lyrh">Layers</div><div class="kp-chips">${KM_LYR.map(([k,l,src])=>`<label class="chk mly kchip"><input type="checkbox" data-mly value="${k}"${KM_MLY.has(k)?' checked':''}><span class="lbl mono">${l.replace(/ \(AADT\)/,'')}</span></label>`).join('')}</div><div class="kp-lsub">${KM_LYR.map(([k,l,src])=>`<div class="mleg sub" id="ml-${k}"${KM_MLY.has(k)?'':' hidden'}>${lyrLegend(k).map(([c,t])=>`<span><i style="background:${c}"></i>${t}</span>`).join('')}<small>${src}</small></div>`).join('')}</div>
  </div><div class="kpan kp-card" id="kmCard" hidden></div>`}
 // map filter panel: proxies for the same list filters (Filters dialogs, stage bar, AI search stay in sync) plus a map-only storage traffic floor
@@ -854,7 +860,9 @@ let KM_SK='';async function drawMap(){if(!mapOn())return;const sk=KM.show+'|'+KM
  if(!KM_M)kmBuild();kmSize();const M=KM_M;
  const P=[].concat(KM.show!=='storage'?KM_R.land.map(o=>['land',o]):[],KM.show!=='land'?KM_R.storage.filter(o=>!KM_AADT||((o.traffic||{}).aadt||0)>=KM_AADT).map(o=>['storage',o]):[]);const C=mColors(P),n={},FS=[];let pl=0;
  P.forEach(([v,o])=>{if(typeof o.lat!=='number'||typeof o.lon!=='number')return;pl++;const k=mKey(v,o);n[k]=(n[k]||0)+1;
-  FS.push({type:'Feature',geometry:{type:'Point',coordinates:[o.lon,o.lat]},properties:{id:o.id,v,n:o.name,k,s:String(LS(v,o)??'—'),col:C[k]||'#777777'}})});
+  FS.push({type:'Feature',geometry:{type:'Point',coordinates:[o.lon,o.lat]},properties:{id:o.id,v,n:o.name,k,s:String(LS(v,o)??'—'),col:C[k]||'#777777',r:0}})});
+ // rank by score within the visible set: 1 = highest; ties by name then id; unscored sites stay unnumbered
+ FS.map(f=>[f,parseFloat(f.properties.s)]).filter(([,x])=>isFinite(x)).sort((a,b)=>b[1]-a[1]||String(a[0].properties.n||'').localeCompare(String(b[0].properties.n||''))||String(a[0].properties.id).localeCompare(String(b[0].properties.id))).forEach(([f],i)=>f.properties.r=i+1);
  if(M.ready)M.map.getSource('deals').setData({type:'FeatureCollection',features:FS});
  $('kmLeg').innerHTML=Object.keys(C).filter(k=>n[k]).map(k=>`<span><i class="dot" style="background:${C[k]}"></i>${esc(k)} <b class="mono">${n[k]}</b></span>`).join('')||'<span class="lbl">No deals match the filters.</span>';
  $('kmCount').textContent=`${pl} of ${P.length} deals on map`+(pl<P.length?' · '+(P.length-pl)+' without a location':'')}
