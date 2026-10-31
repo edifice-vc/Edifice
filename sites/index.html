@@ -262,6 +262,58 @@ details.addf{margin-top:8px}details.addf>summary{list-style:none;display:inline-
 .kcb a.btn{border-color:rgba(255,255,255,.24)!important;color:#fff!important;background:transparent!important}
 .stats{gap:4px 22px!important}
 @media(max-width:760px){.kp-card{background:#121212!important;max-height:60%}}
+
+/* ---- clickable = ember (Sahil, Oct 31): orange only on interactive elements ---- */
+a,a:visited{color:var(--acc)}a:hover{color:#ff6a42;text-decoration:underline}
+.logo,.logo:hover{color:var(--fg);text-decoration:none}
+/* decorative text back to neutral */
+.eyebrow,.sec h4,.score,.sbtn .mono,details.pt summary .mono,.drv .fact b.acc,.dmeta .warn,.tbtn b,.kmfd>summary span{color:var(--fg)!important}
+.bar i,.mini i{background:#bbb}
+/* buttons */
+.btn,button.btn{color:var(--acc)!important;border-color:var(--acc)!important;background:transparent!important;border-radius:0;cursor:pointer}
+.btn:hover{background:rgba(241,75,33,.14)!important;color:#ff6a42!important;border-color:#ff6a42!important}
+.btn.pri,#addBtn,.kcb .btn.pri{background:var(--acc)!important;border-color:var(--acc)!important;color:#fff!important}
+.btn.pri:hover,#addBtn:hover,.kcb .btn.pri:hover{background:#ff6a42!important;border-color:#ff6a42!important}
+.btn.pri~.btn.pri{background:transparent!important;border-color:var(--acc)!important;color:var(--acc)!important}
+.kcb a.btn{border-color:var(--acc)!important;color:var(--acc)!important}
+.btn.ghost{border-color:var(--acc)!important;color:var(--acc)!important}
+.close{color:var(--acc);border-color:var(--acc)}.close:hover{color:#ff6a42;border-color:#ff6a42}
+.tbtn,.tbtn.qc,.rchips button,.afil button,.aichip,.sbtn,.kchip,.who select,.viewbar select{color:var(--acc)!important;border-color:rgba(241,75,33,.45)!important}
+.tbtn:hover,.tbtn.on,.tbtn.qc.on,.rchips button:hover,.afil button:hover,.aichip:hover,.sbtn:hover,.kchip:hover,.kchip:has(input:checked){border-color:var(--acc)!important;color:#ff6a42!important}
+.tbtn.on,.tbtn.qc.on,.kchip:has(input:checked){background:rgba(241,75,33,.14)!important}
+.rchips button[aria-pressed="true"]{background:var(--acc)!important;color:#fff!important}
+.kchip .lbl,.kchip:has(input:checked) .lbl{color:inherit!important}
+.aichip span[aria-hidden]{color:inherit}
+.aiclr,.acct button,.syncst{color:var(--acc)!important}.aiclr:hover,.acct button:hover,.syncst:hover{color:#ff6a42!important;text-decoration:underline}
+/* nav tabs, detail tabs */
+.topnav button,.tabs button{color:var(--acc)!important;opacity:.75}
+.topnav button:hover,.tabs button:hover{opacity:1}
+.topnav button[aria-selected="true"],.tabs button[aria-selected="true"],.tabs button.on{opacity:1;box-shadow:inset 0 -2px 0 var(--acc)!important}
+/* stats bar / stage filter */
+.stats button.stat .lbl,.stagebar button span,.stagebar button b,.stagebar button{color:var(--acc)!important}
+.stagebar button.on span,.stats button.stat.on .lbl{color:#ff6a42!important}
+.stagebar button.on b{box-shadow:inset 0 -1px 0 var(--acc)}
+/* tables: sortable headers + site names */
+th{color:var(--acc)!important;opacity:.8}th:hover,th.s{opacity:1;color:#ff6a42!important}
+th.s{text-decoration:underline;text-underline-offset:3px}
+.nm{color:var(--acc)}tbody tr:hover .nm,.card:hover h3{color:#ff6a42;text-decoration:underline}
+.card h3,.bcard .bh b,.kp-card h3{color:var(--acc)!important}
+/* collapsibles */
+summary,details.col>summary,.how>summary,.kmfd>summary{color:var(--acc)!important}summary:hover{color:#ff6a42!important}
+/* filter controls */
+.filters input,.filters select,.inp.sel,.emgrid select,.dealtop .inp,.ulist .inp{border-color:rgba(241,75,33,.45)}
+.filters select:hover,.inp:hover{border-color:var(--acc)}
+input[type=checkbox],input[type=radio]{accent-color:var(--acc)}
+.chk,.colpick label{color:var(--acc)}
+/* map controls & popups */
+#kmMap .maplibregl-ctrl-group button,#kmMap .mapboxgl-ctrl-group button{filter:none}
+#kmMap .maplibregl-ctrl-group,#kmMap .mapboxgl-ctrl-group{border-color:var(--acc)!important}
+#kmMap .maplibregl-ctrl-icon,#kmMap .mapboxgl-ctrl-icon{filter:invert(42%) sepia(93%) saturate(2200%) hue-rotate(352deg) brightness(98%)}
+.kmpop a,.kmpop button{color:var(--acc)!important}
+.mleg span[data-k],.mleg [role=button],.mly label{color:var(--acc);cursor:pointer}
+.seg button{color:var(--acc)!important;border-color:rgba(241,75,33,.45)!important}.seg button:hover{color:#ff6a42!important;border-color:var(--acc)!important}.seg button.on{background:var(--acc)!important;color:#fff!important;border-color:var(--acc)!important}
+/* focus */
+a:focus-visible,button:focus-visible,summary:focus-visible,select:focus-visible,input:focus-visible,th:focus-visible,[tabindex]:focus-visible{outline:2px solid #ff6a42!important;outline-offset:2px}
 </style>
 </head>
 <body class="gated">
@@ -484,7 +536,7 @@ function render(){
  document.querySelectorAll('th[data-k]').forEach(th=>th.classList.toggle('s',th.dataset.k===k));
  $('count').textContent=`${R.length} of ${S.length} sites`;{const sb=$('fdLgo');if(sb)sb.textContent=`Show ${R.length} sites`}afterRender('land',R);
  $('cards').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv);return `<div class="card" data-id="${s.id}"><div class="score">${scTxt('land',s)}</div><div>${stB('land',s.id)}${badges(s)}${annexBadge(s)}${regFlag(s)}</div><h3>${esc(s.name)}</h3><div class="lbl mono">${esc(s.city)} · ${esc(s.county)} Co · ${fmt(s.acres,0)} ac${dom('land',s.id)!=null?' · '+dom('land',s.id)+' days on mkt':''}</div><div class="subs">${subLine(s)}</div><div class="row mono"><span>$ ${priceLine(s)}</span></div><div class="row mono"><span><span class="lbl">Line</span> ${bl?bl.kv+' kV '+fmt(bl.mi)+' mi':'—'}</span><span><span class="lbl">Sub</span> ${sb?(sb.kv?sb.kv+' kV ':'')+fmt(sb.mi)+' mi':'—'}</span><span><span class="lbl">Gas</span> ${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</span></div></div>`}).join('');
- document.querySelector('#tbl tbody').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv),c=topContact(s);return `<tr data-id="${s.id}"><td>${stB('land',s.id)}</td><td class="n" style="color:var(--acc);font-size:16px">${scTxt('land',s)}</td><td class="n">${s.infra_score}</td><td class="n">${cm(s)?cm(s).score+'<div class="lbl">L'+cm(s).laws.score+' N'+cm(s).news.score+' E'+cm(s).edc.score+'</div>':'—'}</td><td>${badges(s)}${annexBadge(s)}${regFlag(s)}<div>${esc(s.name)}</div><div class="lbl">${esc(s.city)}</div></td><td>${esc(s.county)}</td><td class="n">${fmt(s.acres,0)}</td><td class="n">${totTxt(s)}</td><td class="n">${ppaTxt(s)}</td><td class="n">${domTxt('land',s.id)}</td><td class="n">${bl?bl.kv+' kV · '+fmt(bl.mi)+' mi':'—'}</td><td class="n">${sb?(sb.kv?sb.kv+' kV · ':'')+fmt(sb.mi)+' mi':'—'}</td><td class="n">${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</td><td>${c?esc(c.name||c.org)+'<div class="lbl">'+esc(c.org&&c.name?c.org:'')+'</div>':'—'}</td></tr>`}).join('');
+ document.querySelector('#tbl tbody').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv),c=topContact(s);return `<tr data-id="${s.id}"><td>${stB('land',s.id)}</td><td class="n" style="color:var(--acc);font-size:16px">${scTxt('land',s)}</td><td class="n">${s.infra_score}</td><td class="n">${cm(s)?cm(s).score+'<div class="lbl">L'+cm(s).laws.score+' N'+cm(s).news.score+' E'+cm(s).edc.score+'</div>':'—'}</td><td>${badges(s)}${annexBadge(s)}${regFlag(s)}<div class="nm">${esc(s.name)}</div><div class="lbl">${esc(s.city)}</div></td><td>${esc(s.county)}</td><td class="n">${fmt(s.acres,0)}</td><td class="n">${totTxt(s)}</td><td class="n">${ppaTxt(s)}</td><td class="n">${domTxt('land',s.id)}</td><td class="n">${bl?bl.kv+' kV · '+fmt(bl.mi)+' mi':'—'}</td><td class="n">${sb?(sb.kv?sb.kv+' kV · ':'')+fmt(sb.mi)+' mi':'—'}</td><td class="n">${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</td><td>${c?esc(c.name||c.org)+'<div class="lbl">'+esc(c.org&&c.name?c.org:'')+'</div>':'—'}</td></tr>`}).join('');
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-panel]');if(b){openPanel(b.dataset.site,b.dataset.panel);return}const el=e.target.closest('[data-id]');if(el&&!el.closest('dialog')&&!e.target.closest('select,input,textarea,label')){if(/^st-/.test(el.dataset.id))openStorage(el.dataset.id);else openSite(el.dataset.id)}});
 const dlg=$('dlg');
@@ -935,7 +987,7 @@ function sRender(){
  document.querySelectorAll('th[data-sk]').forEach(th=>th.classList.toggle('s',th.dataset.sk===k));
  $('sCount').textContent=`${R.length} of ${SR.length} storage rows`;{const sb=$('fdSgo');if(sb)sb.textContent=`Show ${R.length} rows`}afterRender('storage',R);
  $('sCards').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{};return `<div class="card" data-id="${r.id}"><div class="score">${scTxt('storage',r)}</div><div>${stB('storage',r.id)}${sBadges(r)}${zBadge(r)}</div><h3>${esc(r.name)}</h3><div class="lbl mono">${esc(r.address)} · ${esc(r.city_label)} · ${sizeTxt(r)}</div><div class="row mono"><span>$ ${r.price?money(r.price):'Unpriced'}${r.price&&unitTxt(r)!=='—'?' · '+unitTxt(r):''}</span></div><div class="row mono"><span><span class="lbl">Road</span> ${esc(t.road||'—')}${t.aadt?' · '+fmt(t.aadt,0)+' AADT':''}</span><span><span class="lbl">Supply</span> ${c.count??'—'} within 3 mi${c.sf_per_capita!=null?' · '+c.sf_per_capita+' SF/person':''}</span><span><span class="lbl">Pop</span> ${d.pop3?fmt(d.pop3/1000,0)+'k':'—'} · ${d.income?'$'+fmt(d.income/1000,0)+'k':'—'}</span></div><div style="margin-top:6px">${fitChips(r)}</div>${mini(r)}</div>`}).join('');
- document.querySelector('#sTbl tbody').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{},z=r.zoning||{},ct=topC(r);return `<tr data-id="${r.id}"><td>${stB('storage',r.id)}</td><td class="n" style="color:var(--acc);font-size:16px">${scTxt('storage',r)}${mini(r)}</td><td>${r.kind==='land'?'Land':'Facility'}</td><td>${sBadges(r).replace(/<span class="badge (cert|chg)">[^<]*<\/span>/,'')}<div>${esc(r.name)}</div><div class="lbl">${esc(r.address)} · ${esc(r.city_label)}</div></td><td class="n">${sizeTxt(r)}</td><td class="n">${r.price?money(r.price):'—'}</td><td class="n">${unitTxt(r)}</td><td class="n">${domTxt('storage',r.id)}</td><td><span class="badge ${ZCLS[z.status]||'unc'}">${esc(z.district||'?')}</span><div class="lbl">${esc(z.status_txt)}</div></td><td>${esc(t.road||'—')}<div class="lbl">${t.aadt?fmt(t.aadt,0)+' AADT ('+esc(t.aadt_year)+')':'no count'}</div></td><td class="n">${c.count??'—'} · ~${c.est_nrsf?fmt(c.est_nrsf/1000,0)+'k SF':'—'}<div class="lbl">${c.sf_per_capita!=null?c.sf_per_capita+' SF/person':''}${c.nearest?' · nearest '+fmt(c.nearest_mi,1)+' mi':''}</div></td><td class="n">${d.pop3?fmt(d.pop3,0):'—'}<div class="lbl">${d.income?'$'+fmt(d.income,0):''}${d.renter_pct!=null?' · '+d.renter_pct+'% rent':''}</div></td><td>${fitChips(r)}</td><td>${ct?esc(ct.name||ct.org)+'<div class="lbl">'+esc(ct.org&&ct.name?ct.org:'')+'</div>':'—'}</td></tr>`}).join('');
+ document.querySelector('#sTbl tbody').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{},z=r.zoning||{},ct=topC(r);return `<tr data-id="${r.id}"><td>${stB('storage',r.id)}</td><td class="n" style="color:var(--acc);font-size:16px">${scTxt('storage',r)}${mini(r)}</td><td>${r.kind==='land'?'Land':'Facility'}</td><td>${sBadges(r).replace(/<span class="badge (cert|chg)">[^<]*<\/span>/,'')}<div class="nm">${esc(r.name)}</div><div class="lbl">${esc(r.address)} · ${esc(r.city_label)}</div></td><td class="n">${sizeTxt(r)}</td><td class="n">${r.price?money(r.price):'—'}</td><td class="n">${unitTxt(r)}</td><td class="n">${domTxt('storage',r.id)}</td><td><span class="badge ${ZCLS[z.status]||'unc'}">${esc(z.district||'?')}</span><div class="lbl">${esc(z.status_txt)}</div></td><td>${esc(t.road||'—')}<div class="lbl">${t.aadt?fmt(t.aadt,0)+' AADT ('+esc(t.aadt_year)+')':'no count'}</div></td><td class="n">${c.count??'—'} · ~${c.est_nrsf?fmt(c.est_nrsf/1000,0)+'k SF':'—'}<div class="lbl">${c.sf_per_capita!=null?c.sf_per_capita+' SF/person':''}${c.nearest?' · nearest '+fmt(c.nearest_mi,1)+' mi':''}</div></td><td class="n">${d.pop3?fmt(d.pop3,0):'—'}<div class="lbl">${d.income?'$'+fmt(d.income,0):''}${d.renter_pct!=null?' · '+d.renter_pct+'% rent':''}</div></td><td>${fitChips(r)}</td><td>${ct?esc(ct.name||ct.org)+'<div class="lbl">'+esc(ct.org&&ct.name?ct.org:'')+'</div>':'—'}</td></tr>`}).join('');
  const by={};SR.forEach(r=>{by[r.city_label]=by[r.city_label]||{land:0,facility:0};by[r.city_label][r.kind]++});
  sStatsDraw(v,R);aiChips();
 }
@@ -1032,7 +1084,7 @@ function kmCard(v,id){const c=$('kmCard');if(!c)return;const o=objOf(v,id);if(!o
 #gate[hidden],#gate [hidden]{display:none!important}
 #gate .box{width:min(440px,100%);border:1px solid var(--line);background:var(--bg);padding:28px 24px}
 #gate h1{font-size:clamp(32px,8vw,48px);margin:18px 0 8px}
-#gate .btn{cursor:pointer;background:none;margin-top:18px}
+#gate .btn{cursor:pointer;margin-top:18px}
 #gate .btn[disabled]{opacity:.4;cursor:default}
 #gate .msg{min-height:1.4em;margin-top:14px;color:var(--mut)}
 #gate .dash{border:1px dashed var(--line);padding:10px 12px;margin-top:14px}
@@ -1045,7 +1097,7 @@ body.gated .wrap{visibility:hidden}
  <div class="logo"><svg width="20" height="30" viewBox="0 0 32 48" fill="none" aria-hidden="true"><path d="M19 1 L31 13 L31 22 L19 34 L19 27 L27 19 L27 16 L19 8 Z" stroke="#F14B21" stroke-width="3"/><path d="M14 13 L14 20 L6 28 L6 31 L14 39 L14 46 L2 34 L2 25 Z" stroke="#F14B21" stroke-width="3"/></svg><span class="wordmark">Edifice</span></div>
  <h1 id="gateT">Kansas sites.</h1>
  <p class="sub" id="gateSub">Private research and deal pipeline. Sign in with your Edifice Google account.</p>
- <button class="btn" type="button" id="gateIn" hidden>Sign in with Google</button>
+ <button class="btn pri" type="button" id="gateIn" hidden>Sign in with Google</button>
  <button class="btn" type="button" id="gateOut" hidden>Sign out</button>
  <div class="lbl mono msg" id="gateMsg" role="status">Checking sign-in</div>
  <div id="gateErr" role="alert" hidden><pre class="mono" id="gateErrTxt"></pre>
