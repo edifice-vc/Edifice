@@ -5,7 +5,7 @@
 #gate[hidden],#gate [hidden]{display:none!important}
 #gate .box{width:min(440px,100%);border:1px solid var(--line);background:var(--bg);padding:28px 24px}
 #gate h1{font-size:clamp(32px,8vw,48px);margin:18px 0 8px}
-#gate .btn{cursor:pointer;background:none;margin-top:18px}
+#gate .btn{cursor:pointer;margin-top:18px}
 #gate .btn[disabled]{opacity:.4;cursor:default}
 #gate .msg{min-height:1.4em;margin-top:14px;color:var(--mut)}
 #gate .dash{border:1px dashed var(--line);padding:10px 12px;margin-top:14px}
@@ -18,7 +18,7 @@ body.gated .wrap{visibility:hidden}
  <div class="logo"><svg width="20" height="30" viewBox="0 0 32 48" fill="none" aria-hidden="true"><path d="M19 1 L31 13 L31 22 L19 34 L19 27 L27 19 L27 16 L19 8 Z" stroke="#F14B21" stroke-width="3"/><path d="M14 13 L14 20 L6 28 L6 31 L14 39 L14 46 L2 34 L2 25 Z" stroke="#F14B21" stroke-width="3"/></svg><span class="wordmark">Edifice</span></div>
  <h1 id="gateT">Kansas sites.</h1>
  <p class="sub" id="gateSub">Private research and deal pipeline. Sign in with your Edifice Google account.</p>
- <button class="btn" type="button" id="gateIn" hidden>Sign in with Google</button>
+ <button class="btn pri" type="button" id="gateIn" hidden>Sign in with Google</button>
  <button class="btn" type="button" id="gateOut" hidden>Sign out</button>
  <div class="lbl mono msg" id="gateMsg" role="status">Checking sign-in</div>
  <div id="gateErr" role="alert" hidden><pre class="mono" id="gateErrTxt"></pre>
