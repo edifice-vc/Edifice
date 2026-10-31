@@ -263,57 +263,102 @@ details.addf{margin-top:8px}details.addf>summary{list-style:none;display:inline-
 .stats{gap:4px 22px!important}
 @media(max-width:760px){.kp-card{background:#121212!important;max-height:60%}}
 
-/* ---- clickable = ember (Sahil, Oct 31): orange only on interactive elements ---- */
-a,a:visited{color:var(--acc)}a:hover{color:#ff6a42;text-decoration:underline}
-.logo,.logo:hover{color:var(--fg);text-decoration:none}
-/* decorative text back to neutral */
-.eyebrow,.sec h4,.score,.sbtn .mono,details.pt summary .mono,.drv .fact b.acc,.dmeta .warn,.tbtn b,.kmfd>summary span{color:var(--fg)!important}
-.bar i,.mini i{background:#bbb}
-/* buttons */
-.btn,button.btn{color:var(--acc)!important;border-color:var(--acc)!important;background:transparent!important;border-radius:0;cursor:pointer}
-.btn:hover{background:rgba(241,75,33,.14)!important;color:#ff6a42!important;border-color:#ff6a42!important}
-.btn.pri,#addBtn,.kcb .btn.pri{background:var(--acc)!important;border-color:var(--acc)!important;color:#fff!important}
-.btn.pri:hover,#addBtn:hover,.kcb .btn.pri:hover{background:#ff6a42!important;border-color:#ff6a42!important}
-.btn.pri~.btn.pri{background:transparent!important;border-color:var(--acc)!important;color:var(--acc)!important}
-.kcb a.btn{border-color:var(--acc)!important;color:var(--acc)!important}
-.btn.ghost{border-color:var(--acc)!important;color:var(--acc)!important}
-.close{color:var(--acc);border-color:var(--acc)}.close:hover{color:#ff6a42;border-color:#ff6a42}
-.tbtn,.tbtn.qc,.rchips button,.afil button,.aichip,.sbtn,.kchip,.who select,.viewbar select{color:var(--acc)!important;border-color:rgba(241,75,33,.45)!important}
-.tbtn:hover,.tbtn.on,.tbtn.qc.on,.rchips button:hover,.afil button:hover,.aichip:hover,.sbtn:hover,.kchip:hover,.kchip:has(input:checked){border-color:var(--acc)!important;color:#ff6a42!important}
-.tbtn.on,.tbtn.qc.on,.kchip:has(input:checked){background:rgba(241,75,33,.14)!important}
-.rchips button[aria-pressed="true"]{background:var(--acc)!important;color:#fff!important}
+/* ---- colour hierarchy v3 (Sahil, Oct 31): ember is sparing ----
+   ember = primary action, selected state, focus, hover accent. Everything else clickable = neutral light. */
+:root{--t1:#F5F3EF;--t2:#B5B3AE;--t3:#8A8884;--ln:rgba(255,255,255,.12);--ln2:rgba(255,255,255,.26);--hov:#161616}
+body{color:var(--t1)}
+a,a:visited{color:var(--t1);text-decoration:none;border-bottom:1px solid var(--ln2)}a:hover{color:#fff;border-bottom-color:var(--acc)}
+.logo,.logo:hover,a.btn,a.btn:hover{border-bottom:0}
+.logo,.logo:hover{color:var(--t1)}
+.lbl{color:var(--t3)}
+/* decorative / status text: neutral, never ember */
+.eyebrow,.sec h4,.score,.sbtn .mono,details.pt summary .mono,.drv .fact b.acc,.tbtn b,.kmfd>summary span,.acc{color:var(--t1)!important}
+.sec h4{color:var(--t3)!important}
+.dmeta .warn,.fail{color:#E0B341!important}
+.bar i,.mini i{background:#BDBAB4}
+#tbl td.n[style],#sTbl td.n[style]{color:var(--t1)!important}
+/* status badges: muted distinct tones, no ember */
+.badge{border-color:var(--ln2);color:var(--t2)}
+.badge.stg{border-color:var(--ln2);color:var(--t1)}
+.badge.stg.s-hot{border-color:#E0B341;color:#E0B341}
+.badge.stg.s-won{background:#2F6B45;border-color:#2F6B45;color:#fff}
+.badge.ann{border-color:#5E9E74;color:#8CC79F}
+.badge.reg,.chip.negative{border-color:#B0665A;color:#D7958A}
+.badge.warn,.badge.pend{border-color:#9C8340;color:#D9BC6A}
+.acb.e{border-color:var(--ln2);color:var(--t1)}
+/* buttons: secondary = neutral outline; primary = ember fill */
+.btn,button.btn,.close{color:var(--t1)!important;border:1px solid var(--ln2)!important;background:transparent!important;border-radius:0;cursor:pointer}
+.btn:hover,.close:hover{border-color:var(--t1)!important;background:var(--hov)!important}
+.btn.pri,#addBtn,#emSend:not([hidden]){background:var(--acc)!important;border-color:var(--acc)!important;color:#fff!important}
+.btn.pri:hover,#addBtn:hover{background:#ff6a42!important;border-color:#ff6a42!important}
+.btn.pri~.btn.pri{background:transparent!important;border-color:var(--ln2)!important;color:var(--t1)!important}
+.kcb .btn.pri{background:var(--acc)!important;border-color:var(--acc)!important;color:#fff!important}
+.btn.ghost{border-style:dashed!important;color:var(--t2)!important}
+/* toolbar buttons + chips: neutral until active */
+.tbtn,.tbtn.qc,.rchips button,.afil button,.aichip,.sbtn,.kchip,.who select,.viewbar select{color:var(--t2)!important;border:1px solid var(--ln)!important;background:transparent!important}
+.tbtn:hover,.tbtn.qc:hover,.rchips button:hover,.afil button:hover,.aichip:hover,.sbtn:hover,.kchip:hover{color:var(--t1)!important;border-color:var(--ln2)!important;background:var(--hov)!important}
+.tbtn.on,.tbtn.qc.on,.afil button[aria-pressed="true"],.rchips button[aria-pressed="true"],.kchip:has(input:checked){color:#fff!important;border-color:var(--acc)!important;background:rgba(241,75,33,.10)!important}
 .kchip .lbl,.kchip:has(input:checked) .lbl{color:inherit!important}
-.aichip span[aria-hidden]{color:inherit}
-.aiclr,.acct button,.syncst{color:var(--acc)!important}.aiclr:hover,.acct button:hover,.syncst:hover{color:#ff6a42!important;text-decoration:underline}
-/* nav tabs, detail tabs */
-.topnav button,.tabs button{color:var(--acc)!important;opacity:.75}
-.topnav button:hover,.tabs button:hover{opacity:1}
-.topnav button[aria-selected="true"],.tabs button[aria-selected="true"],.tabs button.on{opacity:1;box-shadow:inset 0 -2px 0 var(--acc)!important}
-/* stats bar / stage filter */
-.stats button.stat .lbl,.stagebar button span,.stagebar button b,.stagebar button{color:var(--acc)!important}
-.stagebar button.on span,.stats button.stat.on .lbl{color:#ff6a42!important}
-.stagebar button.on b{box-shadow:inset 0 -1px 0 var(--acc)}
-/* tables: sortable headers + site names */
-th{color:var(--acc)!important;opacity:.8}th:hover,th.s{opacity:1;color:#ff6a42!important}
-th.s{text-decoration:underline;text-underline-offset:3px}
-.nm{color:var(--acc)}tbody tr:hover .nm,.card:hover h3{color:#ff6a42;text-decoration:underline}
-.card h3,.bcard .bh b,.kp-card h3{color:var(--acc)!important}
+.aichip span[aria-hidden]{color:var(--t3)}
+.aiclr,.acct button,.syncst,.linkbtn{color:var(--t2)!important}.aiclr:hover,.acct button:hover,.syncst:hover,.linkbtn:hover{color:var(--t1)!important;text-decoration:underline}
+.syncst.off{color:#D9BC6A!important}
+/* top nav: neutral text, ember underline on the selected tab */
+.topnav{border:0;border-bottom:1px solid var(--ln);width:100%}
+.topnav button{color:var(--t3)!important;opacity:1;border:0!important;padding:14px 18px 12px;box-shadow:none!important}
+.topnav button:first-child{padding-left:0}
+.topnav button:hover{color:var(--t1)!important}
+.topnav button[aria-selected="true"]{color:#fff!important;box-shadow:inset 0 -2px 0 var(--acc)!important}
+.topnav button:first-child[aria-selected="true"]{box-shadow:none!important;background:linear-gradient(var(--acc),var(--acc)) bottom left/calc(100% - 18px) 2px no-repeat}
+/* Deals: Powered Land | Self Storage segmented toggle */
+.dealseg{display:inline-flex;margin:18px 0 0;border:1px solid var(--ln2)}
+.dealseg[hidden]{display:none}
+.dealseg button{background:transparent;border:0;border-right:1px solid var(--ln2);color:var(--t2);font:500 12px 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:10px 18px;cursor:pointer;border-radius:0;display:inline-flex;gap:10px;align-items:baseline}
+.dealseg button:last-child{border-right:0}
+.dealseg button:hover{color:var(--t1);background:var(--hov)}
+.dealseg button[aria-selected="true"]{color:#fff;background:#1C1C1C;box-shadow:inset 0 -2px 0 var(--acc)}
+.dealseg .n{color:var(--t3);font-weight:400;letter-spacing:.04em}.dealseg button[aria-selected="true"] .n{color:var(--t2)}
+@media(max-width:600px){.dealseg{display:flex;width:100%}.dealseg[hidden]{display:none}.dealseg button{flex:1;justify-content:center;padding:11px 8px;font-size:11px;letter-spacing:.1em}}
+/* detail tabs */
+.tabs button{color:var(--t3)!important;opacity:1;box-shadow:none!important}
+.tabs button:hover{color:var(--t1)!important}
+.tabs button[aria-selected="true"],.tabs button.on{color:#fff!important;border-bottom-color:var(--acc)!important}
+/* stats / stage bar: neutral numbers, selected = white + ember rule */
+.stats button.stat .lbl{color:var(--t3)!important}.stats button.stat b{color:var(--t1)!important}
+.stats button.stat:hover{border-color:var(--ln)}.stats button.stat.on{border-color:transparent;box-shadow:inset 0 -2px 0 var(--acc)}.stats button.stat.on .lbl{color:#fff!important}
+.stagebar button{color:var(--t2)!important;opacity:1}.stagebar button b{color:var(--t1)!important}.stagebar button span{color:var(--t3)!important}
+.stagebar button:hover span{color:var(--t1)!important}
+.stagebar button.on span{color:#fff!important}.stagebar button.on b{box-shadow:inset 0 -2px 0 var(--acc)!important}
+/* tables: neutral headers, active sort column = white + ember arrow; site name bright white */
+th{color:var(--t3)!important;opacity:1}th[data-k]:hover,th[data-sk]:hover{color:var(--t1)!important}
+th.s{color:#fff!important;text-decoration:none}th.s::after{content:' \2193';color:var(--acc)}
+td{color:var(--t2)}td.n{color:var(--t2)}
+.nm{color:#fff;font-size:15px}
+tbody tr:hover{background:var(--hov)}tbody tr:hover .nm,.card:hover h3,.bcard:hover .bh b{text-decoration:underline;text-decoration-color:var(--acc);text-underline-offset:3px}
+.card h3,.bcard .bh b,.kp-card h3{color:#fff!important}
+.card:hover,.bcard:hover{border-color:var(--ln2)}
 /* collapsibles */
-summary,details.col>summary,.how>summary,.kmfd>summary{color:var(--acc)!important}summary:hover{color:#ff6a42!important}
-/* filter controls */
-.filters input,.filters select,.inp.sel,.emgrid select,.dealtop .inp,.ulist .inp{border-color:rgba(241,75,33,.45)}
-.filters select:hover,.inp:hover{border-color:var(--acc)}
+summary,details.col>summary,.how>summary,.kmfd>summary{color:var(--t2)!important}summary:hover{color:var(--t1)!important}
+details.col>summary::after{color:var(--t3)}
+/* inputs */
+.filters input,.filters select,.inp,.inp.sel,.emgrid select,.dealtop .inp,.ulist .inp{border-color:var(--ln)}
+.filters select:hover,.filters input:hover,.inp:hover{border-color:var(--ln2)}
 input[type=checkbox],input[type=radio]{accent-color:var(--acc)}
-.chk,.colpick label{color:var(--acc)}
+.chk,.colpick label{color:var(--t2)}
+.seg button{color:var(--t2)!important;border-color:var(--ln)!important;background:transparent!important}.seg button:hover{color:var(--t1)!important;border-color:var(--ln2)!important}
+.seg button.on{background:#1C1C1C!important;color:#fff!important;border-color:var(--ln2)!important;box-shadow:inset 0 -2px 0 var(--acc)}
 /* map controls & popups */
-#kmMap .maplibregl-ctrl-group button,#kmMap .mapboxgl-ctrl-group button{filter:none}
-#kmMap .maplibregl-ctrl-group,#kmMap .mapboxgl-ctrl-group{border-color:var(--acc)!important}
-#kmMap .maplibregl-ctrl-icon,#kmMap .mapboxgl-ctrl-icon{filter:invert(42%) sepia(93%) saturate(2200%) hue-rotate(352deg) brightness(98%)}
-.kmpop a,.kmpop button{color:var(--acc)!important}
-.mleg span[data-k],.mleg [role=button],.mly label{color:var(--acc);cursor:pointer}
-.seg button{color:var(--acc)!important;border-color:rgba(241,75,33,.45)!important}.seg button:hover{color:#ff6a42!important;border-color:var(--acc)!important}.seg button.on{background:var(--acc)!important;color:#fff!important;border-color:var(--acc)!important}
-/* focus */
-a:focus-visible,button:focus-visible,summary:focus-visible,select:focus-visible,input:focus-visible,th:focus-visible,[tabindex]:focus-visible{outline:2px solid #ff6a42!important;outline-offset:2px}
+#kmMap .maplibregl-ctrl-group,#kmMap .mapboxgl-ctrl-group{border-color:var(--ln)!important}
+#kmMap .maplibregl-ctrl-icon,#kmMap .mapboxgl-ctrl-icon{filter:invert(1)}
+.kmpop a,.kmpop button{color:var(--t1)!important}
+.mleg span[data-k],.mleg [role=button],.mly label{cursor:pointer}
+/* focus: ember ring */
+a:focus-visible,button:focus-visible,summary:focus-visible,select:focus-visible,input:focus-visible,th:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--acc)!important;outline-offset:2px}
+.viewbar{margin-top:8px}
+td.sc{color:#fff!important;font-size:16px}
+details.how{border:0;padding:0;margin:4px 0 10px}details.kmfd{border:0;padding:0;margin:0}
+.tiles{background:none!important;gap:0!important}.tile{border-right:1px solid var(--ln)}.tile:last-child{border-right:0}
+.kp-main .kmst{gap:4px}.kp-main .kchip{padding:5px 6px;font-size:9px;max-width:100%}
+dialog.fdlg,.mapside,.kp-main,.kp-card{border-radius:0!important}
 </style>
 </head>
 <body>
@@ -325,8 +370,9 @@ a:focus-visible,button:focus-visible,summary:focus-visible,select:focus-visible,
  </a>
  <div class="hdr-r"><span class="lbl mono" id="refreshed"></span><span class="lbl mono syncst off" id="sync" role="status" title="Pipeline sync status">Not synced</span><span class="who lbl mono" id="whoWrap" hidden><label for="me">Signed in as</label><select id="me"></select></span><span class="acct lbl mono" id="acct" hidden><span id="acctWho"></span><button type="button" id="setBtn" hidden>Settings</button><button type="button" id="outBtn">Sign out</button></span></div>
 </header>
-<div class="viewbar"><nav class="topnav" role="tablist" aria-label="Modules"><button type="button" role="tab" data-top="land">Powered Land</button><button type="button" role="tab" data-top="storage">Self Storage</button><button type="button" role="tab" data-top="map">Map</button></nav><select id="view" aria-label="Choose table" hidden><option value="land">Powered Land</option><option value="storage">Storage</option></select></div>
+<div class="viewbar"><nav class="topnav" role="tablist" aria-label="Modules"><button type="button" role="tab" data-top="deals">Deals</button><button type="button" role="tab" data-top="map">Map</button></nav><select id="view" aria-label="Choose table" hidden><option value="land">Powered Land</option><option value="storage">Storage</option></select></div>
 <div class="ais" role="search"><label class="lbl mono" for="aiQ">AI search</label><input id="aiQ" type="search" autocomplete="off" spellcheck="false" aria-describedby="aiChips" placeholder="Ask in plain English"><kbd title="Press / to search">/</kbd></div><div class="aichips" id="aiChips" aria-live="polite"></div>
+<div class="dealseg" id="dealSeg" role="tablist" aria-label="Deal type"><button type="button" role="tab" data-dk="land">Powered Land<span class="n" id="dkL"></span></button><button type="button" role="tab" data-dk="storage">Self Storage<span class="n" id="dkS"></span></button></div>
 <div id="viewMap" class="mapmod" hidden aria-label="Kansas map"><div class="mapside" id="kmSide"></div><div id="kmMap"></div></div>
 <div id="viewLand">
 <div class="eyebrow mono">Kansas · Data-center land</div>
@@ -524,7 +570,7 @@ function landOK(s,v,minKv){if(!stOK('land',s.id)||!aiOK('land',s))return false;i
   if(v.fGas!==''&&(!s.gasline||s.gasline.mi>+v.fGas))return false;return true}
 const QS=[['sites','sites',null,null],['cert','certified',s=>!!s.certified,{fCert:false}],['s70','overall 70+',s=>(s.overall||0)>=70,{fScore:'0'}],['city','in city limits',s=>an(s).status==='annexed',{fAnnex:''}],['new','new this week',s=>!!s.is_new,{fQ:''}],['chg','changed',s=>!!(s.is_changed&&!s.is_new),{fQ:''}]];
 function qOn(k,v){return k==='cert'?!!v.fCert:k==='s70'?(+v.fScore||0)>=70:k==='city'?v.fAnnex==='annexed':k==='new'?v.fQ==='new':k==='chg'?v.fQ==='chg':false}
-function landStats(v,minKv,R){const any=QS.some(q=>qOn(q[0],v));$('stats').innerHTML=QS.map(([k,l,fn,clr])=>{const n=fn?S.filter(s=>fn(s)&&landOK(s,Object.assign({},v,clr),minKv)).length:R.length;const on=qOn(k,v);return `<button type="button" class="stat${on?' on':''}${n||on||k==='sites'?'':' z'}" data-q="${k}" aria-pressed="${on}" title="${k==='sites'?'Clear all filters':(on?'Remove filter: ':'Filter: ')+l}"><b${k==='new'?' style="color:var(--acc)"':''}>${n}</b><span class="lbl">${l}</span></button>`}).join('')}
+function landStats(v,minKv,R){const any=QS.some(q=>qOn(q[0],v));$('stats').innerHTML=QS.map(([k,l,fn,clr])=>{const n=fn?S.filter(s=>fn(s)&&landOK(s,Object.assign({},v,clr),minKv)).length:R.length;const on=qOn(k,v);return `<button type="button" class="stat${on?' on':''}${n||on||k==='sites'?'':' z'}" data-q="${k}" aria-pressed="${on}" title="${k==='sites'?'Clear all filters':(on?'Remove filter: ':'Filter: ')+l}"><b>${n}</b><span class="lbl">${l}</span></button>`}).join('')}
 $('stats').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(!b)return;const k=b.dataset.q,v={fCert:$('fCert').checked,fScore:$('fScore').value,fAnnex:$('fAnnex').value,fQ:$('fQ').value},on=qOn(k,v);
  if(k==='sites'){fReset('land');return}if(k==='cert')$('fCert').checked=!on;else if(k==='s70')$('fScore').value=on?'0':'70';else if(k==='city')$('fAnnex').value=on?'':'annexed';else $('fQ').value=on?'':k;render();const nb=document.querySelector('#stats [data-q="'+k+'"]');if(nb)nb.focus()});
 function render(){
@@ -534,9 +580,9 @@ function render(){
  landStats(v,minKv,R);aiChips();
  const k=v.fSort;const BIG=1e15;R.sort((a,b)=>k==='dom'?(domSort('land',a,b)||b.overall-a.overall):k==='learned'?(LS('land',b)-LS('land',a)||b.overall-a.overall):k==='stage'?(stI('land',a.id)-stI('land',b.id)||b.overall-a.overall):k==='ppa'?((pr(a).per_acre??BIG)-(pr(b).per_acre??BIG)||b.overall-a.overall):k==='price'?((pr(a).total??BIG)-(pr(b).total??BIG)||b.overall-a.overall):k==='acres'?(b.acres||0)-(a.acres||0):k==='tx'?((bestLine(a,minKv)||{mi:1e9}).mi-(bestLine(b,minKv)||{mi:1e9}).mi):k==='gas'?((a.gasline||{mi:1e9}).mi-(b.gasline||{mi:1e9}).mi):k==='name'?a.name.localeCompare(b.name):k==='new'?String(b.first_seen>b.lois_created?b.lois_created:b.first_seen).localeCompare(String(a.lois_created)):k==='infra'?b.infra_score-a.infra_score:k==='comm'?((cm(b)||{score:0}).score-(cm(a)||{score:0}).score):(k==='laws'||k==='news'||k==='edc')?((cm(b)?cm(b)[k].score:0)-(cm(a)?cm(a)[k].score:0)):b.overall-a.overall);
  document.querySelectorAll('th[data-k]').forEach(th=>th.classList.toggle('s',th.dataset.k===k));
- $('count').textContent=`${R.length} of ${S.length} sites`;{const sb=$('fdLgo');if(sb)sb.textContent=`Show ${R.length} sites`}afterRender('land',R);
+ $('count').textContent=`${R.length} of ${S.length} sites`;$('dkL').textContent=R.length;{const sb=$('fdLgo');if(sb)sb.textContent=`Show ${R.length} sites`}afterRender('land',R);
  $('cards').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv);return `<div class="card" data-id="${s.id}"><div class="score">${scTxt('land',s)}</div><div>${stB('land',s.id)}${badges(s)}${annexBadge(s)}${regFlag(s)}</div><h3>${esc(s.name)}</h3><div class="lbl mono">${esc(s.city)} · ${esc(s.county)} Co · ${fmt(s.acres,0)} ac${dom('land',s.id)!=null?' · '+dom('land',s.id)+' days on mkt':''}</div><div class="subs">${subLine(s)}</div><div class="row mono"><span>$ ${priceLine(s)}</span></div><div class="row mono"><span><span class="lbl">Line</span> ${bl?bl.kv+' kV '+fmt(bl.mi)+' mi':'—'}</span><span><span class="lbl">Sub</span> ${sb?(sb.kv?sb.kv+' kV ':'')+fmt(sb.mi)+' mi':'—'}</span><span><span class="lbl">Gas</span> ${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</span></div></div>`}).join('');
- document.querySelector('#tbl tbody').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv),c=topContact(s);return `<tr data-id="${s.id}"><td>${stB('land',s.id)}</td><td class="n" style="color:var(--acc);font-size:16px">${scTxt('land',s)}</td><td class="n">${s.infra_score}</td><td class="n">${cm(s)?cm(s).score+'<div class="lbl">L'+cm(s).laws.score+' N'+cm(s).news.score+' E'+cm(s).edc.score+'</div>':'—'}</td><td>${badges(s)}${annexBadge(s)}${regFlag(s)}<div class="nm">${esc(s.name)}</div><div class="lbl">${esc(s.city)}</div></td><td>${esc(s.county)}</td><td class="n">${fmt(s.acres,0)}</td><td class="n">${totTxt(s)}</td><td class="n">${ppaTxt(s)}</td><td class="n">${domTxt('land',s.id)}</td><td class="n">${bl?bl.kv+' kV · '+fmt(bl.mi)+' mi':'—'}</td><td class="n">${sb?(sb.kv?sb.kv+' kV · ':'')+fmt(sb.mi)+' mi':'—'}</td><td class="n">${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</td><td>${c?esc(c.name||c.org)+'<div class="lbl">'+esc(c.org&&c.name?c.org:'')+'</div>':'—'}</td></tr>`}).join('');
+ document.querySelector('#tbl tbody').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv),c=topContact(s);return `<tr data-id="${s.id}"><td>${stB('land',s.id)}</td><td class="n sc">${scTxt('land',s)}</td><td class="n">${s.infra_score}</td><td class="n">${cm(s)?cm(s).score+'<div class="lbl">L'+cm(s).laws.score+' N'+cm(s).news.score+' E'+cm(s).edc.score+'</div>':'—'}</td><td>${badges(s)}${annexBadge(s)}${regFlag(s)}<div class="nm">${esc(s.name)}</div><div class="lbl">${esc(s.city)}</div></td><td>${esc(s.county)}</td><td class="n">${fmt(s.acres,0)}</td><td class="n">${totTxt(s)}</td><td class="n">${ppaTxt(s)}</td><td class="n">${domTxt('land',s.id)}</td><td class="n">${bl?bl.kv+' kV · '+fmt(bl.mi)+' mi':'—'}</td><td class="n">${sb?(sb.kv?sb.kv+' kV · ':'')+fmt(sb.mi)+' mi':'—'}</td><td class="n">${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</td><td>${c?esc(c.name||c.org)+'<div class="lbl">'+esc(c.org&&c.name?c.org:'')+'</div>':'—'}</td></tr>`}).join('');
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-panel]');if(b){openPanel(b.dataset.site,b.dataset.panel);return}const el=e.target.closest('[data-id]');if(el&&!el.closest('dialog')&&!e.target.closest('select,input,textarea,label')){if(/^st-/.test(el.dataset.id))openStorage(el.dataset.id);else openSite(el.dataset.id)}});
 const dlg=$('dlg');
@@ -684,7 +730,7 @@ function openPanel(id,which){const s=S.find(x=>x.id===id);const c=cm(s);if(!c)re
   ${quotes(E.incentives,'Incentives (quoted from the EDC site)')}${quotes(F.data_center,'Data-center / large-load marketing')}${quotes(F.policy,'Data-center / large-load policy')}${quotes(F.tech,'Tech / advanced-industry marketing')}
   ${(E.pages||[]).length?'<details><summary>Pages reviewed ('+E.pages.length+')</summary><div class="src">'+E.pages.map(p=>lnk(p.url,p.title)).join('<br>')+'</div></details>':''}</div>`}
  $('ipBody').innerHTML=body;ip.showModal();ip.scrollTop=0}
-dlg.addEventListener('close',()=>history.replaceState(null,'',location.pathname+(mapOn()?'#map':'')));
+dlg.addEventListener('close',()=>history.replaceState(null,'',location.pathname+(mapOn()?'#map':'#deals/'+DK)));
 /*__EMAIL__*/
 function cl(u,t){return u?lnk(u,t||u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]):''}
 function outreachSec(s){const O=s.outreach;if(!O)return '';
@@ -869,7 +915,7 @@ function kmBuild(){const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessT
   ksMinZoom(map,true);map.on('resize',()=>ksMinZoom(map));
   map.addLayer({id:'deals-halo',type:'circle',source:'deals',filter:['==',['get','id'],''],paint:{'circle-radius':['interpolate',['linear'],['zoom'],5,8,12,14],'circle-color':'rgba(0,0,0,0)','circle-stroke-color':'#F14B21','circle-stroke-width':1.5}});
   const UNC=['!',['has','point_count']],KF=KM_MB?['DIN Pro Medium','Arial Unicode MS Regular']:['Noto Sans Bold'];
-  map.addLayer({id:'deals-cl',type:'circle',source:'deals',filter:['has','point_count'],paint:{'circle-radius':['step',['get','point_count'],13,10,16,30,20],'circle-color':'#151515','circle-stroke-color':'#F14B21','circle-stroke-width':1.2,'circle-opacity':0.95}},'deals-halo');
+  map.addLayer({id:'deals-cl',type:'circle',source:'deals',filter:['has','point_count'],paint:{'circle-radius':['step',['get','point_count'],13,10,16,30,20],'circle-color':'#151515','circle-stroke-color':'#B5B3AE','circle-stroke-width':1.2,'circle-opacity':0.95}},'deals-halo');
   map.addLayer({id:'deals-cn',type:'symbol',source:'deals',filter:['has','point_count'],layout:{'text-field':['to-string',['get','point_count']],'text-font':KF,'text-size':12,'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#F2F0EB'}});
   map.addLayer({id:'deals',type:'circle',source:'deals',filter:UNC,paint:{'circle-radius':['case',['>',['get','r'],0],['case',['>=',['get','r'],100],12,10],['match',['get','v'],'land',5,4.5]],'circle-color':['get','col'],'circle-stroke-color':['match',['get','v'],'storage','#E8E6E1','#0A0A0A'],'circle-stroke-width':1.2}},'deals-halo');
   map.addLayer({id:'deals-rk',type:'symbol',source:'deals',filter:['all',UNC,['>',['get','r'],0]],layout:{'text-field':['to-string',['get','r']],'text-font':KF,'text-size':['case',['>=',['get','r'],100],9.5,11],'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#0A0A0A'}});
@@ -888,7 +934,7 @@ async function toggleLayer(k,on){const lg=$('ml-'+k);if(lg)lg.hidden=!on;const M
 function kmSide(){const seg=(attr,opts,cur)=>`<div class="seg mseg">${opts.map(([k,l])=>`<button type="button" ${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k}">${l}</button>`).join('')}</div>`;
  return `<div class="kpan kp-main"><div class="msec"><div class="lbl mono">Deals</div>${seg('data-kshow',[['land','Land'],['storage','Storage'],['both','Both']],KM.show)}</div>
  <details class="msec kmfd" id="kmFd"${innerWidth>760?' open':''}><summary class="lbl mono">Filters <span id="kmFn"></span></summary><div id="kmF">${kmFiltHtml()}</div></details>
- <div class="msec"><span class="lbl mono" id="kmCount"></span></div></div><div class="kpan kp-leg"><div class="msec"><div class="lbl mono">Colour by</div>${seg('data-kby',kmViews(),KM.by)}<div class="mleg" id="kmLeg"></div><div class="mleg"><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #000"></i>Land site</span><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #fff"></i>Storage</span><span><i class="dot" style="background:#151515;border:1.5px solid #F14B21"></i>Cluster · click to expand</span></div><div class="lbl" style="margin-top:6px">Pin number = score rank (1 = highest) among shown deals</div></div>
+ <div class="msec"><span class="lbl mono" id="kmCount"></span></div></div><div class="kpan kp-leg"><div class="msec"><div class="lbl mono">Colour by</div>${seg('data-kby',kmViews(),KM.by)}<div class="mleg" id="kmLeg"></div><div class="mleg"><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #000"></i>Land site</span><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #fff"></i>Storage</span><span><i class="dot" style="background:#151515;border:1.5px solid #B5B3AE"></i>Cluster · click to expand</span></div><div class="lbl" style="margin-top:6px">Pin number = score rank (1 = highest) among shown deals</div></div>
  </div><div class="kp-lyr"><div class="lbl mono kp-lyrh">Layers</div><div class="kp-chips">${KM_LYR.map(([k,l,src])=>`<label class="chk mly kchip"><input type="checkbox" data-mly value="${k}"${KM_MLY.has(k)?' checked':''}><span class="lbl mono">${l.replace(/ \(AADT\)/,'')}</span></label>`).join('')}</div><div class="kp-lsub">${KM_LYR.map(([k,l,src])=>`<div class="mleg sub" id="ml-${k}"${KM_MLY.has(k)?'':' hidden'}>${lyrLegend(k).map(([c,t])=>`<span><i style="background:${c}"></i>${t}</span>`).join('')}<small>${src}</small></div>`).join('')}</div>
  </div><div class="kpan kp-card" id="kmCard" hidden></div>`}
 // map filter panel: proxies for the same list filters (Filters dialogs, stage bar, AI search stay in sync) plus a map-only storage traffic floor
@@ -950,13 +996,17 @@ const ST=D.storage||null;const SR=ST?ST.rows:[];
 const FMT={drive_up:'Drive-up',climate:'Indoor climate',multistory:'Multi-story',boat_rv:'Boat / RV',contractor:'Contractor garages'};
 const PARTS=[['demand','Demand'],['competition','Competition'],['visibility','Visibility'],['zoning','Zoning'],['price','Price']];
 const ZCLS={P:'ann',S:'ann',I:'pend',C:'pend',X:'reg','?':'unc'};
-function setView(v,keep){const mp=v==='map',st=v==='storage';$('viewMap').hidden=!mp;$('viewLand').hidden=mp||st;$('viewStorage').hidden=mp||!st;if(!mp)$('view').value=st?'storage':'land';try{localStorage.setItem('edks_view',v)}catch(e){}
- document.querySelectorAll('[data-top]').forEach(b=>b.setAttribute('aria-selected',b.dataset.top===v));
- if(mp){if(location.hash!=='#map'&&!dlg.open)history.replaceState(null,'','#map');render();if(ST)sRender();drawMap();return}else if(location.hash==='#map')history.replaceState(null,'',location.pathname);
+let DK='land';try{DK=localStorage.getItem('edks_dk')||'land'}catch(e){}if(DK!=='storage')DK='land';
+function vHash(v){return v==='map'?'#map':'#deals/'+v}
+function setView(v,keep){if(v==='deals')v=DK;const mp=v==='map',st=v==='storage';if(!mp){DK=v;try{localStorage.setItem('edks_dk',v)}catch(e){}}$('dealSeg').hidden=mp;document.querySelectorAll('[data-dk]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dk===v));if(!dlg.open&&location.hash!==vHash(v))history.replaceState(null,'',location.pathname+vHash(v));$('viewMap').hidden=!mp;$('viewLand').hidden=mp||st;$('viewStorage').hidden=mp||!st;if(!mp)$('view').value=st?'storage':'land';try{localStorage.setItem('edks_view',v)}catch(e){}
+ document.querySelectorAll('[data-top]').forEach(b=>b.setAttribute('aria-selected',b.dataset.top===(mp?'map':'deals')));
+ if(mp){render();if(ST)sRender();drawMap();return}
  if(st&&ST){$('refreshed').textContent='Storage refreshed '+new Date(ST.generated_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}else{$('refreshed').textContent='Last refreshed '+gen.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}
  if(st)sRender()}
 $('view').addEventListener('change',e=>setView(e.target.value));
-document.addEventListener('click',e=>{const b=e.target.closest('[data-top]');if(b){setView(b.dataset.top);setTimeout(aiChips)}});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-top],[data-dk]');if(b){setView(b.dataset.top||b.dataset.dk);setTimeout(aiChips)}});
+function hashView(h){h=h.toLowerCase();if(h==='map')return 'map';if(/^(deals\/)?(storage|self-storage|st)$/.test(h))return 'storage';if(/^(deals\/)?(land|powered-land)$/.test(h))return 'land';if(h==='deals')return 'deals';return null}
+window.addEventListener('hashchange',()=>{const v=hashView(location.hash.slice(1));if(v)setView(v)});
 const fitOK=v=>v==='yes';const fitM=v=>['CUP','maybe','small','add?','?'].includes(v);
 function fitChips(r,all){return Object.keys(FMT).map(k=>{const f=(r.formats||{})[k]||['—',''];const v=f[0];if(!all&&!(fitOK(v)||fitM(v)))return '';return `<span class="fit ${fitOK(v)?'y':fitM(v)?'m':'n'}" title="${esc(f[1])}">${FMT[k]}${fitM(v)?' ('+esc(v)+')':''}</span>`}).join('')}
 function sizeTxt(r){return r.kind==='land'?fmt(r.acres,2)+' ac':[r.nrsf?fmt(r.nrsf,0)+' NRSF':r.sf?fmt(r.sf,0)+' SF':'',r.units?fmt(r.units,0)+' units':'',r.acres?fmt(r.acres,2)+' ac':''].filter(Boolean).join(' · ')||'—'}
@@ -976,7 +1026,7 @@ function sOK(r,v){if(!stOK('storage',r.id)||!aiOK('storage',r))return false;if(v
   if(v.sPrice!==''&&!(r.price&&r.price<=+v.sPrice))return false;if(v.sFit&&!(r.kind==='land'&&!r.fit_flag))return false;if(v.sNew&&!r.is_new)return false;return true}
 const SQS=[['sites','sites',null,null],['land','land sites',r=>r.kind==='land',{sType:''}],['fac','facilities',r=>r.kind==='facility',{sType:''}],['fit','5–10 ac',r=>r.kind==='land'&&!r.fit_flag,{sFit:false}],['s65','score 65+',r=>r.score>=65,{sScore:'0'}],['new','new this week',r=>!!r.is_new,{sNew:false}]];
 function sqOn(k,v){return k==='land'?v.sType==='land':k==='fac'?v.sType==='facility':k==='fit'?!!v.sFit:k==='s65'?(+v.sScore||0)>=65:k==='new'?!!v.sNew:false}
-function sStatsDraw(v,R){$('sStats').innerHTML=SQS.map(([k,l,fn,clr])=>{const n=fn?SR.filter(r=>fn(r)&&sOK(r,Object.assign({},v,clr))).length:R.length;const on=sqOn(k,v);return `<button type="button" class="stat${on?' on':''}${n||on||k==='sites'?'':' z'}" data-q="${k}" aria-pressed="${on}" title="${k==='sites'?'Clear all filters':(on?'Remove filter: ':'Filter: ')+l}"><b${k==='new'?' style="color:var(--acc)"':''}>${n}</b><span class="lbl">${l}</span></button>`}).join('')}
+function sStatsDraw(v,R){$('sStats').innerHTML=SQS.map(([k,l,fn,clr])=>{const n=fn?SR.filter(r=>fn(r)&&sOK(r,Object.assign({},v,clr))).length:R.length;const on=sqOn(k,v);return `<button type="button" class="stat${on?' on':''}${n||on||k==='sites'?'':' z'}" data-q="${k}" aria-pressed="${on}" title="${k==='sites'?'Clear all filters':(on?'Remove filter: ':'Filter: ')+l}"><b>${n}</b><span class="lbl">${l}</span></button>`}).join('')}
 $('sStats').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(!b)return;const k=b.dataset.q,v={sType:$('sType').value,sFit:$('sFit').checked,sScore:$('sScore').value,sNew:$('sNew').checked},on=sqOn(k,v);
  if(k==='sites'){fReset('storage');return}if(k==='land'||k==='fac')$('sType').value=on?'':(k==='land'?'land':'facility');else if(k==='fit')$('sFit').checked=!on;else if(k==='s65')$('sScore').value=on?'0':'65';else $('sNew').checked=!on;sRender();const nb=document.querySelector('#sStats [data-q="'+k+'"]');if(nb)nb.focus()});
 function sRender(){
@@ -985,9 +1035,9 @@ function sRender(){
  let R=SR.filter(r=>sOK(r,v));
  const k=v.sSort,BIG=1e15;R.sort((a,b)=>k==='dom'?(domSort('storage',a,b)||b.score-a.score):k==='learned'?(LS('storage',b)-LS('storage',a)||b.score-a.score):k==='stage'?(stI('storage',a.id)-stI('storage',b.id)||b.score-a.score):PARTS.some(p=>p[0]===k)?(b.score_parts[k]-a.score_parts[k]||b.score-a.score):k==='price'?((a.price??BIG)-(b.price??BIG)):k==='unit'?(((a.price_per_acre||a.price_per_sf)??BIG)-((b.price_per_acre||b.price_per_sf)??BIG)):k==='acres'?(b.acres||0)-(a.acres||0):k==='aadt'?((b.traffic.aadt||0)-(a.traffic.aadt||0)):k==='pop'?((b.demand.pop3||0)-(a.demand.pop3||0)):k==='new'?String(b.first_seen).localeCompare(String(a.first_seen)):b.score-a.score);
  document.querySelectorAll('th[data-sk]').forEach(th=>th.classList.toggle('s',th.dataset.sk===k));
- $('sCount').textContent=`${R.length} of ${SR.length} storage rows`;{const sb=$('fdSgo');if(sb)sb.textContent=`Show ${R.length} rows`}afterRender('storage',R);
+ $('sCount').textContent=`${R.length} of ${SR.length} storage rows`;$('dkS').textContent=R.length;{const sb=$('fdSgo');if(sb)sb.textContent=`Show ${R.length} rows`}afterRender('storage',R);
  $('sCards').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{};return `<div class="card" data-id="${r.id}"><div class="score">${scTxt('storage',r)}</div><div>${stB('storage',r.id)}${sBadges(r)}${zBadge(r)}</div><h3>${esc(r.name)}</h3><div class="lbl mono">${esc(r.address)} · ${esc(r.city_label)} · ${sizeTxt(r)}</div><div class="row mono"><span>$ ${r.price?money(r.price):'Unpriced'}${r.price&&unitTxt(r)!=='—'?' · '+unitTxt(r):''}</span></div><div class="row mono"><span><span class="lbl">Road</span> ${esc(t.road||'—')}${t.aadt?' · '+fmt(t.aadt,0)+' AADT':''}</span><span><span class="lbl">Supply</span> ${c.count??'—'} within 3 mi${c.sf_per_capita!=null?' · '+c.sf_per_capita+' SF/person':''}</span><span><span class="lbl">Pop</span> ${d.pop3?fmt(d.pop3/1000,0)+'k':'—'} · ${d.income?'$'+fmt(d.income/1000,0)+'k':'—'}</span></div><div style="margin-top:6px">${fitChips(r)}</div>${mini(r)}</div>`}).join('');
- document.querySelector('#sTbl tbody').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{},z=r.zoning||{},ct=topC(r);return `<tr data-id="${r.id}"><td>${stB('storage',r.id)}</td><td class="n" style="color:var(--acc);font-size:16px">${scTxt('storage',r)}${mini(r)}</td><td>${r.kind==='land'?'Land':'Facility'}</td><td>${sBadges(r).replace(/<span class="badge (cert|chg)">[^<]*<\/span>/,'')}<div class="nm">${esc(r.name)}</div><div class="lbl">${esc(r.address)} · ${esc(r.city_label)}</div></td><td class="n">${sizeTxt(r)}</td><td class="n">${r.price?money(r.price):'—'}</td><td class="n">${unitTxt(r)}</td><td class="n">${domTxt('storage',r.id)}</td><td><span class="badge ${ZCLS[z.status]||'unc'}">${esc(z.district||'?')}</span><div class="lbl">${esc(z.status_txt)}</div></td><td>${esc(t.road||'—')}<div class="lbl">${t.aadt?fmt(t.aadt,0)+' AADT ('+esc(t.aadt_year)+')':'no count'}</div></td><td class="n">${c.count??'—'} · ~${c.est_nrsf?fmt(c.est_nrsf/1000,0)+'k SF':'—'}<div class="lbl">${c.sf_per_capita!=null?c.sf_per_capita+' SF/person':''}${c.nearest?' · nearest '+fmt(c.nearest_mi,1)+' mi':''}</div></td><td class="n">${d.pop3?fmt(d.pop3,0):'—'}<div class="lbl">${d.income?'$'+fmt(d.income,0):''}${d.renter_pct!=null?' · '+d.renter_pct+'% rent':''}</div></td><td>${fitChips(r)}</td><td>${ct?esc(ct.name||ct.org)+'<div class="lbl">'+esc(ct.org&&ct.name?ct.org:'')+'</div>':'—'}</td></tr>`}).join('');
+ document.querySelector('#sTbl tbody').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{},z=r.zoning||{},ct=topC(r);return `<tr data-id="${r.id}"><td>${stB('storage',r.id)}</td><td class="n sc">${scTxt('storage',r)}${mini(r)}</td><td>${r.kind==='land'?'Land':'Facility'}</td><td>${sBadges(r).replace(/<span class="badge (cert|chg)">[^<]*<\/span>/,'')}<div class="nm">${esc(r.name)}</div><div class="lbl">${esc(r.address)} · ${esc(r.city_label)}</div></td><td class="n">${sizeTxt(r)}</td><td class="n">${r.price?money(r.price):'—'}</td><td class="n">${unitTxt(r)}</td><td class="n">${domTxt('storage',r.id)}</td><td><span class="badge ${ZCLS[z.status]||'unc'}">${esc(z.district||'?')}</span><div class="lbl">${esc(z.status_txt)}</div></td><td>${esc(t.road||'—')}<div class="lbl">${t.aadt?fmt(t.aadt,0)+' AADT ('+esc(t.aadt_year)+')':'no count'}</div></td><td class="n">${c.count??'—'} · ~${c.est_nrsf?fmt(c.est_nrsf/1000,0)+'k SF':'—'}<div class="lbl">${c.sf_per_capita!=null?c.sf_per_capita+' SF/person':''}${c.nearest?' · nearest '+fmt(c.nearest_mi,1)+' mi':''}</div></td><td class="n">${d.pop3?fmt(d.pop3,0):'—'}<div class="lbl">${d.income?'$'+fmt(d.income,0):''}${d.renter_pct!=null?' · '+d.renter_pct+'% rent':''}</div></td><td>${fitChips(r)}</td><td>${ct?esc(ct.name||ct.org)+'<div class="lbl">'+esc(ct.org&&ct.name?ct.org:'')+'</div>':'—'}</td></tr>`}).join('');
  const by={};SR.forEach(r=>{by[r.city_label]=by[r.city_label]||{land:0,facility:0};by[r.city_label][r.kind]++});
  sStatsDraw(v,R);aiChips();
 }
@@ -1014,8 +1064,8 @@ function openStorage(id){const r=SR.find(x=>x.id===id);if(!r)return;
 if(ST){const cm_=ST.comps||[];$('sComps').innerHTML=cm_.length?`<details><summary>Single garage / storage condo units for sale (${cm_.length}) — format comps, not scored</summary><div class="db">${cm_.map(x=>`<div class="issue">${lnk(x.url,x.name)} · ${esc(x.city)} · ${x.sf?fmt(x.sf,0)+' SF':''} · ${x.price?money(x.price):'unpriced'}${x.price&&x.sf?' · $'+fmt(x.price/x.sf,0)+'/SF':''}</div>`).join('')}</div></details>`:'';
  const C=ST.cities||{};
  $('sMethodBody').innerHTML='<div class="sec"><h4>Score (0–100)</h4>'+PARTS.map(([k,l])=>`<div class="part"><b>${l}</b> <span class="mono">max ${ST.weights[k]}</span><br><small>${esc((ST.method||{})[k])}</small></div>`).join('')+'</div><div class="sec"><h4>Cities</h4>'+Object.values(C).map(c=>`<div class="part"><b>${esc(c.label)}</b> · pop ${fmt(c.pop2024,0)} (${c.growth_pct!=null?(c.growth_pct>0?'+':'')+c.growth_pct+'% since 2020':'—'}) · ${fmt(c.permits,0)} permitted units ${esc(c.permits_year)}<br><small>Zoning: ${lnk(c.zoning_url,c.zoning_code)}${c.zoning_gis?' · '+lnk(c.zoning_gis,'zoning GIS'):' · no public zoning GIS — listing zoning used'}</small><div class="src">${(c.contacts||[]).map(x=>esc(x.role)+': '+esc(x.name)+' '+esc(x.phone)+' '+esc(x.email)).join('<br>')}</div></div>`).join('')+'</div><div class="sec"><h4>Source status (this refresh)</h4>'+Object.entries(ST.status||{}).map(([k,v])=>`<div class="part"><span class="${v.ok?'ok':'fail'} mono">${v.ok?'OK':'FAIL'}</span> ${esc(k)} — ${esc(v.detail)}${v.url?`<div class="src">${lnk(v.url)}</div>`:''}</div>`).join('')+'</div><div class="sec"><small>Your facility ('+esc((ST.own_facility||{}).name)+', '+esc((ST.own_facility||{}).address)+') is counted as supply in Topeka competition, not as a target. OpenStreetMap does not map every storage facility, so supply can be understated. Verify zoning with the city before an offer.</small></div>'}
-{let v0='land';try{v0=localStorage.getItem('edks_view')||'land'}catch(e){}const h=location.hash.slice(1);if(h==='map')v0='map';else if(/^st-/.test(h))v0='storage';else if(h)v0='land';setView(v0);
- if(h){if(/^st-/.test(h))openStorage(h);else openSite(h)}}
+{let v0='deals';try{v0=localStorage.getItem('edks_view')||'deals'}catch(e){}if(!['map','land','storage','deals'].includes(v0))v0='deals';const h=location.hash.slice(1),hv=hashView(h);if(hv)v0=hv;else if(/^st-/.test(h))v0='storage';else if(h)v0='land';setView(v0);
+ if(h&&!hv){if(/^st-/.test(h))openStorage(h);else openSite(h)}}
 
 if(BK){
 // ---- signed-in account, live updates and user management (Firebase)
