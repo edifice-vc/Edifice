@@ -259,6 +259,22 @@ async function boot(user, email, me0) {
         return setDoc(ref, d, { merge: true });
       }).catch(fail);
     },
+    // Admin-only record ops (merge / unmerge / bulk edit / archive / soft delete / restore): one atomic batch per
+    // call (chunked at 400). ops = [{v, id, name, stage, set: {key: value | null}, ev}]; null clears the key.
+    recs(ops) {
+      err = '';
+      const all = []; let b = writeBatch(db), n = 0;
+      for (const o of ops) {
+        const R = RIDS.has(o.id), dc = R ? 'rdeals' : 'deals';
+        const d = { site_id: o.id, view: o.v, name: o.name || '', stage: o.stage || 'New', updated: serverTimestamp(), updated_by: email };
+        for (const [k, x] of Object.entries(o.set || {})) d[k] = x === null ? deleteField() : x;
+        b.set(doc(db, dc, o.id), d, { merge: true }); n++;
+        if (o.ev) { b.set(doc(db, dc, o.id, R ? 'revents' : 'events', o.ev.event_id), clean(Object.assign({}, o.ev, { by: email }))); n++; }
+        if (n >= 400) { all.push(b.commit()); b = writeBatch(db); n = 0; }
+      }
+      if (n) all.push(b.commit());
+      return Promise.all(all).catch(e => { fail(e); throw e; });
+    },
     setFu(siteId, eventId, st) {
       err = '';
       const R = RIDS.has(siteId);
@@ -311,7 +327,8 @@ async function boot(user, email, me0) {
     apply(null, null, users);
   }, fail);
   let dealsM = {}, dealsR = {}, evM = [], evR = [];
-  const dmap = docs => { const o = {}; docs.forEach(d => { const x = d.data(); o[(x.view || 'land') + '|' + d.id] = { stage: x.stage, updated: tsIso(x.updated) || new Date().toISOString(), listed: typeof x.listed === 'string' ? x.listed : '' }; }); return o; };
+  const dmap = docs => { const o = {}; docs.forEach(d => { const x = d.data(); o[(x.view || 'land') + '|' + d.id] = { stage: x.stage, updated: tsIso(x.updated) || new Date().toISOString(), listed: typeof x.listed === 'string' ? x.listed : '',
+    merged_into: x.merged_into || '', merged_by: x.merged_by || '', deleted: !!x.deleted, archived: !!x.archived, fields: x.fields && typeof x.fields === 'object' ? x.fields : null }; }); return o; };
   const emap = q => q.docs.map(d => { const x = d.data(); return Object.assign({}, x, { event_id: d.id, site_id: x.site_id || d.ref.parent.parent.id, reasons: x.reasons || [] }); });
   dealsSource('deals', (q, docs) => {
     pend.d = q.metadata.hasPendingWrites; cache = q.metadata.fromCache; if (!pend.d && !cache) lastOk = new Date();

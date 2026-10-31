@@ -302,3 +302,29 @@ test('listed date (days on market): admins set/clear; editors keep it unchanged;
   await assertFails(setDoc(doc(E, 'deals', 's1'), base(EDITOR)));                                               // overwrite dropping it
   await assertSucceeds(setDoc(doc(A, 'deals', 's1'), base(ADMIN)));                                              // admin may clear
 });
+
+test('record ops (merge / archive / soft delete / overrides): admins only; editors keep the flags unchanged', async () => {
+  const A = as(ADMIN), E = as(EDITOR), base = (by, x = {}) => Object.assign({ site_id: 's1', view: 'land', name: 'Site', stage: 'New', updated: serverTimestamp(), updated_by: by }, x);
+  const rec = (by, x) => ev(by, Object.assign({ event_id: 'rx', type: 'merge', text: 'Merged 1', children: ['s2'], choices: { name: 'X' }, before: { s2: { stage: 'New' } } }, x));
+  // editors: no flags, no record events, no hidden keys on their own events
+  await assertFails(setDoc(doc(E, 'deals', 's1'), base(EDITOR, { merged_into: 's9', merged_by: EDITOR }), { merge: true }));
+  await assertFails(setDoc(doc(E, 'deals', 's1'), base(EDITOR, { deleted: true }), { merge: true }));
+  await assertFails(setDoc(doc(E, 'deals', 's1'), base(EDITOR, { fields: { name: 'X' } }), { merge: true }));
+  await assertFails(setDoc(doc(E, 'deals/s1/events', 'rx'), rec(EDITOR)));
+  await assertFails(setDoc(doc(E, 'deals/s1/events', 'n2'), ev(EDITOR, { event_id: 'n2', before: {} })));
+  // admins: atomic merge batch, soft delete, overrides
+  const b = writeBatch(A);
+  b.set(doc(A, 'deals', 's1'), base(ADMIN, { fields: { name: 'Merged name', contacts: [{ name: 'A' }], tags: ['dup'] } }), { merge: true });
+  b.set(doc(A, 'deals/s1/events', 'rx'), rec(ADMIN));
+  b.set(doc(A, 'deals', 's2'), Object.assign(base(ADMIN, { merged_into: 's1', merged_by: ADMIN, merged_at: '2026-10-31T12:00:00Z' }), { site_id: 's2' }), { merge: true });
+  await assertSucceeds(b.commit());
+  await assertSucceeds(setDoc(doc(A, 'deals', 's1'), base(ADMIN, { deleted: true, deleted_by: ADMIN, deleted_at: '2026-10-31T12:00:00Z' }), { merge: true }));
+  await assertFails(setDoc(doc(A, 'deals', 's1'), base(ADMIN, { deleted: 'yes' }), { merge: true }));
+  await assertFails(setDoc(doc(A, 'deals', 's1'), base(ADMIN, { fields: { role: 'admin' } }), { merge: true }));
+  await assertFails(setDoc(doc(A, 'deals/s1/events', 'ry'), rec(ADMIN, { event_id: 'ry', type: 'wipe' })));
+  // an editor can still move the stage of a flagged record (flags carried unchanged via merge)
+  await assertSucceeds(setDoc(doc(E, 'deals', 's2'), Object.assign(base(EDITOR, { stage: 'Reviewing' }), { site_id: 's2' }), { merge: true }));
+  let d; await env.withSecurityRulesDisabled(async (c) => { d = (await getDoc(doc(c.firestore(), 'deals', 's2'))).data(); });
+  if (d.merged_into !== 's1') throw new Error('merge flag lost on stage change');
+  await assertFails(setDoc(doc(E, 'deals', 's2'), Object.assign(base(EDITOR), { site_id: 's2' })));            // overwrite dropping it
+});

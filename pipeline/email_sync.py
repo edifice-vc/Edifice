@@ -88,13 +88,33 @@ def _phrases(name, address):
             out.add(st)
     return out
 
+def merge_root(sid, deals):
+    """Follow merged_into (only merges made by a person/tool, i.e. with merged_by) to the surviving record."""
+    seen = set()
+    while sid in deals and deals[sid].get("merged_into") and deals[sid].get("merged_by") and sid not in seen:
+        seen.add(sid); sid = deals[sid]["merged_into"]
+    return sid
+
+def fold_records(idx, deals):
+    """Pure: mail that matches a merged child lands on its parent; deleted/archived records stop matching."""
+    out = {sid: x for sid, x in idx.items() if merge_root(sid, deals) == sid}
+    for sid, x in idx.items():
+        root = merge_root(sid, deals)
+        if root != sid and root in out:
+            p = out[root]
+            for k in ("emails", "names", "subjects", "phrases"):
+                p[k] = set(p[k]) | set(x[k])
+    return {sid: x for sid, x in out.items() if not (deals.get(sid) or {}).get("deleted") and not (deals.get(sid) or {}).get("archived")}
+
 def deal_index(client):
     """Per deal: contact emails, contact names, subject hints, name/address phrases."""
     mine = set(senders(client))
     deals = {}
     for col, restricted in (("deals", False), ("rdeals", True)):
-        for d in client.collection(col).select(["stage"]).stream():
-            deals[d.id] = {"restricted": restricted, "stage": (d.to_dict() or {}).get("stage", "New")}
+        for d in client.collection(col).select(["stage", "merged_into", "merged_by", "deleted", "archived"]).stream():
+            x = d.to_dict() or {}
+            deals[d.id] = {"restricted": restricted, "stage": x.get("stage", "New"), "merged_into": x.get("merged_into"),
+                           "merged_by": x.get("merged_by"), "deleted": x.get("deleted"), "archived": x.get("archived")}
     # One collection-group query per event kind (~65 reads) instead of one query per deal (>=215 reads), and
     # one batched get for the site docs instead of 216 sequential gets.
     ev_text = defaultdict(list)
@@ -151,6 +171,7 @@ def deal_index(client):
                     "emails": emails, "names": names, "subjects": subj,
                     "phrases": {ph for ph in _phrases(sd.get("name") or j.get("name"), j.get("address"))
                                 if len(ph) >= 8 and ph != str(j.get("city") or "").lower()}}
+    idx = fold_records(idx, deals)
     freq = defaultdict(int)
     for x in idx.values():
         for e in x["emails"]:

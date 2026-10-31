@@ -868,6 +868,115 @@ def cmd_enrich(a):
         n += 1
     print(f"[edks] enrich: {n} of {len(todo)} manual sites updated")
 
+# ------------------------------------------------------------------ record ops (same model as the app's bulk toolbar)
+# Flags live on deals/rdeals docs (merged_into+merged_by, deleted, archived, fields{} display overrides) so the nightly
+# push (which never writes deal docs) can't bring a record back. Each change also writes an event with before/after.
+REC_FIELDS = ("name", "acres", "contact", "contacts", "assignee", "tags", "score_override")
+
+def _rec(client, sid):
+    view, name, restricted = locate(client, sid)
+    _, dcol, ecol = _cols(restricted)
+    ref = client.collection(dcol).document(sid); snap = ref.get()
+    return {"id": sid, "view": view, "name": name, "restricted": restricted, "ref": ref, "ecol": ecol,
+            "d": (snap.to_dict() or {}) if snap.exists else {}}
+
+def _snap(r):
+    d = r["d"]
+    return {k: d.get(k) for k in ("stage", "merged_into", "merged_by", "merged_at", "deleted", "deleted_by", "deleted_at", "archived", "fields", "listed") if k in d}
+
+def plan_merge(parent, children, by, ts):
+    """Pure: list of (record, deal-update, event) for merging children into parent. Grandchildren follow."""
+    names = [c["name"] for c in children]
+    ops = [(parent, {}, {"type": "merge", "children": [c["id"] for c in children], "choices": {},
+                         "before": {r["id"]: _snap(r) for r in [parent] + children},
+                         "text": f"Merged {len(children)} record{'s' if len(children) != 1 else ''} into this one: {', '.join(names)}"})]
+    for c in children:
+        ops.append((c, {"merged_into": parent["id"], "merged_by": by, "merged_at": ts}, {"type": "merged", "ref_id": parent["id"], "text": f"Merged into {parent['name']}"}))
+    return ops
+
+def _apply(client, ops, by, dry):
+    from google.cloud import firestore as gcf
+    ts = now_iso()
+    for r, upd, ev in ops:
+        print(f"  {'[dry-run] ' if dry else ''}{r['view']}/{r['id']} {r['name']!r}: " + (json.dumps(upd, default=str) if upd else "(no field change)") + f"  + event {ev['type']}")
+    if dry:
+        print(f"[edks] dry run: {len(ops)} record(s), nothing written"); return
+    b = client.batch(); n = 0
+    for r, upd, ev in ops:
+        d = {"site_id": r["id"], "view": r["view"], "name": r["name"], "updated": dt.datetime.now(dt.timezone.utc), "updated_by": by}
+        if "stage" not in r["d"]: d["stage"] = "New"   # never overwrite a stage another step just wrote
+        d.update({k: (gcf.DELETE_FIELD if v is None else v) for k, v in upd.items()})
+        b.set(r["ref"], d, merge=True); n += 1
+        eid = dt.datetime.now().strftime("%y%m%d") + uuid.uuid4().hex[:10]
+        e = {"event_id": eid, "site_id": r["id"], "view": r["view"], "name": r["name"], "ts": ts, "by": by, "text": ""}
+        e.update(ev); b.set(r["ref"].collection(r["ecol"]).document(eid), e); n += 1
+        if n >= 400: b.commit(); b = client.batch(); n = 0
+    if n: b.commit()
+    print(f"[edks] wrote {len(ops)} record(s)")
+
+def cmd_merge(a):
+    client = db()
+    if a.into in a.children: die("a record can't be merged into itself")
+    parent = _rec(client, a.into)
+    if parent["d"].get("merged_into") and parent["d"].get("merged_by"): die(f"{a.into} is itself merged into {parent['d']['merged_into']}")
+    kids = [_rec(client, c) for c in a.children]
+    for k in kids:
+        if k["view"] != parent["view"] or k["restricted"] != parent["restricted"]: die(f"{k['id']} is a {k['view']} record; only same-type records merge")
+    # grandchildren: records already merged into a child follow it to the new parent
+    seen = {k["id"] for k in kids} | {parent["id"]}
+    for k in list(kids):
+        for g in client.collection(_cols(k["restricted"])[1]).where("merged_into", "==", k["id"]).stream():
+            if g.id not in seen and (g.to_dict() or {}).get("merged_by"): kids.append(_rec(client, g.id)); seen.add(g.id)
+    print(f"[edks] merge {len(kids)} into {parent['view']}/{parent['id']} {parent['name']!r}")
+    _apply(client, plan_merge(parent, kids, a.by, now_iso()), a.by, a.dry_run)
+
+def cmd_unmerge(a):
+    client = db(); c = _rec(client, a.child)
+    p = c["d"].get("merged_into")
+    if not p: die(f"{a.child} isn't merged")
+    parent = _rec(client, p)
+    _apply(client, [(c, {"merged_into": None, "merged_by": None, "merged_at": None, "merge_note": None}, {"type": "unmerge", "ref_id": p, "before": {c["id"]: _snap(c)}, "text": f"Unmerged from {parent['name']}"}),
+                    (parent, {}, {"type": "unmerge", "ref_id": c["id"], "text": f"Unmerged {c['name']}"})], a.by, a.dry_run)
+
+def cmd_flag(a, kind):
+    client = db(); ts = now_iso(); ops = []
+    for sid in a.site_ids:
+        r = _rec(client, sid)
+        upd = {"delete": {"deleted": True, "deleted_by": a.by, "deleted_at": ts}, "restore": {"deleted": None, "deleted_by": None, "deleted_at": None},
+               "archive": {"archived": True}, "unarchive": {"archived": None}}[kind]
+        ops.append((r, upd, {"type": kind, "before": {sid: _snap(r)}, "after": {k: v for k, v in upd.items() if v is not None}}))
+    _apply(client, ops, a.by, a.dry_run)
+
+def bulk_fields(cur, a):
+    """Pure: the new fields{} map after bulk-set flags."""
+    f = dict(cur or {})
+    if a.owner is not None: f["assignee"] = a.owner
+    if a.contact is not None: f["contact"] = a.contact
+    if a.add_tags or a.remove_tags:
+        tags = [x for x in f.get("tags") or [] if x not in [y.strip() for y in (a.remove_tags or "").split(",")]]
+        tags += [x.strip() for x in (a.add_tags or "").split(",") if x.strip() and x.strip() not in tags]
+        f["tags"] = tags
+    if a.score_override is not None: f["score_override"] = a.score_override
+    if a.clear_score_override: f.pop("score_override", None)
+    f = {k: v for k, v in f.items() if k in REC_FIELDS and v not in ("", [], None)}
+    return f
+
+def cmd_bulk_set(a):
+    client = db(); bid = uuid.uuid4().hex[:10]
+    if a.stage and a.stage not in STAGES: die(f"stage must be one of: {', '.join(STAGES)}")
+    ops = []
+    for sid in a.site_ids:
+        r = _rec(client, sid); upd = {}
+        cur = r["d"].get("fields") or {}; nf = bulk_fields(cur, a)
+        if nf != cur: upd["fields"] = nf or None
+        if a.listed: upd["listed"] = a.listed
+        if upd: ops.append((r, upd, {"type": "bulk", "bulk_id": bid, "before": {sid: _snap(r)}, "after": {k: v for k, v in upd.items()}}))
+        if a.stage and a.stage != r["d"].get("stage", "New"):
+            print(f"  {'[dry-run] ' if a.dry_run else ''}{r['view']}/{sid} stage {r['d'].get('stage', 'New')} -> {a.stage} (review queued)")
+            if not a.dry_run:
+                cmd_stage(argparse.Namespace(site_id=sid, to_stage=a.stage, reasons=a.reasons, text=a.text, by=a.by, ts=None, event_id=None))
+    _apply(client, ops, a.by, a.dry_run)
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -907,13 +1016,24 @@ def main():
     p = sp.add_parser("migrate-under-consideration"); p.add_argument("--dry-run", action="store_true")
     p = sp.add_parser("learn", help="refit learnings/weights"); p.add_argument("--force", action="store_true")
     p = sp.add_parser("senders"); p.add_argument("--emails", help="comma-separated; omit to just count"); p.add_argument("--gmail-client-id", help="OAuth Web client ID for send-from-app (not a secret)")
+    p = sp.add_parser("merge", help="merge records into one (reversible with unmerge)"); p.add_argument("children", nargs="+"); p.add_argument("--into", required=True)
+    p.add_argument("--by", required=True); p.add_argument("--dry-run", action="store_true")
+    p = sp.add_parser("unmerge"); p.add_argument("child"); p.add_argument("--by", required=True); p.add_argument("--dry-run", action="store_true")
+    for c in ("delete", "restore", "archive", "unarchive"):
+        p = sp.add_parser(c, help=f"{c} records (soft; reversible)"); p.add_argument("site_ids", nargs="+"); p.add_argument("--by", required=True); p.add_argument("--dry-run", action="store_true")
+    p = sp.add_parser("bulk-set", help="edit many records at once"); p.add_argument("site_ids", nargs="+"); p.add_argument("--by", required=True)
+    p.add_argument("--stage"); p.add_argument("--reasons", default=""); p.add_argument("--text", default=""); p.add_argument("--owner"); p.add_argument("--contact")
+    p.add_argument("--add-tags"); p.add_argument("--remove-tags"); p.add_argument("--score-override", type=float); p.add_argument("--clear-score-override", action="store_true")
+    p.add_argument("--listed"); p.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     {"push": cmd_push, "users": cmd_users, "followups": cmd_followups, "done": lambda a: cmd_status(a, "done"),
      "reopen": lambda a: cmd_status(a, "open"), "note": cmd_note, "followup": cmd_followup, "dump": cmd_dump,
      "push-learnings": cmd_push_learnings, "import": cmd_import, "verify": cmd_verify,
      "add-manual": cmd_add_manual, "delete-manual": cmd_delete_manual, "set-listed": cmd_set_listed, "enrich": cmd_enrich,
      "stage": cmd_stage, "reviews": cmd_reviews, "mark-asked": cmd_mark_asked, "answer": cmd_answer,
-     "backfill-reviews": cmd_backfill_reviews, "learn": cmd_learn, "senders": cmd_senders, "migrate-under-consideration": cmd_migrate_under_consideration}[a.cmd](a)
+     "backfill-reviews": cmd_backfill_reviews, "learn": cmd_learn, "senders": cmd_senders, "migrate-under-consideration": cmd_migrate_under_consideration,
+     "merge": cmd_merge, "unmerge": cmd_unmerge, "bulk-set": cmd_bulk_set, "delete": lambda a: cmd_flag(a, "delete"), "restore": lambda a: cmd_flag(a, "restore"),
+     "archive": lambda a: cmd_flag(a, "archive"), "unarchive": lambda a: cmd_flag(a, "unarchive")}[a.cmd](a)
 
 if __name__ == "__main__":
     main()
