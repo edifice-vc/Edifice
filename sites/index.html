@@ -387,6 +387,30 @@ body.mapfull.kmcol .kp-main{display:none}body.mapfull.kmcol .kmhide{display:inli
  body.mapfull .logo svg{display:block!important;width:12px;height:18px}body.mapfull .viewbar{left:30px}
  body.mapfull:not(.kmcol) #kmMap [class*=ctrl-bottom-]{bottom:calc(34dvh + 4px)}body.mapfull #kmMap [class*=ctrl-scale]{display:none}body.mapfull #kmMap [class*=ctrl-bottom-left]{left:0}body.mapfull #kmMap [class*=ctrl-attrib]{max-width:calc(100vw - 24px)}
 }
+/* ---- records: select mode, bulk bar, merge/edit dialogs (ember only on the primary button + selected rows) */
+.selc{width:34px;text-align:center}.selc input,.card .selx{accent-color:var(--acc);width:15px;height:15px;cursor:pointer;margin:0}
+body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .selx,body:not(.selS) #sCards .selx{display:none}
+#tbl tr.picked td,#sTbl tr.picked td{background:rgba(241,75,33,.06)}#tbl tr.picked td:first-child,#sTbl tr.picked td:first-child{box-shadow:inset 2px 0 0 var(--acc)}
+.card .selx{position:absolute;left:12px;top:14px}body.selL #cards .card,body.selS #sCards .card{position:relative;padding-left:40px}.card.picked{border-color:var(--acc)!important}
+.rbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:10px 0 0;padding:10px 12px;border:1px solid var(--ln2);background:#111;position:sticky;top:0;z-index:5}
+.rbar[hidden]{display:none}.rbar .rbn{color:var(--t2);font-size:12px}.rbar .rbn b{color:var(--t1)}.rbar .rbsp{flex:1}
+.rbar .btn{padding:7px 11px;font-size:12px}.rbar .btn[disabled]{opacity:.35;cursor:default}.rbar .linkbtn,.ract .linkbtn,.rkids .linkbtn{background:none;border:0;font:12px 'JetBrains Mono',monospace;cursor:pointer;padding:0}
+.rbar select{background:#000;color:var(--t2);border:1px solid var(--ln);font:12px 'JetBrains Mono',monospace;padding:7px 8px}
+#tbl td .badge.tag,#sTbl td .badge.tag{display:inline-block}.badge.tag{border-color:var(--ln);color:var(--t2);text-transform:none;letter-spacing:.02em}
+.rdlg{max-width:560px}@media(min-width:641px){.rdlg{height:auto!important;max-height:88dvh}}.rdlg.wide{width:min(760px,100vw);max-width:100vw}.rdlg .rsub,.rdlg .rbody,.rdlg .rfoot,.rdlg #recErr{padding-left:16px;padding-right:16px}.rdlg .rsub{margin:14px 0 4px;line-height:1.6;color:var(--t2)}.rdlg .rfoot{position:sticky;bottom:0;background:#0d0d0d;border-top:1px solid var(--line);padding-top:12px;padding-bottom:14px;margin-top:8px}.rdlg .rsub b{color:var(--t1)}
+.rsec{border-top:1px solid var(--ln);padding:12px 0 4px}.rsec>.lbl{display:block;margin-bottom:8px}
+.rrad{display:flex;gap:10px;align-items:flex-start;padding:6px 0;cursor:pointer}.rrad input{accent-color:var(--acc);margin-top:3px}
+.rfield{display:grid;grid-template-columns:140px 1fr;gap:2px 12px;align-items:start;padding:4px 0}.rfield .rrad{grid-column:2;padding:3px 0}.rfield>.lbl{padding-top:6px}
+@media(max-width:600px){.rfield{grid-template-columns:1fr}.rfield .rrad{grid-column:1}}
+.rnames{margin:0;padding-left:18px;line-height:1.7}.rfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.rgrid label{display:flex;flex-direction:column;gap:4px}.rgrid .inp{width:100%;box-sizing:border-box}
+@media(max-width:600px){.rgrid{grid-template-columns:1fr}}
+.rdiff{max-height:260px;overflow:auto}.rkids{width:100%;border-collapse:collapse;font-size:13px}.rkids td{padding:6px 8px 6px 0;border-bottom:1px solid var(--ln);vertical-align:top}.rkids td.n{font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.rpick{max-height:340px;overflow:auto;margin-top:8px}.rpick button{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;background:transparent;border:0;border-bottom:1px solid var(--ln);color:var(--t1);padding:9px 4px;cursor:pointer;font:14px inherit}.rpick button:hover{background:var(--hov)}
+.ract{display:flex;gap:18px;margin-top:14px;padding-top:12px;border-top:1px solid var(--ln)}.ract .linkbtn:last-child{color:#D7958A!important}
+.rnote{padding:10px 12px;border:1px solid var(--ln2);margin-top:12px}
+.rtoast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1C1C1C;border:1px solid var(--ln2);color:var(--t1);padding:12px 16px;display:flex;gap:18px;align-items:center;z-index:1000;font-size:13px;max-width:calc(100vw - 32px)}.rtoast[hidden]{display:none}
+.rtoast .linkbtn{background:none;border:0;color:#fff!important;text-decoration:underline;cursor:pointer;font:inherit}
 </style>
 </head>
 <body class="gated">
@@ -413,7 +437,7 @@ body.mapfull.kmcol .kp-main{display:none}body.mapfull.kmcol .kmhide{display:inli
 <div id="listL">
 <div class="cards" id="cards"></div>
 <div class="tblwrap"><table id="tbl"><thead><tr>
- <th data-k="stage">Stage</th><th data-k="score">Overall</th><th data-k="infra">Infra</th><th data-k="comm">Comm</th><th data-k="name">Site</th><th data-k="county">County</th><th data-k="acres">Acres</th><th data-k="price">Price</th><th data-k="ppa">$/acre<th data-k="dom">Days on mkt</th><th data-k="tx">Best line</th><th data-k="sub">Substation</th><th data-k="gas">Gas pipeline</th><th>Contact</th>
+ <th data-c="sel" class="selc"><input type="checkbox" data-selall="land" aria-label="Select all visible"></th><th data-k="stage">Stage</th><th data-k="score">Overall</th><th data-k="infra">Infra</th><th data-k="comm">Comm</th><th data-k="name">Site</th><th data-k="county">County</th><th data-k="acres">Acres</th><th data-k="price">Price</th><th data-k="ppa">$/acre<th data-k="dom">Days on mkt</th><th data-k="tx">Best line</th><th data-k="sub">Substation</th><th data-k="gas">Gas pipeline</th><th>Contact</th>
 </tr></thead><tbody></tbody></table></div>
 </div>
 <details class="lr" id="lrL"><summary>What your decisions say</summary><div class="db" id="lrLb"></div></details>
@@ -430,7 +454,7 @@ body.mapfull.kmcol .kp-main{display:none}body.mapfull.kmcol .kmhide{display:inli
 <div id="listS">
 <div class="cards" id="sCards"></div>
 <div class="tblwrap"><table id="sTbl"><thead><tr>
- <th data-sk="stage">Stage</th><th data-sk="score">Score</th><th>Type</th><th data-sk="name">Property</th><th data-sk="acres">Size</th><th data-sk="price">Price</th><th data-sk="unit">$/ac · $/SF<th data-sk="dom">Days on mkt</th><th>Zoning</th><th data-sk="aadt">Frontage · AADT</th><th data-sk="competition">3-mi supply</th><th data-sk="pop">3-mi demand</th><th>Formats</th><th>Contact</th>
+ <th data-c="sel" class="selc"><input type="checkbox" data-selall="storage" aria-label="Select all visible"></th><th data-sk="stage">Stage</th><th data-sk="score">Score</th><th>Type</th><th data-sk="name">Property</th><th data-sk="acres">Size</th><th data-sk="price">Price</th><th data-sk="unit">$/ac · $/SF<th data-sk="dom">Days on mkt</th><th>Zoning</th><th data-sk="aadt">Frontage · AADT</th><th data-sk="competition">3-mi supply</th><th data-sk="pop">3-mi demand</th><th>Formats</th><th>Contact</th>
 </tr></thead><tbody></tbody></table></div>
 </div>
 <details class="lr" id="lrS"><summary>What your decisions say</summary><div class="db" id="lrSb"></div></details>
@@ -478,6 +502,9 @@ body.mapfull.kmcol .kp-main{display:none}body.mapfull.kmcol .kmhide{display:inli
 <dialog id="dlg"><div class="dh dhx"><div class="dhr"><div class="dhm"><div class="lbl mono" id="dKick"></div><h2 id="dTitle"></h2><div id="dBadges"></div><div class="lbl mono" id="dSub"></div></div><button class="close" onclick="dlg.close()" aria-label="Close">Close</button></div><div class="dmeta mono" id="dMeta"></div><div class="tiles" id="dTiles"></div><nav class="tabs" id="dTabs" role="tablist" aria-label="Deal sections"></nav></div><div class="db" id="dBody"></div></dialog>
 <script id="data" type="application/json">null</script>
 <script type="text/plain" id="appjs">
+// records state (merge / bulk / soft delete) — declared first because render() reads it during startup
+var RECT={merge:'Merged',merged:'Merged',unmerge:'Unmerged',bulk:'Bulk edit',delete:'Deleted',restore:'Restored',archive:'Archived',unarchive:'Unarchived'};
+var XV={land:'',storage:''},SEL={land:new Set(),storage:new Set()},SELM={land:false,storage:false},VIS={land:[],storage:[]};
 const D=JSON.parse(document.getElementById('data').textContent);
 const S=D.sites;const I=D.issues||(D.issues={});
 function normRow(s){if(s.score==null)s.score=0;if(s.overall==null)s.overall=s.score;if(s.infra_score==null)s.infra_score=s.score;['contacts','electric','sources'].forEach(k=>{if(!Array.isArray(s[k]))s[k]=[]});['score_parts','power','gas','water','sewer','telecom','highway','rail'].forEach(k=>{if(!s[k]||typeof s[k]!=='object')s[k]={}});if(s.name==null)s.name='';if(s.city==null)s.city='';if(s.county==null)s.county='';if(s._issues)Object.assign(I,s._issues);return s}
@@ -608,9 +635,9 @@ function render(){
  landStats(v,minKv,R);aiChips();
  const k=v.fSort;const BIG=1e15;R.sort((a,b)=>k==='dom'?(domSort('land',a,b)||b.overall-a.overall):k==='learned'?(LS('land',b)-LS('land',a)||b.overall-a.overall):k==='stage'?(stI('land',a.id)-stI('land',b.id)||b.overall-a.overall):k==='ppa'?((pr(a).per_acre??BIG)-(pr(b).per_acre??BIG)||b.overall-a.overall):k==='price'?((pr(a).total??BIG)-(pr(b).total??BIG)||b.overall-a.overall):k==='acres'?(b.acres||0)-(a.acres||0):k==='tx'?((bestLine(a,minKv)||{mi:1e9}).mi-(bestLine(b,minKv)||{mi:1e9}).mi):k==='gas'?((a.gasline||{mi:1e9}).mi-(b.gasline||{mi:1e9}).mi):k==='name'?a.name.localeCompare(b.name):k==='new'?String(b.first_seen>b.lois_created?b.lois_created:b.first_seen).localeCompare(String(a.lois_created)):k==='infra'?b.infra_score-a.infra_score:k==='comm'?((cm(b)||{score:0}).score-(cm(a)||{score:0}).score):(k==='laws'||k==='news'||k==='edc')?((cm(b)?cm(b)[k].score:0)-(cm(a)?cm(a)[k].score:0)):b.overall-a.overall);
  document.querySelectorAll('th[data-k]').forEach(th=>th.classList.toggle('s',th.dataset.k===k));
- $('count').textContent=`${R.length} of ${S.length} sites`;$('dkL').textContent=R.length;{const sb=$('fdLgo');if(sb)sb.textContent=`Show ${R.length} sites`}afterRender('land',R);
- $('cards').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv);return `<div class="card" data-id="${s.id}"><div class="score">${scTxt('land',s)}</div><div>${stB('land',s.id)}${badges(s)}${annexBadge(s)}${regFlag(s)}</div><h3>${esc(s.name)}</h3><div class="lbl mono">${esc(s.city)} · ${esc(s.county)} Co · ${fmt(s.acres,0)} ac${dom('land',s.id)!=null?' · '+dom('land',s.id)+' days on mkt':''}</div><div class="subs">${subLine(s)}</div><div class="row mono"><span>$ ${priceLine(s)}</span></div><div class="row mono"><span><span class="lbl">Line</span> ${bl?bl.kv+' kV '+fmt(bl.mi)+' mi':'—'}</span><span><span class="lbl">Sub</span> ${sb?(sb.kv?sb.kv+' kV ':'')+fmt(sb.mi)+' mi':'—'}</span><span><span class="lbl">Gas</span> ${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</span></div></div>`}).join('');
- document.querySelector('#tbl tbody').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv),c=topContact(s);return `<tr data-id="${s.id}"><td>${stB('land',s.id)}</td><td class="n sc">${scTxt('land',s)}</td><td class="n">${s.infra_score}</td><td class="n">${cm(s)?cm(s).score+'<div class="lbl">L'+cm(s).laws.score+' N'+cm(s).news.score+' E'+cm(s).edc.score+'</div>':'—'}</td><td>${badges(s)}${annexBadge(s)}${regFlag(s)}<div class="nm">${esc(s.name)}</div><div class="lbl">${esc(s.city)}</div></td><td>${esc(s.county)}</td><td class="n">${fmt(s.acres,0)}</td><td class="n">${totTxt(s)}</td><td class="n">${ppaTxt(s)}</td><td class="n">${domTxt('land',s.id)}</td><td class="n">${bl?bl.kv+' kV · '+fmt(bl.mi)+' mi':'—'}</td><td class="n">${sb?(sb.kv?sb.kv+' kV · ':'')+fmt(sb.mi)+' mi':'—'}</td><td class="n">${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</td><td>${c?esc(c.name||c.org)+'<div class="lbl">'+esc(c.org&&c.name?c.org:'')+'</div>':'—'}</td></tr>`}).join('');
+ $('count').textContent=`${R.length} of ${S.filter(o=>!hidK('land',o.id)).length} sites`;$('dkL').textContent=R.length;{const sb=$('fdLgo');if(sb)sb.textContent=`Show ${R.length} sites`}afterRender('land',R);
+ $('cards').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv);return `<div class="card" data-id="${s.id}">${selBox('land',s.id)}<div class="score">${scTxt('land',s)}</div><div>${stB('land',s.id)}${badges(s)}${annexBadge(s)}${regFlag(s)}</div><h3>${esc(s.name)}</h3><div class="lbl mono">${esc(s.city)} · ${esc(s.county)} Co · ${fmt(s.acres,0)} ac${dom('land',s.id)!=null?' · '+dom('land',s.id)+' days on mkt':''}</div><div class="subs">${subLine(s)}</div><div class="row mono"><span>$ ${priceLine(s)}</span></div><div class="row mono"><span><span class="lbl">Line</span> ${bl?bl.kv+' kV '+fmt(bl.mi)+' mi':'—'}</span><span><span class="lbl">Sub</span> ${sb?(sb.kv?sb.kv+' kV ':'')+fmt(sb.mi)+' mi':'—'}</span><span><span class="lbl">Gas</span> ${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</span></div></div>`}).join('');
+ document.querySelector('#tbl tbody').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv),c=topContact(s);return `<tr data-id="${s.id}"><td class="selc">${selBox('land',s.id)}</td><td>${stB('land',s.id)}</td><td class="n sc">${scTxt('land',s)}</td><td class="n">${s.infra_score}</td><td class="n">${cm(s)?cm(s).score+'<div class="lbl">L'+cm(s).laws.score+' N'+cm(s).news.score+' E'+cm(s).edc.score+'</div>':'—'}</td><td>${badges(s)}${annexBadge(s)}${regFlag(s)}<div class="nm">${esc(s.name)}</div><div class="lbl">${esc(s.city)}</div></td><td>${esc(s.county)}</td><td class="n">${fmt(s.acres,0)}</td><td class="n">${totTxt(s)}</td><td class="n">${ppaTxt(s)}</td><td class="n">${domTxt('land',s.id)}</td><td class="n">${bl?bl.kv+' kV · '+fmt(bl.mi)+' mi':'—'}</td><td class="n">${sb?(sb.kv?sb.kv+' kV · ':'')+fmt(sb.mi)+' mi':'—'}</td><td class="n">${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</td><td>${c?esc(c.name||c.org)+'<div class="lbl">'+esc(c.org&&c.name?c.org:'')+'</div>':'—'}</td></tr>`}).join('');
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-panel]');if(b){openPanel(b.dataset.site,b.dataset.panel);return}const el=e.target.closest('[data-id]');if(el&&!el.closest('dialog')&&!e.target.closest('select,input,textarea,label')){if(/^st-/.test(el.dataset.id))openStorage(el.dataset.id);else openSite(el.dataset.id)}});
 const dlg=$('dlg');
@@ -662,8 +689,9 @@ const acctDom=a=>String(a||'').split('@')[1]||'';
 function actItems(v,id){const L=[];evOf(v,id).forEach(e=>{
   if(e.type==='note')L.push({k:'note',ts:e.ts,t:'Note',by:uName(e.by),body:esc(e.text).replace(/\n/g,'<br>')});
   else if(e.type==='followup')L.push({k:'fu',ts:e.ts,t:'Follow-up'+(fuStatus(e)==='done'?' · done':''),by:uName(e.by)+' → '+esc(e.assignee||'any bot'),body:esc(e.text)+(e.due?` <span class="lbl mono">due ${esc(e.due)}</span>`:'')});
-  else if(e.type==='stage')L.push({k:'stage',ts:e.ts,t:'Stage',by:uName(e.by),body:`${esc(stL(e.from_stage||'New'))} → <b>${esc(stL(e.to_stage))}</b>${(e.reasons||[]).length?' · '+e.reasons.map(r=>`<span class="chip neutral">${esc(r)}</span>`).join(''):''}${e.text?`<div class="muted">“${esc(e.text)}”</div>`:''}`})});
- (EMI[id]||[]).forEach(m=>L.push({k:'email',ts:m.date,t:m.dir==='out'?'Email sent':'Email received',acct:acctDom(m.account),by:esc(m.dir==='out'?'to '+addrName(m.to):'from '+addrName(m.from)),body:`<a href="${esc(m.link)}" target="_blank" rel="noopener">${esc(m.subject||'(no subject)')} ↗</a>${m.excerpt?`<div class="muted">${esc(m.excerpt)}</div>`:''}`}));
+  else if(e.type==='stage')L.push({k:'stage',ts:e.ts,t:'Stage',by:uName(e.by),body:`${esc(stL(e.from_stage||'New'))} → <b>${esc(stL(e.to_stage))}</b>${(e.reasons||[]).length?' · '+e.reasons.map(r=>`<span class="chip neutral">${esc(r)}</span>`).join(''):''}${e.text?`<div class="muted">“${esc(e.text)}”</div>`:''}`});
+  else if(RECT[e.type])L.push({k:'stage',ts:e.ts,t:RECT[e.type],by:uName(e.by),body:esc(e.text||'')+(e.site_id!==id?` <span class="lbl mono">on merged record</span>`:'')})});
+ famEm(id).forEach(m=>L.push({k:'email',ts:m.date,t:m.dir==='out'?'Email sent':'Email received',acct:acctDom(m.account),by:esc(m.dir==='out'?'to '+addrName(m.to):'from '+addrName(m.from)),body:`<a href="${esc(m.link)}" target="_blank" rel="noopener">${esc(m.subject||'(no subject)')} ↗</a>${m.excerpt?`<div class="muted">${esc(m.excerpt)}</div>`:''}`}));
  return L.sort((a,b)=>(new Date(b.ts)-new Date(a.ts))||0)}
 function drawAct(v,id){const el=$('dAct');if(!el)return;const L=actItems(v,id);const accts=[...new Set(L.filter(x=>x.acct).map(x=>x.acct))].sort();
  const F=[['all','All'],['email','Email'],['note','Notes'],['stage','Stage'],['fu','Follow-ups']].concat(accts.map(a=>['acct:'+a,a]));if(!F.some(f=>f[0]===AF))AF='all';
@@ -789,7 +817,7 @@ const uName=e=>{const u=USERS.find(x=>x.email===e);return u?(u.name||u.email):/^
 const objOf=(v,id)=>v==='land'?S.find(s=>s.id===id):SR.find(r=>r.id===id);
 let STG={};
 function idx(){STG={};const T={};PS.events.forEach(e=>{if(e.type!=='stage')return;const k=e.view+'|'+e.site_id;if(!T[k]||e.ts>T[k]){T[k]=e.ts;STG[k]=e.to_stage}});
- Object.entries(PS.deals||{}).forEach(([k,d])=>{if(STAGES.includes(d.stage)&&(!T[k]||String(d.updated)>T[k]))STG[k]=d.stage})}
+ Object.entries(PS.deals||{}).forEach(([k,d])=>{if(STAGES.includes(d.stage)&&(!T[k]||String(d.updated)>T[k]))STG[k]=d.stage});if(typeof ovApply==='function')ovApply()}
 const nyToday=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const lstd=(v,id)=>{const d=(PS.deals||{})[v+'|'+id];return d&&/^\d{4}-\d{2}-\d{2}$/.test(d.listed||'')?d.listed:''};
 const dom=(v,id)=>{const l=lstd(v,id);if(!l)return null;return Math.round((Date.parse(nyToday()+'T00:00:00Z')-Date.parse(l+'T00:00:00Z'))/864e5)};
@@ -797,7 +825,7 @@ const domTxt=(v,id)=>{const n=dom(v,id);return n==null?'':String(n)};
 const domSort=(v,a,b)=>{const x=dom(v,a.id),y=dom(v,b.id);return (y??-1e9)-(x??-1e9)};
 const stageOf=(v,id)=>STG[v+'|'+id]||'New';const stI=(v,id)=>STAGES.indexOf(stageOf(v,id));
 function stB(v,id){const s=stageOf(v,id);return `<span class="badge stg ${STC[s]||''}" title="Pipeline stage">${esc(stL(s))}</span>`}
-const evOf=(v,id)=>PS.events.filter(e=>e.view===v&&e.site_id===id).sort((a,b)=>a.ts<b.ts?-1:1);
+const evOf=(v,id)=>{const F=famIds(v,id);return PS.events.filter(e=>e.view===v&&F.has(e.site_id)).sort((a,b)=>a.ts<b.ts?-1:1)};
 function fuStatus(f){let st=f.status||'open',t='';PS.events.forEach(e=>{if(e.type==='followup_status'&&e.ref_id===f.event_id&&e.ts>t){t=e.ts;st=e.status}});return st}
 const when=t=>{const d=new Date(t);return isNaN(d)?esc(t):d.toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})};
 function addEv(e){e=Object.assign({event_id:uid(),ts:new Date().toISOString(),by:me()},e);if(BK){if(RO())return e;if(e.type==='followup_status')BK.setFu(e.site_id,e.ref_id,e.status);else BK.add(e,e.type==='stage'?e.to_stage:stageOf(e.view,e.site_id));return e}PS.events.push(e);PS.queue.push(e.event_id);psave();pRefresh();sync();return e}
@@ -866,14 +894,14 @@ function storFacts(r){const z=r.zoning||{},t=r.traffic||{},c=r.competition||{},d
 // ---- filters modal, stage filter, summary bar, board
 const STF={land:new Set(),storage:new Set()};try{const x=JSON.parse(localStorage.getItem('edks_stf')||'{}');['land','storage'].forEach(v=>(x[v]||[]).forEach(s=>STF[v].add(s)))}catch(e){}
 function stfSave(){try{localStorage.setItem('edks_stf',JSON.stringify({land:[...STF.land],storage:[...STF.storage]}))}catch(e){}}
-const stOK=(v,id)=>STF[v].size?STF[v].has(stageOf(v,id)):stageOf(v,id)!=='Passed';
+const stOK=(v,id)=>hidOK(v,id)&&(STF[v].size?STF[v].has(stageOf(v,id)):stageOf(v,id)!=='Passed');
 const isDef=el=>el.type==='checkbox'?el.checked===el.defaultChecked:el.tagName==='SELECT'?el.value===(([...el.options].find(o=>o.defaultSelected)||el.options[0]||{}).value):el.value===el.defaultValue;
 function fCount(v){const ids=v==='land'?F:SF;return ids.filter(k=>!/Sort$/.test(k)&&!isDef($(k))).length+(STF[v].size?1:0)+Object.keys(AI[v].x).length+AI[v].terms.length}
 function fReset(v){(v==='land'?F:SF).forEach(k=>{const el=$(k);if(/Sort$/.test(k))return;if(el.type==='checkbox')el.checked=el.defaultChecked;else if(el.tagName==='SELECT')el.value=(([...el.options].find(o=>o.defaultSelected)||el.options[0]||{}).value);else el.value=el.defaultValue});STF[v].clear();stfSave();AI[v]={chips:[],terms:[],x:{}};$('aiQ').value='';v==='land'?render():sRender()}
 function stChk(v){$(v==='land'?'fStageL':'fStageS').innerHTML=STAGES.map(s=>`<label class="chk"><input type="checkbox" data-stf="${v}" value="${esc(s)}"${STF[v].has(s)?' checked':''}><span class="lbl mono">${esc(stL(s))}</span></label>`).join('')}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.stf)return;const v=t.dataset.stf;t.checked?STF[v].add(t.value):STF[v].delete(t.value);stfSave();v==='land'?render():sRender()});
-function stageBar(v){const all=v==='land'?S:SR;const n={};STAGES.forEach(s=>n[s]=0);all.forEach(o=>n[stageOf(v,o.id)]++);
- $(v==='land'?'sbL':'sbS').innerHTML=`<button type="button" data-sall="${v}" class="${STF[v].size?'':'on'}" aria-pressed="${!STF[v].size}"><b>${(v==='land'?S:SR).filter(o=>stageOf(v,o.id)!=='Passed').length}</b><span>Active</span></button>`+STAGES.map(s=>`<button type="button" data-sbar="${v}" data-st="${esc(s)}" class="${STF[v].has(s)?'on':''}${n[s]||STF[v].has(s)?'':' z'}" aria-pressed="${STF[v].has(s)}"><b>${n[s]}</b><span>${esc(stL(s))}</span></button>`).join('')}
+function stageBar(v){const all=v==='land'?S:SR;const n={};STAGES.forEach(s=>n[s]=0);all.forEach(o=>{if(!hidK(v,o.id))n[stageOf(v,o.id)]++});
+ $(v==='land'?'sbL':'sbS').innerHTML=`<button type="button" data-sall="${v}" class="${STF[v].size?'':'on'}" aria-pressed="${!STF[v].size}"><b>${(v==='land'?S:SR).filter(o=>stageOf(v,o.id)!=='Passed'&&!hidK(v,o.id)).length}</b><span>Active</span></button>`+STAGES.map(s=>`<button type="button" data-sbar="${v}" data-st="${esc(s)}" class="${STF[v].has(s)?'on':''}${n[s]||STF[v].has(s)?'':' z'}" aria-pressed="${STF[v].has(s)}"><b>${n[s]}</b><span>${esc(stL(s))}</span></button>`).join('')}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-sbar]');if(!b)return;const v=b.dataset.sbar,s=b.dataset.st;STF[v].has(s)?STF[v].delete(s):STF[v].add(s);stfSave();v==='land'?render():sRender()});
 const MODE={land:'list',storage:'list'};try{const m=JSON.parse(localStorage.getItem('edks_mode')||'{}');Object.assign(MODE,m)}catch(e){}
 function setMode(v,m){MODE[v]=m;try{localStorage.setItem('edks_mode',JSON.stringify(MODE))}catch(e){}v==='land'?render():sRender()}
@@ -1065,9 +1093,9 @@ function sRender(){
  let R=SR.filter(r=>sOK(r,v));
  const k=v.sSort,BIG=1e15;R.sort((a,b)=>k==='dom'?(domSort('storage',a,b)||b.score-a.score):k==='learned'?(LS('storage',b)-LS('storage',a)||b.score-a.score):k==='stage'?(stI('storage',a.id)-stI('storage',b.id)||b.score-a.score):PARTS.some(p=>p[0]===k)?(b.score_parts[k]-a.score_parts[k]||b.score-a.score):k==='price'?((a.price??BIG)-(b.price??BIG)):k==='unit'?(((a.price_per_acre||a.price_per_sf)??BIG)-((b.price_per_acre||b.price_per_sf)??BIG)):k==='acres'?(b.acres||0)-(a.acres||0):k==='aadt'?((b.traffic.aadt||0)-(a.traffic.aadt||0)):k==='pop'?((b.demand.pop3||0)-(a.demand.pop3||0)):k==='new'?String(b.first_seen).localeCompare(String(a.first_seen)):b.score-a.score);
  document.querySelectorAll('th[data-sk]').forEach(th=>th.classList.toggle('s',th.dataset.sk===k));
- $('sCount').textContent=`${R.length} of ${SR.length} storage rows`;$('dkS').textContent=R.length;{const sb=$('fdSgo');if(sb)sb.textContent=`Show ${R.length} rows`}afterRender('storage',R);
- $('sCards').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{};return `<div class="card" data-id="${r.id}"><div class="score">${scTxt('storage',r)}</div><div>${stB('storage',r.id)}${sBadges(r)}${zBadge(r)}</div><h3>${esc(r.name)}</h3><div class="lbl mono">${esc(r.address)} · ${esc(r.city_label)} · ${sizeTxt(r)}</div><div class="row mono"><span>$ ${r.price?money(r.price):'Unpriced'}${r.price&&unitTxt(r)!=='—'?' · '+unitTxt(r):''}</span></div><div class="row mono"><span><span class="lbl">Road</span> ${esc(t.road||'—')}${t.aadt?' · '+fmt(t.aadt,0)+' AADT':''}</span><span><span class="lbl">Supply</span> ${c.count??'—'} within 3 mi${c.sf_per_capita!=null?' · '+c.sf_per_capita+' SF/person':''}</span><span><span class="lbl">Pop</span> ${d.pop3?fmt(d.pop3/1000,0)+'k':'—'} · ${d.income?'$'+fmt(d.income/1000,0)+'k':'—'}</span></div><div style="margin-top:6px">${fitChips(r)}</div>${mini(r)}</div>`}).join('');
- document.querySelector('#sTbl tbody').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{},z=r.zoning||{},ct=topC(r);return `<tr data-id="${r.id}"><td>${stB('storage',r.id)}</td><td class="n sc">${scTxt('storage',r)}${mini(r)}</td><td>${r.kind==='land'?'Land':'Facility'}</td><td>${sBadges(r).replace(/<span class="badge (cert|chg)">[^<]*<\/span>/,'')}<div class="nm">${esc(r.name)}</div><div class="lbl">${esc(r.address)} · ${esc(r.city_label)}</div></td><td class="n">${sizeTxt(r)}</td><td class="n">${r.price?money(r.price):'—'}</td><td class="n">${unitTxt(r)}</td><td class="n">${domTxt('storage',r.id)}</td><td><span class="badge ${ZCLS[z.status]||'unc'}">${esc(z.district||'?')}</span><div class="lbl">${esc(z.status_txt)}</div></td><td>${esc(t.road||'—')}<div class="lbl">${t.aadt?fmt(t.aadt,0)+' AADT ('+esc(t.aadt_year)+')':'no count'}</div></td><td class="n">${c.count??'—'} · ~${c.est_nrsf?fmt(c.est_nrsf/1000,0)+'k SF':'—'}<div class="lbl">${c.sf_per_capita!=null?c.sf_per_capita+' SF/person':''}${c.nearest?' · nearest '+fmt(c.nearest_mi,1)+' mi':''}</div></td><td class="n">${d.pop3?fmt(d.pop3,0):'—'}<div class="lbl">${d.income?'$'+fmt(d.income,0):''}${d.renter_pct!=null?' · '+d.renter_pct+'% rent':''}</div></td><td>${fitChips(r)}</td><td>${ct?esc(ct.name||ct.org)+'<div class="lbl">'+esc(ct.org&&ct.name?ct.org:'')+'</div>':'—'}</td></tr>`}).join('');
+ $('sCount').textContent=`${R.length} of ${SR.filter(o=>!hidK('storage',o.id)).length} storage rows`;$('dkS').textContent=R.length;{const sb=$('fdSgo');if(sb)sb.textContent=`Show ${R.length} rows`}afterRender('storage',R);
+ $('sCards').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{};return `<div class="card" data-id="${r.id}">${selBox('storage',r.id)}<div class="score">${scTxt('storage',r)}</div><div>${stB('storage',r.id)}${sBadges(r)}${zBadge(r)}</div><h3>${esc(r.name)}</h3><div class="lbl mono">${esc(r.address)} · ${esc(r.city_label)} · ${sizeTxt(r)}</div><div class="row mono"><span>$ ${r.price?money(r.price):'Unpriced'}${r.price&&unitTxt(r)!=='—'?' · '+unitTxt(r):''}</span></div><div class="row mono"><span><span class="lbl">Road</span> ${esc(t.road||'—')}${t.aadt?' · '+fmt(t.aadt,0)+' AADT':''}</span><span><span class="lbl">Supply</span> ${c.count??'—'} within 3 mi${c.sf_per_capita!=null?' · '+c.sf_per_capita+' SF/person':''}</span><span><span class="lbl">Pop</span> ${d.pop3?fmt(d.pop3/1000,0)+'k':'—'} · ${d.income?'$'+fmt(d.income/1000,0)+'k':'—'}</span></div><div style="margin-top:6px">${fitChips(r)}</div>${mini(r)}</div>`}).join('');
+ document.querySelector('#sTbl tbody').innerHTML=R.map(r=>{const t=r.traffic||{},c=r.competition||{},d=r.demand||{},z=r.zoning||{},ct=topC(r);return `<tr data-id="${r.id}"><td class="selc">${selBox('storage',r.id)}</td><td>${stB('storage',r.id)}</td><td class="n sc">${scTxt('storage',r)}${mini(r)}</td><td>${r.kind==='land'?'Land':'Facility'}</td><td>${sBadges(r).replace(/<span class="badge (cert|chg)">[^<]*<\/span>/,'')}<div class="nm">${esc(r.name)}</div><div class="lbl">${esc(r.address)} · ${esc(r.city_label)}</div></td><td class="n">${sizeTxt(r)}</td><td class="n">${r.price?money(r.price):'—'}</td><td class="n">${unitTxt(r)}</td><td class="n">${domTxt('storage',r.id)}</td><td><span class="badge ${ZCLS[z.status]||'unc'}">${esc(z.district||'?')}</span><div class="lbl">${esc(z.status_txt)}</div></td><td>${esc(t.road||'—')}<div class="lbl">${t.aadt?fmt(t.aadt,0)+' AADT ('+esc(t.aadt_year)+')':'no count'}</div></td><td class="n">${c.count??'—'} · ~${c.est_nrsf?fmt(c.est_nrsf/1000,0)+'k SF':'—'}<div class="lbl">${c.sf_per_capita!=null?c.sf_per_capita+' SF/person':''}${c.nearest?' · nearest '+fmt(c.nearest_mi,1)+' mi':''}</div></td><td class="n">${d.pop3?fmt(d.pop3,0):'—'}<div class="lbl">${d.income?'$'+fmt(d.income,0):''}${d.renter_pct!=null?' · '+d.renter_pct+'% rent':''}</div></td><td>${fitChips(r)}</td><td>${ct?esc(ct.name||ct.org)+'<div class="lbl">'+esc(ct.org&&ct.name?ct.org:'')+'</div>':'—'}</td></tr>`}).join('');
  const by={};SR.forEach(r=>{by[r.city_label]=by[r.city_label]||{land:0,facility:0};by[r.city_label][r.kind]++});
  sStatsDraw(v,R);aiChips();
 }
@@ -1132,12 +1160,12 @@ $('sync').onclick=()=>{PS.err='';sync()};syncUI();sync();setInterval(sync,60000)
 }
 // ---- column picker (per table, saved in this browser). Defaults follow the Figma list: a short single-line table.
 const COLDEF={tbl:['stage','name','county','score','acres','tx','dom'],sTbl:['stage','score','name','acres','price','dom']};
-function colKeys(t){return [...document.querySelectorAll('#'+t+' thead th')].map(th=>th.dataset.k||th.dataset.sk||th.textContent.trim())}
+function colKeys(t){return [...document.querySelectorAll('#'+t+' thead th')].map(th=>th.dataset.c||th.dataset.k||th.dataset.sk||th.textContent.trim())}
 function colGet(t){try{const v=JSON.parse(localStorage.getItem('edks_cols_'+t));if(Array.isArray(v))return v}catch(e){}return COLDEF[t]}
-function colApply(t){const on=new Set(colGet(t)),K=colKeys(t);let css='';K.forEach((k,i)=>{if(!on.has(k))css+=`#${t} tr>*:nth-child(${i+1}){display:none}`});let st=document.getElementById('cs_'+t);if(!st){st=document.createElement('style');st.id='cs_'+t;document.head.appendChild(st)}st.textContent=css}
+function colApply(t){const on=new Set(colGet(t)),K=colKeys(t);let css='';K.forEach((k,i)=>{if(!on.has(k)&&k!=='sel')css+=`#${t} tr>*:nth-child(${i+1}){display:none}`});let st=document.getElementById('cs_'+t);if(!st){st=document.createElement('style');st.id='cs_'+t;document.head.appendChild(st)}st.textContent=css}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cols]');const open=document.querySelector('.colpick');if(open&&!e.target.closest('.colpick')){open.remove();if(!b)return}
  if(!b)return;const t=b.dataset.cols,K=colKeys(t),on=new Set(colGet(t)),L=[...document.querySelectorAll('#'+t+' thead th')].map(th=>th.textContent.trim());
- const m=document.createElement('div');m.className='colpick';m.innerHTML=K.map((k,i)=>`<label><input type="checkbox" data-ck="${esc(k)}"${on.has(k)?' checked':''}>${esc(L[i])}</label>`).join('');
+ const m=document.createElement('div');m.className='colpick';m.innerHTML=K.map((k,i)=>k==='sel'?'':`<label><input type="checkbox" data-ck="${esc(k)}"${on.has(k)?' checked':''}>${esc(L[i])}</label>`).join('');
  const r=b.getBoundingClientRect();m.style.left=(r.left+scrollX)+'px';m.style.top=(r.bottom+scrollY+4)+'px';document.body.appendChild(m);
  m.addEventListener('change',()=>{const v=[...m.querySelectorAll('[data-ck]:checked')].map(x=>x.dataset.ck);localStorage.setItem('edks_cols_'+t,JSON.stringify(v));colApply(t)})});
 colApply('tbl');colApply('sTbl');
@@ -1156,6 +1184,179 @@ function kmCard(v,id){const c=$('kmCard');if(!c)return;const o=objOf(v,id);if(!o
  const sub=L&&bl?`${bl.kv} kV line ${fmt(bl.mi)} mi`:'';
  c.innerHTML=`<div class="kch"><span class="lbl mono">${esc([o.county?o.county+' County':'',o.city].filter(Boolean).join(' · '))}</span><button type="button" class="close" data-kcx aria-label="Close">Close</button></div><h3>${esc(o.name||id)}</h3><div class="lbl mono kcs">${esc(stL(st))} · ${L?'Land':'Storage'}</div><div class="kcg">${g}</div>${sub?`<p class="kcsub">${esc(sub)}</p>`:''}<div class="kcb"><button type="button" class="btn pri" data-kopen>Open deal</button>${o.url?`<a class="btn" href="${esc(o.url)}" target="_blank" rel="noopener">Listing</a>`:''}</div>`;
  c.hidden=false;c.querySelector('[data-kcx]').onclick=()=>{c.hidden=true;if(KM_M&&KM_M.ready)KM_M.map.setFilter('deals-halo',['==',['get','id'],''])};c.querySelector('[data-kopen]').onclick=()=>L?openSite(id):openStorage(id)}
+// ---- records (admins): multi-select, merge, bulk edit, archive, soft delete, CSV export.
+// Nothing is ever hard-deleted or moved: flags live on the deal doc, and the event that set them keeps a snapshot of the
+// prior fields so every action can be undone. Children of a merge keep their own events/emails; the parent shows the union.
+function DL(v,id){return (PS.deals||{})[v+'|'+id]||{}}
+// merged_into only counts when set by this feature (merged_by); older system notes (merge_note) stay visible until merged here
+function hidK(v,id){const d=DL(v,id);if(d.deleted)return 'deleted';if(d.merged_into&&d.merged_by)return 'merged';if(d.archived)return 'archived';return ''}
+function hidOK(v,id){const h=hidK(v,id),x=XV[v];if(x==='deleted'||x==='archived')return h===x;return !h||(x==='merged'&&h==='merged')}
+function canRec(){return BK?(isAdm()&&!RO()):true}
+function allOf(v){return v==='land'?S:SR}
+function kids(v,id){return allOf(v).filter(o=>{const d=DL(v,o.id);return d.merged_by&&d.merged_into===id&&!d.deleted})}
+function famIds(v,id){const F=new Set([id]);try{kids(v,id).forEach(o=>F.add(o.id))}catch(e){}return F}
+function famEm(id){let L=(EMI[id]||[]).slice();try{const v=$('dealBox').dataset.view;kids(v,id).forEach(o=>L=L.concat(EMI[o.id]||[]))}catch(e){}return L}
+function rootOf(v,id){let x=id;for(let n=0;n<8;n++){const d=DL(v,x);if(d.merged_by&&d.merged_into&&d.merged_into!==x)x=d.merged_into;else break}return x}
+function selBox(v,id){return `<input type="checkbox" class="selx" data-sel="${v}" data-sid="${id}"${SEL[v].has(id)?' checked':''} aria-label="Select">`}
+function baseOf(o,k){return o&&o._ov0&&(k in o._ov0)?o._ov0[k]:(o||{})[k]}
+function scoreOf(v,o){return o._so!=null?o._so:(v==='land'?o.overall:o.score)}
+function nameOf(v,id){const o=objOf(v,id);return o?o.name:id}
+// durable display overrides from deal.fields (name, acres, contact, contacts, assignee, tags, score_override)
+function ovApply(){const A2=[];try{A2.push(['land',S])}catch(e){}try{A2.push(['storage',SR])}catch(e){}A2.forEach(([v,A])=>A.forEach(o=>{
+ if(o._ov0){Object.keys(o._ov0).forEach(k=>{if(o._ov0[k]===undefined)delete o[k];else o[k]=o._ov0[k]});delete o._ov0}
+ const f=DL(v,o.id).fields;if(!f||typeof f!=='object')return;const keep={};const set=(k,x)=>{if(!(k in keep))keep[k]=o[k];o[k]=x};
+ if(f.name)set('name',f.name);if(typeof f.acres==='number')set('acres',f.acres);if(Array.isArray(f.contacts))set('contacts',f.contacts);
+ if(f.contact)set('_pc',f.contact);if(f.assignee)set('_asg',f.assignee);if(Array.isArray(f.tags)&&f.tags.length)set('_tags',f.tags);
+ if(typeof f.score_override==='number')set('_so',f.score_override);o._ov0=keep}))}
+{const L0=LS;LS=function(v,o){return o&&o._so!=null?o._so:L0(v,o)};
+ const t1=topContact;topContact=function(s){return s._pc?{name:s._pc,role:'Primary'}:t1(s)};const t2=topC;topC=function(r){return r._pc?{name:r._pc,role:'Primary'}:t2(r)};
+ const tg=o=>(o._tags||[]).map(t=>`<span class="badge tag">${esc(t)}</span>`).join('')+(o._asg?`<span class="badge tag" title="Owner">@${esc(o._asg)}</span>`:'');
+ const b1=badges;badges=function(s){return b1(s)+tg(s)};const b2=sBadges;sBadges=function(r){return b2(r)+tg(r)};
+ const a0=afterRender;afterRender=function(v,R){a0(v,R);VIS[v]=R;selSync(v)};
+ const d0=drawDeal;drawDeal=function(v,id){d0(v,id);const b=$('dealBox');if(!b)return;b.insertAdjacentHTML('beforeend',recSec(v,id));
+  if(BK&&isAdm())kids(v,id).forEach(o=>{if(!EMI[o.id+'_l']){EMI[o.id+'_l']=1;BK.emailItems(o.id).then(L=>{EMI[o.id]=L||[];if($('dealBox').dataset.id===id)drawAct(v,id)}).catch(()=>{})}})};
+ const o1=openSite;openSite=function(id){const r=rootOf('land',id);if(r!==id&&XV.land!=='merged'){o1(r);toast(`“${nameOf('land',id)}” was merged into this record.`)}else o1(id)};
+ const o2=openStorage;openStorage=function(id){const r=rootOf('storage',id);if(r!==id&&XV.storage!=='merged'){o2(r);toast(`“${nameOf('storage',id)}” was merged into this record.`)}else o2(id)};}
+// ---- toast
+var TT=null;function toast(msg,undo){let t=$('rtoast');t.innerHTML=`<span>${esc(msg)}</span>${undo?'<button type="button" class="linkbtn" id="rtUndo">Undo</button>':''}`;t.hidden=false;
+ if(undo)$('rtUndo').onclick=()=>{t.hidden=true;undo()};clearTimeout(TT);TT=setTimeout(()=>t.hidden=true,undo?12000:5000)}
+// ---- writes: ops=[{v,id,set:{k:val|null},ev:{type,text,...}}]; one batch through BK.recs (Firestore) or local storage when static
+function snap(v,id){const d=DL(v,id);const s={stage:stageOf(v,id)};['listed','fields','merged_into','merged_by','merged_at','deleted','archived'].forEach(k=>{s[k]=d[k]==null||d[k]===''||d[k]===false?null:d[k]});return JSON.parse(JSON.stringify(s))}
+function restoreSet(b){const s={};['listed','fields','merged_into','merged_by','merged_at','deleted','archived'].forEach(k=>s[k]=b&&b[k]!=null?b[k]:null);if(b&&b.stage)s.stage=b.stage;return s}
+async function recW(ops){if(!ops.length)return;const ts=new Date().toISOString(),by=me();
+ ops.forEach(o=>{o.name=baseOf(objOf(o.v,o.id),'name')||'';o.stage=o.set&&o.set.stage||stageOf(o.v,o.id);if(o.ev)o.ev=JSON.parse(JSON.stringify(Object.assign({event_id:uid(),ts,by,view:o.v,site_id:o.id,name:o.name},o.ev)))});
+ if(BK){if(!canRec())throw new Error('Admins only');await BK.recs(ops);return}
+ ops.forEach(o=>{const k=o.v+'|'+o.id;const d=Object.assign({},PS.deals[k]||{});Object.entries(o.set||{}).forEach(([a,b])=>{if(b===null)delete d[a];else d[a]=b});d.stage=o.stage;d.updated=ts;PS.deals[k]=d;if(o.ev)PS.events.push(o.ev)});psave();pRefresh()}
+// ---- selection + toolbar
+function selSync(v){const L=v==='land';const bar=$(L?'rbL':'rbS');if(!bar)return;const on=SELM[v]&&canRec();document.body.classList.toggle(L?'selL':'selS',on);
+ const sb=$(L?'selBtnL':'selBtnS');if(sb){sb.hidden=!canRec();sb.classList.toggle('on',on)}bar.hidden=!on;if(!on)return;
+ const n=SEL[v].size,vis=VIS[v].length,x=XV[v];
+ bar.innerHTML=`<span class="rbn mono"><b>${n}</b> selected</span><button type="button" class="linkbtn" data-ra="all">Select all visible (${vis})</button>${n?'<button type="button" class="linkbtn" data-ra="clear">Clear</button>':''}<span class="rbsp"></span>`+
+ (x==='deleted'?`<button type="button" class="btn" data-ra="restore"${n?'':' disabled'}>Restore</button>`:x==='archived'?`<button type="button" class="btn" data-ra="unarchive"${n?'':' disabled'}>Unarchive</button>`:
+ `<button type="button" class="btn" data-ra="edit"${n?'':' disabled'}>Edit</button><button type="button" class="btn" data-ra="merge"${n>1?'':' disabled'} title="Select two or more">Merge</button><button type="button" class="btn" data-ra="archive"${n?'':' disabled'}>Archive</button><button type="button" class="btn" data-ra="delete"${n?'':' disabled'}>Delete</button>`)+
+ `<button type="button" class="btn" data-ra="csv"${n?'':' disabled'}>Export CSV</button><select class="rbv" data-rv="${v}" aria-label="Show"><option value="">Active records</option><option value="merged"${x==='merged'?' selected':''}>Include merged</option><option value="archived"${x==='archived'?' selected':''}>Archived</option><option value="deleted"${x==='deleted'?' selected':''}>Recently deleted</option></select>`;
+ const all=document.querySelector(`[data-selall="${v}"]`);if(all){all.checked=n>0&&VIS[v].every(o=>SEL[v].has(o.id));all.indeterminate=n>0&&!all.checked}
+ document.querySelectorAll(`.selx[data-sel="${v}"]`).forEach(c=>{c.checked=SEL[v].has(c.dataset.sid);const r=c.closest('tr,.card');if(r)r.classList.toggle('picked',c.checked)})}
+function selV(){return $('viewLand').hidden?'storage':'land'}
+function rer(v){v==='land'?render():sRender()}
+document.addEventListener('click',e=>{const t=e.target;
+ const sm=t.closest('[data-selm]');if(sm){const v=sm.dataset.selm;SELM[v]=!SELM[v];if(!SELM[v]){SEL[v].clear();if(XV[v]){XV[v]='';rer(v);return}}selSync(v);return}
+ const sa=t.closest('[data-selall]');if(sa){const v=sa.dataset.selall;const on=!VIS[v].every(o=>SEL[v].has(o.id));VIS[v].forEach(o=>on?SEL[v].add(o.id):SEL[v].delete(o.id));selSync(v);e.stopPropagation();return}
+ const row=t.closest('#listL [data-id],#listS [data-id],#tbl tr[data-id],#sTbl tr[data-id],#cards [data-id],#sCards [data-id]');
+ if(row&&!t.closest('dialog')){const v=row.closest('#sTbl,#sCards,#listS,#viewStorage')?'storage':'land';if(SELM[v]&&canRec()&&!t.closest('a')){e.stopPropagation();const id=row.dataset.id;if(t.matches('.selx'))t.checked?SEL[v].add(id):SEL[v].delete(id);else{e.preventDefault();SEL[v].has(id)?SEL[v].delete(id):SEL[v].add(id)}selSync(v);return}}
+ const ra=t.closest('[data-ra]');if(ra){const v=selV(),ids=[...SEL[v]];({all:()=>{VIS[v].forEach(o=>SEL[v].add(o.id));selSync(v)},clear:()=>{SEL[v].clear();selSync(v)},
+  edit:()=>bulkOpen(v,ids),merge:()=>mergeOpen(v,ids),archive:()=>hideOpen(v,ids,'archive'),delete:()=>hideOpen(v,ids,'delete'),restore:()=>unhide(v,ids,'restore'),unarchive:()=>unhide(v,ids,'unarchive'),csv:()=>csvOut(v,ids)}[ra.dataset.ra]||(()=>{}))()}},true);
+document.addEventListener('change',e=>{const s=e.target.closest('[data-rv]');if(s){const v=s.dataset.rv;XV[v]=s.value;SEL[v].clear();rer(v)}},true);
+// ---- dialog shell
+function rd(title,sub,body,okTxt,ok,wide){const d=$('recDlg');d.classList.toggle('wide',!!wide);d.innerHTML=`<form method="dialog"><div class="dh"><h3>${esc(title)}</h3><button class="close" value="x" aria-label="Close">✕</button></div><p class="lbl mono rsub">${sub}</p><div class="rbody">${body}</div><p class="fail" id="recErr" hidden></p><div class="rfoot"><button type="button" class="btn" value="x" onclick="this.closest('dialog').close()">Cancel</button>${okTxt?`<button type="button" class="btn pri" id="recOk">${esc(okTxt)}</button>`:''}</div></form>`;
+ if(okTxt)$('recOk').onclick=async()=>{const b=$('recOk');b.disabled=true;try{await ok();d.close()}catch(err){const p=$('recErr');p.hidden=false;p.textContent=String(err&&err.message||err);b.disabled=false}};d.showModal()}
+const vLbl=v=>v==='land'?'sites':'storage rows';
+const nlist=(v,ids)=>`<ul class="rnames">${ids.slice(0,12).map(id=>`<li>${esc(nameOf(v,id))}</li>`).join('')}${ids.length>12?`<li class="lbl mono">+ ${ids.length-12} more</li>`:''}</ul>`;
+// ---- merge
+var MG=null;
+function cOf(o){return ((o&&o.contacts)||[]).filter(c=>c&&(c.name||c.email||c.phone))}
+function ckey(c){return (c.email||'').toLowerCase()||String(c.phone||'').replace(/\D/g,'')||(c.name||'').toLowerCase().trim()}
+function mergeOpen(v,ids,surv){ids=[...new Set(ids)].filter(id=>objOf(v,id)&&!hidK(v,id));if(ids.length<2){toast('Pick two or more active records to merge.');return}
+ const O=ids.map(id=>objOf(v,id));MG={v,ids,surv:surv||O.slice().sort((a,b)=>(scoreOf(v,b)||0)-(scoreOf(v,a)||0))[0].id,ch:{},union:true};drawMerge()}
+function mgFields(v){return [['name','Name',o=>o.name],['acres','Acres',o=>o.acres==null?'':String(o.acres)],['stage','Stage',o=>stageOf(v,o.id)],['listed','Listed date',o=>lstd(v,o.id)],['contact','Primary contact',o=>{const c=(v==='land'?topContact:topC)(o);return c?c.name||c.email||'':''}]]}
+function drawMerge(){const {v,ids,surv}=MG;const O=ids.map(id=>objOf(v,id)),P=objOf(v,surv),ch=ids.filter(x=>x!==surv);
+ let body=`<div class="rsec"><span class="lbl mono">Keep this record</span>${O.map(o=>`<label class="rrad"><input type="radio" name="mgS" value="${o.id}"${o.id===surv?' checked':''}><span><b>${esc(o.name)}</b><span class="lbl mono"> · ${o.acres??'–'} ac · score ${scoreOf(v,o)??'–'} · ${esc(stL(stageOf(v,o.id)))}</span></span></label>`).join('')}</div>`;
+ const F=mgFields(v);let conf='';F.forEach(([k,l,g])=>{const vals=[...new Set(O.map(g).filter(x=>x!==''&&x!=null))];if(vals.length<2)return;const cur=MG.ch[k]??g(P);
+  conf+=`<div class="rfield"><span class="lbl mono">${esc(l)}</span>${vals.map(x=>`<label class="rrad"><input type="radio" name="mg_${k}" value="${esc(x)}"${x===cur?' checked':''}><span>${esc(k==='stage'?stL(x):x)}</span></label>`).join('')}</div>`});
+ body+=`<div class="rsec"><span class="lbl mono">Fields that differ</span>${conf||'<p class="muted">No conflicts. The kept record’s fields stay as they are.</p>'}</div>`;
+ const all=[];O.forEach(o=>cOf(o).forEach(c=>{if(!all.some(x=>ckey(x)===ckey(c)))all.push(c)}));
+ const E=PS.events.filter(e=>e.view===v&&ch.some(c=>famIds(v,c).has(e.site_id)));const nn=E.filter(e=>e.type==='note').length,nf=E.filter(e=>e.type==='followup').length,ns=E.filter(e=>e.type==='stage').length;
+ const em=ch.reduce((a,c)=>a+((EMI[c]||[]).length),0),gk=ch.reduce((a,c)=>a+kids(v,c).length,0);
+ body+=`<div class="rsec"><span class="lbl mono">Contacts</span><label class="rrad"><input type="checkbox" id="mgU"${MG.union?' checked':''}><span>Combine contacts: ${all.length} unique (from ${O.reduce((a,o)=>a+cOf(o).length,0)})</span></label></div>`;
+ body+=`<div class="rsec"><span class="lbl mono">What moves to “${esc(P.name)}”</span><ul class="rnames"><li>${nn} note${nn===1?'':'s'} and ${nf} follow-up${nf===1?'':'s'} (kept in order, labelled “on merged record”)</li><li>${ns} stage change${ns===1?'':'s'} in history</li>${BK&&isAdm()?`<li>${em?em+' synced email'+(em===1?'':'s'):'Synced email'} from the merged records, and future mail that matches them</li>`:''}${gk?`<li>${gk} record${gk===1?'':'s'} already merged into them</li>`:''}</ul>
+ <p class="muted">${ch.length} record${ch.length===1?'':'s'} will be hidden from the list, map, counts and ranks. Their links open “${esc(P.name)}”. Unmerge any of them later from the Merged records section.</p></div>`;
+ rd(`Merge ${ids.length} ${vLbl(v)}`,`${ch.map(c=>esc(nameOf(v,c))).join(' · ')} → <b>${esc(P.name)}</b>`,body,`Merge into ${P.name.length>28?P.name.slice(0,27)+'…':P.name}`,doMerge,true);
+ const d=$('recDlg');d.querySelectorAll('[name=mgS]').forEach(r=>r.onchange=()=>{MG.surv=r.value;MG.ch={};drawMerge()});
+ F.forEach(([k])=>d.querySelectorAll(`[name=mg_${k}]`).forEach(r=>r.onchange=()=>MG.ch[k]=r.value));const u=$('mgU');if(u)u.onchange=()=>MG.union=u.checked}
+async function doMerge(){const {v,ids,surv:p}=MG;const P=objOf(v,p),ch=ids.filter(x=>x!==p),gk=[];ch.forEach(c=>kids(v,c).forEach(g=>gk.push(g.id)));
+ const before={};[p,...ch,...gk].forEach(id=>before[id]=snap(v,id));const pf=Object.assign({},DL(v,p).fields||{}),choices={};const F=mgFields(v);
+ F.forEach(([k,,g])=>{if(MG.ch[k]==null||MG.ch[k]===g(P))return;choices[k]=MG.ch[k]});
+ if(choices.name)pf.name=choices.name;if(choices.acres)pf.acres=Number(choices.acres);if(choices.contact)pf.contact=choices.contact;
+ if(MG.union){const all=[];ids.map(id=>objOf(v,id)).forEach(o=>cOf(o).forEach(c=>{if(!all.some(x=>ckey(x)===ckey(c)))all.push(c)}));if(all.length>cOf(P).length){pf.contacts=all.map(c=>({name:c.name||'',role:c.role||'',org:c.org||'',email:c.email||'',phone:c.phone||''}));choices.contacts=all.length+' unique'}}
+ const ts=new Date().toISOString(),by=me(),pset={fields:Object.keys(pf).length?pf:null};if(choices.listed)pset.listed=choices.listed;
+ const names=ch.map(c=>nameOf(v,c));
+ const ops=[{v,id:p,set:pset,ev:{type:'merge',children:[...ch,...gk],choices,before,text:`Merged ${names.length} record${names.length===1?'':'s'} into this one: ${names.join(', ')}`}}];
+ [...ch,...gk].forEach(c=>ops.push({v,id:c,set:{merged_into:p,merged_by:by,merged_at:ts},ev:{type:'merged',ref_id:p,text:`Merged into ${P.name}`}}));
+ SEL[v].clear();await recW(ops);if(choices.stage&&choices.stage!==stageOf(v,p))addEv({type:'stage',view:v,site_id:p,name:P.name,from_stage:stageOf(v,p),to_stage:choices.stage,reasons:['Merged records'],text:''});
+ SEL[v].clear();toast(`Merged ${names.length} into “${P.name}”.`,()=>undoMerge(v,p,null));}
+function lastMerge(v,p,c){return PS.events.filter(e=>e.view===v&&e.site_id===p&&e.type==='merge'&&(!c||(e.children||[]).includes(c))).sort((a,b)=>a.ts<b.ts?1:-1)[0]}
+async function undoMerge(v,p,c){const m=lastMerge(v,p,c);if(!m){toast('No merge event found to undo.');return}const B=m.before||{};
+ const list=(c?[c]:(m.children||[])).filter(x=>DL(v,x).merged_into===p);const ops=list.map(x=>({v,id:x,set:restoreSet(B[x]),ev:{type:'unmerge',ref_id:p,text:`Unmerged from ${nameOf(v,p)}`}}));
+ const left=kids(v,p).filter(o=>!list.includes(o.id));const pset=!left.length&&B[p]?{fields:B[p].fields||null}:{};
+ ops.push({v,id:p,set:pset,ev:{type:'unmerge',children:list,text:`Unmerged ${list.map(x=>nameOf(v,x)).join(', ')}${!left.length?' (merge fully undone)':''}`}});await recW(ops);toast(`Unmerged ${list.length} record${list.length===1?'':'s'}.`)}
+function recSec(v,id){const K=kids(v,id),h=hidK(v,id),adm=canRec();let s='';
+ if(h==='merged'){const p=DL(v,id).merged_into;s+=`<div class="sec rnote"><span class="lbl mono">Merged</span> This record was merged into <a href="#" data-ropen="${v}|${p}">${esc(nameOf(v,p))}</a>.${adm?` <button type="button" class="linkbtn" data-unm="${v}|${p}|${id}">Unmerge</button>`:''}</div>`}
+ if(h==='deleted'||h==='archived')s+=`<div class="sec rnote"><span class="lbl mono">${h==='deleted'?'Deleted':'Archived'}</span> Hidden from lists, the map, counts and ranks.${adm?` <button type="button" class="btn" data-run="${v}|${id}|${h==='deleted'?'restore':'unarchive'}">${h==='deleted'?'Restore':'Unarchive'}</button>`:''}</div>`;
+ if(K.length)s+=`<div class="sec"><h4>Merged records (${K.length})</h4><table class="rkids"><tbody>${K.map(o=>`<tr><td><a href="#" data-ropen="${v}|${o.id}">${esc(o.name)}</a></td><td class="n">${o.acres??'–'} ac</td><td class="n">${scoreOf(v,o)??'–'}</td><td>${o.url?`<a href="${esc(o.url)}" target="_blank" rel="noopener">Listing ↗</a>`:''}</td><td>${adm?`<button type="button" class="linkbtn" data-unm="${v}|${id}|${o.id}">Unmerge</button>`:''}</td></tr>`).join('')}</tbody></table></div>`;
+ if(adm&&!h)s+=`<div class="ract"><button type="button" class="linkbtn" data-mi="${v}|${id}">Merge into…</button><button type="button" class="linkbtn" data-hid="${v}|${id}|archive">Archive</button><button type="button" class="linkbtn" data-hid="${v}|${id}|delete">Delete</button></div>`;return s}
+document.addEventListener('click',e=>{const t=e.target;const g=(a)=>{const x=t.closest('['+a+']');return x?x.getAttribute(a).split('|'):null};let a;
+ if(a=g('data-ropen')){e.preventDefault();e.stopPropagation();const [v,id]=a;if(hidK(v,id)==='merged')XV[v]='merged';(v==='land'?openSite:openStorage)(id);return}
+ if(a=g('data-unm')){e.stopPropagation();undoMerge(a[0],a[1],a[2]);return}
+ if(a=g('data-run')){e.stopPropagation();unhide(a[0],[a[1]],a[2]);return}
+ if(a=g('data-hid')){e.stopPropagation();hideOpen(a[0],[a[1]],a[2]);return}
+ if(a=g('data-mi')){e.stopPropagation();mergeInto(a[0],a[1]);return}},true);
+function mergeInto(v,id){const me_=objOf(v,id);rd('Merge into…',`Pick the record to keep. “${esc(me_.name)}” will be merged into it.`,`<input class="inp" id="miQ" placeholder="Search name, city or county" autocomplete="off"><div class="rpick" id="miL"></div>`,'',null);
+ const draw=()=>{const q=$('miQ').value.toLowerCase().trim();const L=allOf(v).filter(o=>o.id!==id&&!hidK(v,o.id)&&(!q||[o.name,o.county,o.city,o.address].join(' ').toLowerCase().includes(q))).sort((a,b)=>(scoreOf(v,b)||0)-(scoreOf(v,a)||0)).slice(0,30);
+  $('miL').innerHTML=L.map(o=>`<button type="button" data-mit="${o.id}"><b>${esc(o.name)}</b><span class="lbl mono">${esc(o.county||o.city||'')} · ${o.acres??'–'} ac · ${scoreOf(v,o)??'–'}</span></button>`).join('')||'<p class="muted">No match.</p>'};
+ $('miQ').oninput=draw;draw();$('miL').onclick=e=>{const b=e.target.closest('[data-mit]');if(!b)return;$('recDlg').close();mergeOpen(v,[b.dataset.mit,id],b.dataset.mit)};setTimeout(()=>$('miQ').focus(),30)}
+// ---- archive / delete (soft) and restore
+function hideOpen(v,ids,kind){ids=ids.filter(id=>!hidK(v,id));if(!ids.length)return;const D=kind==='delete';
+ rd(`${D?'Delete':'Archive'} ${ids.length} ${ids.length===1?vLbl(v).replace(/s$/,''):vLbl(v)}?`,D?'Soft delete: hidden everywhere, restorable from Recently deleted. Nothing is erased.':'Hidden from lists, the map, counts and ranks. Restore any time from Archived.',nlist(v,ids),`${D?'Delete':'Archive'} ${ids.length}`,async()=>{
+  const ts=new Date().toISOString(),by=me();const ops=ids.map(id=>({v,id,set:D?{deleted:true,deleted_by:by,deleted_at:ts}:{archived:true},ev:{type:kind,before:snap(v,id),text:D?'Deleted (soft)':'Archived'}}));
+  await recW(ops);ids.forEach(id=>SEL[v].delete(id));if($('dlg').open&&ids.includes($('dealBox').dataset.id))$('dlg').close();toast(`${D?'Deleted':'Archived'} ${ids.length}.`,()=>unhide(v,ids,D?'restore':'unarchive'))})}
+async function unhide(v,ids,kind){const R=kind==='restore';ids=ids.filter(id=>hidK(v,id)===(R?'deleted':'archived'));if(!ids.length)return;
+ await recW(ids.map(id=>({v,id,set:R?{deleted:null,deleted_by:null,deleted_at:null}:{archived:null},ev:{type:kind,before:snap(v,id),text:R?'Restored':'Unarchived'}})));ids.forEach(id=>SEL[v].delete(id));toast(`${R?'Restored':'Unarchived'} ${ids.length}.`)}
+// ---- bulk edit with a diff preview
+var BE=null;
+function bulkOpen(v,ids){if(!ids.length)return;BE={v,ids};const ul=USERS.map(u=>u.name||u.email).concat(BOTS);
+ const body=`<div class="rgrid">
+ <label><span class="lbl mono">Stage</span><select class="inp" id="beStage"><option value="">No change</option>${STAGES.map(s=>`<option value="${s}">${esc(stL(s))}</option>`).join('')}</select></label>
+ <label><span class="lbl mono">Owner</span><input class="inp" id="beAsg" list="beUL" placeholder="No change"><datalist id="beUL">${ul.map(u=>`<option value="${esc(u)}">`).join('')}</datalist></label>
+ <label><span class="lbl mono">Primary contact</span><input class="inp" id="bePc" placeholder="No change"></label>
+ <label><span class="lbl mono">Add tags</span><input class="inp" id="beTagA" placeholder="comma separated"></label>
+ <label><span class="lbl mono">Remove tags</span><input class="inp" id="beTagR" placeholder="comma separated"></label>
+ <label><span class="lbl mono">Score override</span><input class="inp" id="beSc" type="number" min="0" max="100" placeholder="No change"><span class="lbl mono"><input type="checkbox" id="beScX"> clear override</span></label>
+ <label><span class="lbl mono">Listed date</span><input class="inp" id="beLd" type="date"><span class="lbl mono"><input type="checkbox" id="beLdX"> clear</span></label>
+ </div><div class="rsec"><span class="lbl mono">Preview</span><div id="beDiff" class="rdiff"><p class="muted">Change a field to see the diff.</p></div></div>`;
+ rd(`Edit ${ids.length} ${vLbl(v)}`,'Only the fields you change are written. Each record gets a history entry you can undo.',body,`Save ${ids.length}`,bulkSave,true);
+ $('recDlg').querySelectorAll('.rgrid input,.rgrid select').forEach(x=>x.addEventListener(BK?'input':'input',bulkDiff));$('recDlg').querySelectorAll('.rgrid input[type=checkbox],.rgrid select').forEach(x=>x.addEventListener('change',bulkDiff));bulkDiff()}
+function tagsIn(id){return $(id).value.split(',').map(x=>x.trim()).filter(Boolean)}
+function bulkPlan(){const {v,ids}=BE;const st=$('beStage').value,asg=$('beAsg').value.trim(),pc=$('bePc').value.trim(),ta=tagsIn('beTagA'),tr=tagsIn('beTagR'),sc=$('beSc').value,scx=$('beScX').checked,ld=$('beLd').value,ldx=$('beLdX').checked;
+ return ids.map(id=>{const o=objOf(v,id),d=DL(v,id),f=Object.assign({},d.fields||{}),ch=[];let fl=false;
+  if(st&&st!==stageOf(v,id))ch.push(['Stage',stL(stageOf(v,id)),stL(st)]);
+  if(asg&&asg!==(f.assignee||'')){ch.push(['Owner',f.assignee||'–',asg]);f.assignee=asg;fl=true}
+  if(pc&&pc!==(f.contact||'')){const c=(v==='land'?topContact:topC)(o);ch.push(['Primary contact',c?c.name||'–':'–',pc]);f.contact=pc;fl=true}
+  if(ta.length||tr.length){const t0=f.tags||[];let t=t0.filter(x=>!tr.includes(x));ta.forEach(x=>{if(!t.includes(x))t.push(x)});if(t.join()!==t0.join()){ch.push(['Tags',t0.join(', ')||'–',t.join(', ')||'–']);f.tags=t;if(!t.length)delete f.tags;fl=true}}
+  if(scx&&f.score_override!=null){ch.push(['Score',String(f.score_override),'model '+(baseOf(o,v==='land'?'overall':'score')??'–')]);delete f.score_override;fl=true}
+  else if(sc!==''&&Number(sc)!==f.score_override){ch.push(['Score',String(scoreOf(v,o)??'–'),sc+' (override)']);f.score_override=Math.max(0,Math.min(100,Number(sc)));fl=true}
+  const set={};if(fl)set.fields=Object.keys(f).length?f:null;
+  if(ldx&&lstd(v,id)){ch.push(['Listed',lstd(v,id),'–']);set.listed=null}else if(ld&&ld!==lstd(v,id)){ch.push(['Listed',lstd(v,id)||'–',ld]);set.listed=ld}
+  return {id,o,ch,set,st:st&&st!==stageOf(v,id)?st:''}})}
+function bulkDiff(){const P=bulkPlan(),n=P.filter(p=>p.ch.length).length;const el=$('beDiff');if(!el)return;
+ el.innerHTML=n?`<p class="lbl mono">${n} of ${P.length} records change</p><table class="rkids"><tbody>${P.filter(p=>p.ch.length).slice(0,40).map(p=>p.ch.map((c,i)=>`<tr><td>${i?'':esc(p.o.name)}</td><td class="lbl mono">${esc(c[0])}</td><td class="muted">${esc(c[1])}</td><td>→ ${esc(c[2])}</td></tr>`).join('')).join('')}</tbody></table>`:'<p class="muted">Change a field to see the diff.</p>';
+ const ok=$('recOk');if(ok){ok.disabled=!n;ok.textContent=n?`Save ${n}`:'Save'}}
+async function bulkSave(){const {v}=BE,P=bulkPlan().filter(p=>p.ch.length);if(!P.length)return;const bid=uid();let why=null;const stg=P.filter(p=>p.st);
+ if(stg.length){const to=stg[0].st;try{$('recDlg').close();why=await askWhy(v,{name:`${stg.length} ${vLbl(v)}`},stageOf(v,stg[0].id),to)}catch(e){return}}
+ const ops=P.filter(p=>Object.keys(p.set).length).map(p=>{const b=snap(v,p.id);const a=Object.assign({},b,p.set);return {v,id:p.id,set:p.set,ev:{type:'bulk',bulk_id:bid,before:b,after:JSON.parse(JSON.stringify(a)),text:p.ch.filter(c=>c[0]!=='Stage').map(c=>`${c[0]}: ${c[1]} → ${c[2]}`).join('; ')}}});
+ await recW(ops);const und=stg.map(p=>[p.id,stageOf(v,p.id)]);
+ stg.forEach(p=>addEv({type:'stage',view:v,site_id:p.id,name:p.o.name,from_stage:stageOf(v,p.id),to_stage:p.st,reasons:why.reasons,text:why.text}));
+ toast(`Updated ${P.length} record${P.length===1?'':'s'}.`,async()=>{await recW(ops.map(o=>({v,id:o.id,set:restoreSet(o.ev.before),ev:{type:'bulk',bulk_id:bid+'-undo',before:o.ev.after,after:o.ev.before,text:'Undo bulk edit'}})));
+  und.forEach(([id,s])=>addEv({type:'stage',view:v,site_id:id,name:nameOf(v,id),from_stage:stageOf(v,id),to_stage:s,reasons:['Undo'],text:'Undo bulk edit'}));});if($('recDlg').open)$('recDlg').close()}
+// ---- CSV export of the selection
+function csvOut(v,ids){const q=x=>{x=x==null?'':String(x);return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x};
+ const H=['id','name','stage','score','acres','county','city','price','listed','days_listed','primary_contact','contact_email','contact_phone','owner','tags','status','url'];
+ const L=ids.map(id=>{const o=objOf(v,id);const c=(v==='land'?topContact:topC)(o)||{};const f=DL(v,id).fields||{};return [id,o.name,stL(stageOf(v,id)),scoreOf(v,o),o.acres,o.county,o.city,typeof o.price==='number'?o.price:'',lstd(v,id),domTxt(v,id),c.name,c.email,c.phone,f.assignee,(f.tags||[]).join('; '),hidK(v,id)||'active',o.url].map(q).join(',')});
+ const b=new Blob([[H.join(',')].concat(L).join('\n')+'\n'],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`edifice-${v}-${nyToday()}-${ids.length}.csv`;document.body.appendChild(a);a.click();a.remove();toast(`Exported ${ids.length} to CSV.`)}
+// ---- mount: Select buttons, bars, dialog, toast
+{[['land','#viewLand .tools','rbL','selBtnL'],['storage','#viewStorage .tools','rbS','selBtnS']].forEach(([v,q,bar,btn])=>{const t=document.querySelector(q);if(!t)return;
+ t.insertAdjacentHTML('beforeend',`<button class="tbtn" type="button" id="${btn}" data-selm="${v}" hidden>Select</button>`);t.insertAdjacentHTML('afterend',`<div class="rbar" id="${bar}" hidden></div>`)});
+ document.body.insertAdjacentHTML('beforeend','<dialog class="small rdlg" id="recDlg"></dialog><div class="rtoast mono" id="rtoast" role="status" hidden></div>');
+ try{render()}catch(e){}try{sRender()}catch(e){}selSync('land');selSync('storage');if(BK&&BK.onReady)BK.onReady(()=>{selSync('land');selSync('storage')})}
 </script>
 <!-- Firebase shell: Google sign-in gate. No site data ships in this page; after an allowed account
      signs in, the data and the private draft engine are read from Firestore and the app starts. -->
@@ -1418,6 +1619,22 @@ async function boot(user, email, me0) {
         return setDoc(ref, d, { merge: true });
       }).catch(fail);
     },
+    // Admin-only record ops (merge / unmerge / bulk edit / archive / soft delete / restore): one atomic batch per
+    // call (chunked at 400). ops = [{v, id, name, stage, set: {key: value | null}, ev}]; null clears the key.
+    recs(ops) {
+      err = '';
+      const all = []; let b = writeBatch(db), n = 0;
+      for (const o of ops) {
+        const R = RIDS.has(o.id), dc = R ? 'rdeals' : 'deals';
+        const d = { site_id: o.id, view: o.v, name: o.name || '', stage: o.stage || 'New', updated: serverTimestamp(), updated_by: email };
+        for (const [k, x] of Object.entries(o.set || {})) d[k] = x === null ? deleteField() : x;
+        b.set(doc(db, dc, o.id), d, { merge: true }); n++;
+        if (o.ev) { b.set(doc(db, dc, o.id, R ? 'revents' : 'events', o.ev.event_id), clean(Object.assign({}, o.ev, { by: email }))); n++; }
+        if (n >= 400) { all.push(b.commit()); b = writeBatch(db); n = 0; }
+      }
+      if (n) all.push(b.commit());
+      return Promise.all(all).catch(e => { fail(e); throw e; });
+    },
     setFu(siteId, eventId, st) {
       err = '';
       const R = RIDS.has(siteId);
@@ -1470,7 +1687,8 @@ async function boot(user, email, me0) {
     apply(null, null, users);
   }, fail);
   let dealsM = {}, dealsR = {}, evM = [], evR = [];
-  const dmap = docs => { const o = {}; docs.forEach(d => { const x = d.data(); o[(x.view || 'land') + '|' + d.id] = { stage: x.stage, updated: tsIso(x.updated) || new Date().toISOString(), listed: typeof x.listed === 'string' ? x.listed : '' }; }); return o; };
+  const dmap = docs => { const o = {}; docs.forEach(d => { const x = d.data(); o[(x.view || 'land') + '|' + d.id] = { stage: x.stage, updated: tsIso(x.updated) || new Date().toISOString(), listed: typeof x.listed === 'string' ? x.listed : '',
+    merged_into: x.merged_into || '', merged_by: x.merged_by || '', deleted: !!x.deleted, archived: !!x.archived, fields: x.fields && typeof x.fields === 'object' ? x.fields : null }; }); return o; };
   const emap = q => q.docs.map(d => { const x = d.data(); return Object.assign({}, x, { event_id: d.id, site_id: x.site_id || d.ref.parent.parent.id, reasons: x.reasons || [] }); });
   dealsSource('deals', (q, docs) => {
     pend.d = q.metadata.hasPendingWrites; cache = q.metadata.fromCache; if (!pend.d && !cache) lastOk = new Date();
