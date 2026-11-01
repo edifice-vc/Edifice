@@ -298,6 +298,8 @@ async function boot(user, email, me0) {
       return isNew ? setDoc(doc(db, 'users', em), d) : updateDoc(doc(db, 'users', em), d);
     },
     removeUser: em => deleteDoc(doc(db, 'users', em.toLowerCase())),
+    // Site data phase 1 (flood/slope/buildable): one chunked meta blob, read lazily when Site Planning opens (1-2 reads/session).
+    siteData: () => blob('sitedata').catch(() => null),
     // Manual sites: clients only queue a stub or hand edits; the enrich job (service account) fills the record.
     addManual(id, d, restricted) {
       if (restricted && role !== 'admin') return Promise.reject(new Error('admins only'));

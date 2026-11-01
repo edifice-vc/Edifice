@@ -79,6 +79,166 @@ semantic_model:
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "String", "firestore_path": "jurisdiction", "namespace": "edifice_sunflower"}'
+  - name: site_conditions
+    source: firestore:dms-edvc/meta/sitedata (one chunked blob, gated; built by pipeline/site_data.py)
+    primary_key:
+    - site_id
+    description: 'Phase-1 civil screening per deal (score > 65, not Passed): FEMA NFHL flood share, USGS 3DEP slope/elevation stats, buildable
+      acres (site minus 100-yr floodplain and >15% slope), county parcel availability. One blob, not per-site docs, to keep reads/writes minimal.
+      Screening only, not a survey.'
+    fields:
+    - name: site_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: site_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "sites.{id}", "namespace": "edifice_sunflower"}'
+    - name: site_ac
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: site_ac
+      description: 'Area analysed: site polygon, else circle of listed acres around the pin'
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "site_ac", "namespace": "edifice_sunflower"}'
+    - name: sfha_pct
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: sfha_pct
+      description: '% of site in FEMA 100-yr floodplain (A/AE/AH/AO incl. floodway)'
+      ai_context:
+        synonyms:
+        - floodplain
+        - flood zone
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "flood.sfha_pct", "namespace": "edifice_sunflower", "source": "FEMA NFHL layer 28"}'
+    - name: floodway_pct
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: floodway_pct
+      description: '% of site in regulatory floodway'
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "flood.floodway_pct", "namespace": "edifice_sunflower", "source": "FEMA NFHL layer 28"}'
+    - name: x500_pct
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: x500_pct
+      description: '% of site in 0.2%-annual-chance (500-yr) zone'
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "flood.x500_pct", "namespace": "edifice_sunflower", "source": "FEMA NFHL layer 28"}'
+    - name: slope_mean_pct
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: slope_mean_pct
+      description: Mean slope %
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "slope.slope_mean_pct", "namespace": "edifice_sunflower", "source": "USGS 3DEP"}'
+    - name: pct_gt5
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: pct_gt5
+      description: '% of site steeper than 5%'
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "slope.pct_gt5", "namespace": "edifice_sunflower", "source": "USGS 3DEP"}'
+    - name: pct_gt15
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: pct_gt15
+      description: '% of site steeper than 15%'
+      ai_context:
+        synonyms:
+        - steep slopes
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "slope.pct_gt15", "namespace": "edifice_sunflower", "source": "USGS 3DEP"}'
+    - name: elev_min_ft
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: elev_min_ft
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "slope.elev_min_ft", "namespace": "edifice_sunflower"}'
+    - name: elev_max_ft
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: elev_max_ft
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "slope.elev_max_ft", "namespace": "edifice_sunflower"}'
+    - name: elev_mean_ft
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: elev_mean_ft
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "slope.elev_mean_ft", "namespace": "edifice_sunflower"}'
+    - name: cutfill_cy
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: cutfill_cy
+      description: Rough earthwork to level the site to its best-fit plane (cut = fill), cubic yards
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "slope.cutfill_cy", "namespace": "edifice_sunflower"}'
+    - name: buildable_ac
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: buildable_ac
+      description: Site minus 100-yr floodplain and >15%-slope blocks
+      ai_context:
+        synonyms:
+        - net developable
+        - buildable area
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "buildable_ac", "namespace": "edifice_sunflower"}'
+    - name: parcels_found
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: parcels_found
+      description: County parcel polygons available from a public service (geometry kept admin-only)
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Boolean", "firestore_path": "parcels.found", "namespace": "edifice_sunflower"}'
+    - name: pin_county
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: pin_county
+      description: County containing the pin (Census TIGERweb); flagged when it differs from the listing
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "pin_county", "namespace": "edifice_sunflower"}'
+    - name: generated
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: generated
+      dimension:
+        is_time: true
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "meta.generated", "namespace": "edifice_sunflower"}'
   - name: memory_facts
     source: firestore:dms-edvc/osi_facts/{model}__{entity}.facts.{fact_id}
     primary_key:
@@ -384,6 +544,18 @@ semantic_model:
     data: '{"namespace": "edifice_sunflower", "stages": {"pass": ["Passed", "On Hold"], "pursue": ["Reviewing", "Contacted", "In Diligence", "LOI
       Submitted", "Under Contract", "Closed"]}}'
   metrics:
+  - name: buildable_share
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: SUM(site_conditions.buildable_ac) / SUM(site_conditions.site_ac)
+    description: Share of analysed site area that is buildable after flood and steep-slope exclusions
+    ai_context:
+      synonyms:
+      - net to gross
+    custom_extensions:
+    - vendor_name: COMMON
+      data: '{"datatype": "Decimal", "namespace": "edifice_sunflower"}'
   - name: accepted_fact_count
     expression:
       dialects:

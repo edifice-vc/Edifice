@@ -1232,7 +1232,7 @@ function stDraw(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;const L
  m.getSource('sp-plant').setData({type:'FeatureCollection',features:L.resY>L.y0?[{type:'Feature',geometry:{type:'Polygon',coordinates:[bk(L.x0+r.set,L.x1-r.set,L.y0+r.set,Math.max(0,L.resY-L.y0-r.set))]}}]:[]});
  const bb=SP.poly.reduce((b,p)=>[[Math.min(b[0][0],p[0]),Math.min(b[0][1],p[1])],[Math.max(b[1][0],p[0]),Math.max(b[1][1],p[1])]],[[180,90],[-180,-90]]);
  if(SP.fitFor!==s.id+SP.polySrc+SP.poly.length){SP.fitFor=s.id+SP.polySrc+SP.poly.length;m.fitBounds(bb,{padding:60,duration:0,maxZoom:18})}
- $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':'No parcel polygon on file · '+fmt(s.acres||3,1)+'-acre square around the pin'} · ${spN(r.siteSf/43560,2)} ac · ember = multi-story · gray = drive-up · green = office, parking, stormwater`}
+ $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':'No parcel polygon on file · '+fmt(s.acres||3,1)+'-acre square around the pin'} · ${spN(r.siteSf/43560,2)} ac · ember = multi-story · gray = drive-up · green = office, parking, stormwater`;spSD(s)}
 function stOut(s,r){const B=r.best,I=SP.inp,E=' <span class="spest">PROPOSED ESTIMATE</span>',M=x=>x==null||!isFinite(x)?'—':'$'+spN(x/1e6,2)+'M',pct=x=>x==null?'—':spN(x*100,1)+'%';
  const mix=(k,n)=>ST_MIX[k].map(([l,sz,sh])=>[l,Math.round(n*sh/sz),Math.round(n*sh)]).filter(x=>x[1]>0);
  const mx=[].concat(B.L.nM?mix('cc',B.L.nM).map(x=>['Climate '+x[0],x[1],x[2]]):[],B.L.nD?mix('du',B.L.nD).map(x=>['Drive-up '+x[0],x[1],x[2]]):[]);
@@ -1281,7 +1281,23 @@ function spShow(id,co){if(!isAdm()){location.hash='#deals';return}spShell();co=c
  $('spPick').value=id;spForm();spMapInit().then(()=>{spLyrVis();spRun()})}
 function spLyrVis(){const m=SP.map;if(!m)return;const on=SP.co!=='storage';['sp-lines','sp-gas','sp-subs','sp-subl','sp-linel'].forEach(k=>{if(m.getLayer(k))m.setLayoutProperty(k,'visibility',on?'visible':'none')})}
 function spForm(){const I=SP.inp;$('spIn').innerHTML=(SP.co==='storage'?ST_F:SP_F).map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,u])=>`<label class="spf"><span>${l}${u&&u!=='text'?' <i>'+u+'</i>':''}</span><input class="inp mono" data-sp="${k}" type="${u==='text'?'text':'number'}" step="any" value="${esc(I[k])}" placeholder="${k==='gridOv'||k==='gasOv'?'estimate':h.startsWith('Zoning')?'Zoneomics: pending':''}"></label>`).join('')}</div>`).join('')}
-async function spLayers(){const get=k=>SP.ly[k]?Promise.resolve(SP.ly[k]):fetch(KM_LBASE+k+'.geojson').then(r=>r.ok?r.json():null).then(j=>(SP.ly[k]=j)).catch(()=>null);await Promise.all(['lines','gas','subs'].map(get))}
+// Site data phase 1 (FEMA NFHL flood, USGS 3DEP slope): D.sitedata, built by pipeline/site_data.py and delivered with the gated data (no extra reads)
+function spSD(s){const m=SP.map,d=SP.sd&&SP.sd.sites&&SP.sd.sites[s&&s.id],E={type:'FeatureCollection',features:[]},fc=g=>g?{type:'Feature',geometry:g}:E;
+ if(m&&m.getSource('sp-sd-sfha')){m.getSource('sp-sd-sfha').setData(fc(d&&d.geo.sfha));m.getSource('sp-sd-fw').setData(fc(d&&d.geo.floodway));m.getSource('sp-sd-steep').setData(fc(d&&d.geo.steep));m.getSource('sp-sd-bld').setData(fc(d&&d.geo.buildable))}
+ const o=$('spOut');if(!o)return;let el=$('spSD');if(!el){el=document.createElement('div');el.id='spSD';o.appendChild(el)}
+ if(!d){el.innerHTML=`<div class="lbl mono" style="margin-top:14px">Site data</div><small class="muted">No flood/slope pull for this deal yet (phase 1 covers deals scoring above 65).</small>`;return}
+ const f=d.flood||{},sl=d.slope||{},M=SP.sd.meta,dt=(M.generated||'').slice(0,10);
+ el.innerHTML=`<div class="lbl mono" style="margin-top:14px">Site data · buildable area</div><table class="lt sptbl"><tbody>
+ <tr><td>Buildable (ex. 100-yr flood &amp; &gt;15% slope)</td><td class="n">${spN(d.buildable_ac,1)} ac · ${spN(d.buildable_pct,0)}%</td></tr>
+ <tr><td>100-yr floodplain <span style="color:#3B8BEB">■</span> / floodway <span style="color:#1E4FD8">■</span></td><td class="n">${f.sfha_pct??'—'}% / ${f.floodway_pct??'—'}%</td></tr>
+ <tr><td>0.2% (500-yr)</td><td class="n">${f.x500_pct??'—'}%</td></tr>
+ <tr><td>Slope mean / 90th pct</td><td class="n">${sl.slope_mean_pct??'—'}% / ${sl.slope_p90_pct??'—'}%</td></tr>
+ <tr><td>Area &gt;5% / &gt;15% <span style="color:#F2B233">■</span></td><td class="n">${sl.pct_gt5??'—'}% / ${sl.pct_gt15??'—'}%</td></tr>
+ <tr><td>Elevation min–max (relief)</td><td class="n">${sl.elev_min_ft??'—'}–${sl.elev_max_ft??'—'} ft (${sl.relief_ft??'—'})</td></tr>
+ <tr><td>Rough cut/fill to plane</td><td class="n">${sl.cutfill_cy!=null?spN(sl.cutfill_cy)+' CY · '+spN(sl.cutfill_cy_per_ac)+'/ac':'—'}</td></tr></tbody></table>
+ ${(d.flags||[]).length?'<div class="issues">'+d.flags.map(x=>`<span class="chip">⚠ ${esc(x)}</span>`).join(' ')+'</div>':''}
+ <small class="muted">Shape: ${esc(d.site_method||'')}. Sources: FEMA NFHL; USGS 3DEP ${sl.dem_cell_m?sl.dem_cell_m+' m':''} DEM · pulled ${esc(dt)}. Screening only, not a survey.</small>`}
+async function spLayers(){const get=k=>SP.ly[k]?Promise.resolve(SP.ly[k]):fetch(KM_LBASE+k+'.geojson').then(r=>r.ok?r.json():null).then(j=>(SP.ly[k]=j)).catch(()=>null);await Promise.all(['lines','gas','subs'].map(get));if(!SP.sd)SP.sd=(D&&D.sitedata)||(window.EDKS_BK&&EDKS_BK.siteData?await EDKS_BK.siteData():null)}
 async function spMapInit(){await spLayers();if(SP.map)return;try{await loadGL()}catch(e){$('spHint').textContent='Map library did not load; numbers still run';return}
  const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessToken=KM_TOK;const s=spSite();
  const map=new G.Map({container:'spMap',style:KM_MB?'mapbox://styles/mapbox/dark-v11':'https://tiles.openfreemap.org/styles/dark',center:[+s.lon,+s.lat],zoom:13,attributionControl:false,dragRotate:false,preserveDrawingBuffer:true});
@@ -1294,6 +1310,8 @@ async function spMapInit(){await spLayers();if(SP.map)return;try{await loadGL()}
  map.addLayer({id:'sp-bndf',type:'fill',source:'sp-bnd',paint:{'fill-color':'#F5F3EF','fill-opacity':.04}});map.addLayer({id:'sp-bndl',type:'line',source:'sp-bnd',paint:{'line-color':'#F5F3EF','line-width':1.4,'line-dasharray':[3,2]}});
  map.addLayer({id:'sp-plantf',type:'fill',source:'sp-plant',paint:{'fill-color':'#6F9E7D','fill-opacity':.45}});
  map.addLayer({id:'sp-hallf',type:'fill',source:'sp-halls',paint:{'fill-color':['case',['get','on'],'#F14B21','#3A3A3A'],'fill-opacity':['case',['get','on'],.55,.35]}});map.addLayer({id:'sp-halll',type:'line',source:'sp-halls',paint:{'line-color':['case',['get','on'],'#F14B21','#6A6A6A'],'line-width':1}});
+ ['sp-sd-sfha','sp-sd-fw','sp-sd-steep','sp-sd-bld'].forEach(k=>map.addSource(k,{type:'geojson',data:E}));
+ map.addLayer({id:'sp-sd-bldl',type:'line',source:'sp-sd-bld',paint:{'line-color':'#6FCF97','line-width':1.6}});map.addLayer({id:'sp-sd-steepf',type:'fill',source:'sp-sd-steep',paint:{'fill-color':'#F2B233','fill-opacity':.35}});map.addLayer({id:'sp-sd-sfhaf',type:'fill',source:'sp-sd-sfha',paint:{'fill-color':'#3B8BEB','fill-opacity':.4}});map.addLayer({id:'sp-sd-fwf',type:'fill',source:'sp-sd-fw',paint:{'fill-color':'#1E4FD8','fill-opacity':.6}});
  map.addLayer({id:'sp-drawl',type:'line',source:'sp-draw',paint:{'line-color':'#F14B21','line-width':2}});
  map.on('click',e=>{if(!SP.draw)return;SP.draw.push([e.lngLat.lng,e.lngLat.lat]);spDrawShow()});
  map.on('dblclick',e=>{if(!SP.draw)return;e.preventDefault();spDrawEnd()})}
@@ -1315,7 +1333,7 @@ function spDrawMap(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;cons
  m.getSource('sp-plant').setData({type:'FeatureCollection',features:F});
  const bb=SP.poly.reduce((b,p)=>[[Math.min(b[0][0],p[0]),Math.min(b[0][1],p[1])],[Math.max(b[1][0],p[0]),Math.max(b[1][1],p[1])]],[[180,90],[-180,-90]]);
  if(SP.fitFor!==s.id+SP.polySrc+SP.poly.length){SP.fitFor=s.id+SP.polySrc+SP.poly.length;m.fitBounds(bb,{padding:60,duration:0,maxZoom:16})}
- $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':'No parcel polygon on file · '+fmt(s.acres,0)+'-acre square around the pin'} · ${spN(r.areaAc)} ac · ${r.H.length} hall slots · easements ${spN(G.easeAc,1)} ac`}
+ $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':'No parcel polygon on file · '+fmt(s.acres,0)+'-acre square around the pin'} · ${spN(r.areaAc)} ac · ${r.H.length} hall slots · easements ${spN(G.easeAc,1)} ac`;spSD(s)}
 function spOut(s,r){const B=r.best,I=SP.inp,est=(ov)=>ov===''||ov==null?' <span class="spest">ESTIMATE</span>':' <span class="spest ov">OVERRIDE</span>';const fl=s.floodplain;
  const mix=B.fac?Math.round(100*B.gridUse/B.fac):0,mt=x=>x?Math.round(x)+' mo':'—';
  $('spOut').innerHTML=`<div class="spbig"><div class="lbl mono">Max IT load</div><b class="mono">${spN(B.it,1)}<i> MW</i></b><div class="lbl mono">${spN(B.fac,1)} MW facility at PUE ${I.pue} · ${B.n} hall${B.n===1?'':'s'} × ${spN(r.hallIT,1)} MW IT${r.st>1?' · '+r.st+' stories':''}</div></div>
