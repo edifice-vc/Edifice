@@ -8,6 +8,7 @@
 #gate .gk .logo{gap:8px}#gate .gk .logo span{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em}
 #gate .sw{font-family:Jost,sans-serif;font-weight:300;font-size:clamp(44px,11vw,64px);line-height:1;letter-spacing:-.01em;margin:44px 0 6px;color:#fff}
 #gate h1{font-family:'JetBrains Mono',monospace;font-weight:400;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:0 0 28px}
+#gate .tag{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#F14B21;margin:0 0 28px}
 #gate .sub{font-size:15px;line-height:1.55;color:#cfcfcf;margin:0;border-top:1px solid var(--line);padding-top:20px}
 #gate .btn{cursor:pointer;margin-top:24px;width:100%;border-radius:0;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
 #gate .btn.pri{background:#F14B21;border-color:#F14B21;color:#000}
@@ -24,8 +25,9 @@ body.gated .wrap{visibility:hidden}
 <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gateT"><div class="box">
  <div class="gk"><div class="logo"><svg width="14" height="21" viewBox="0 0 32 48" fill="none" aria-hidden="true"><path d="M19 1 L31 13 L31 22 L19 34 L19 27 L27 19 L27 16 L19 8 Z" stroke="#F14B21" stroke-width="3"/><path d="M14 13 L14 20 L6 28 L6 31 L14 39 L14 46 L2 34 L2 25 Z" stroke="#F14B21" stroke-width="3"/></svg><span>Edifice</span></div><span>Private</span></div>
  <div class="sw">Sunflower</div>
+ <div class="tag">A proprietary operating system for Edifice</div>
  <h1 id="gateT">Kansas deal pipeline</h1>
- <p class="sub" id="gateSub">Private research and deal pipeline. Sign in with your Edifice Google account.</p>
+ <p class="sub" id="gateSub">Sign in with your Edifice Google account.</p>
  <button class="btn pri" type="button" id="gateIn" hidden>Sign in with Google</button>
  <button class="btn" type="button" id="gateOut" hidden>Sign out</button>
  <div class="lbl mono msg" id="gateMsg" role="status">Checking sign-in</div>
@@ -122,7 +124,7 @@ window.addEventListener('error', ev => { if (!started && ev.error) showErr('Unex
 let started = false;
 onAuthStateChanged(auth, async user => {
   if (started) { if (!user) location.reload(); return; }
-  if (!user) { $g('gateT').textContent = 'Kansas deal pipeline'; gate('Private research and deal pipeline. Sign in with your Edifice Google account.', '', 'in'); return; }
+  if (!user) { $g('gateT').textContent = 'Kansas deal pipeline'; gate('Sign in with your Edifice Google account.', '', 'in'); return; }
   const email = (user.email || '').toLowerCase();
   gate(null, 'Checking access for ' + email);
   const retry = () => location.reload();
