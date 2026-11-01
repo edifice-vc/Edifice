@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 """Site data phase 1: FEMA flood, USGS 3DEP slope and county parcels per deal -> compact static layers.
 
 Scope (Sahil, 2026-11-01): deals with site score > 65, any stage except Passed (merged/deleted skipped).
@@ -100,6 +101,26 @@ def dem(m):
     z[z < -1000] = np.nan
     return z, (x0, y1), cell
 
+EG_N = 32  # coarse elevation grid for in-browser pad grading (32x32 cells over the site bbox, decifeet ints)
+
+def egrid(m, z=None, o=None, c=None):
+    """Coarse bare-earth grid for Site Planning earthwork (per-pad cut/fill). Block means of the 3DEP DEM over the
+    site's bounding box in WGS84 corners; values are elevation in tenths of a foot (int), null where no data."""
+    if z is None: z, o, c = dem(m)
+    (ox, oy) = o; h, w = z.shape; n = EG_N
+    bi = np.linspace(0, h, n + 1).astype(int); bj = np.linspace(0, w, n + 1).astype(int)
+    g = []
+    for i in range(n):
+        row = []
+        for j in range(n):
+            b = z[bi[i]:max(bi[i] + 1, bi[i + 1]), bj[j]:max(bj[j] + 1, bj[j + 1])]
+            v = np.nanmean(b) if np.isfinite(b).any() else np.nan
+            row.append(None if not np.isfinite(v) else int(round(v * 32.8084)))
+        g.append(row)
+    sw = ll(Point(ox, oy - h * c)); ne = ll(Point(ox + w * c, oy))
+    return {"n": n, "sw": [round(sw.x, 6), round(sw.y, 6)], "ne": [round(ne.x, 6), round(ne.y, 6)], "z_dft": g,
+            "src": "USGS 3DEP bare-earth DEM, block means", "cell_m": round(c * h / n, 1)}
+
 def slope_stats(m):
     z, (ox, oy), c = dem(m)
     gy, gx = np.gradient(z, c)
@@ -128,7 +149,7 @@ def slope_stats(m):
             "slope_mean_pct": round(float(si.mean()), 2), "slope_p90_pct": round(float(np.percentile(si, 90)), 2),
             "pct_gt5": round(float((si > SLOPE_MOD).mean() * 100), 1), "pct_gt15": round(float((si > SLOPE_STEEP).mean() * 100), 1),
             "cutfill_cy": int(cutfill * 1.30795), "cutfill_cy_per_ac": int(cutfill * 1.30795 / (m.area / fp.AC_M2)),
-            "dem_cell_m": round(c, 1)}, sg
+            "dem_cell_m": round(c, 1), "egrid": egrid(m, z, (ox, oy), c)}, sg
 
 # ------------------------------------------------------------- county + parcels
 def county_at(lat, lon):
@@ -227,6 +248,22 @@ def build(a):
     json.dump({"meta": meta, **priv}, open(PRIV, "w"), separators=(",", ":"))
     print(f"[site_data] wrote {PUB} ({os.path.getsize(PUB)//1024} KB), private {os.path.getsize(PRIV)//1024} KB")
 
+def add_egrid(a):
+    """Add the coarse elevation grid to an existing sitedata.json without re-pulling flood (DEM only, no Firestore)."""
+    d = json.load(open(PUB)); ids = set(a.ids or [])
+    todo = [o for o in d["sites"].values() if (not ids or o["id"] in ids) and o.get("slope") and o.get("geo", {}).get("site")
+            and (a.force or "egrid" not in o["slope"])]  # never clobber a good grid unless --force
+    def f(o):
+        err = None
+        for t in range(3):  # 3DEP returns transient 502/504s
+            try: o["slope"]["egrid"] = egrid(mm(shape(o["geo"]["site"]))); err = None; break
+            except Exception as e: err = e; time.sleep(5 * (t + 1))
+        o["errors"] = [x for x in o.get("errors", []) if not x.startswith("egrid")] + ([f"egrid: {err}"] if err else [])
+        return o["name"]
+    with ThreadPoolExecutor(4) as ex:
+        for n in ex.map(f, todo): print("  egrid", n[:50])
+    json.dump(d, open(PUB, "w"), separators=(",", ":")); print(f"[site_data] egrid on {len(todo)} sites, {os.path.getsize(PUB)//1024} KB")
+
 def push(a):
     """Upload pipeline/private/sitedata.json as the gated meta blob 'sitedata' (chunked, change-hash skip).
     Dry-run unless --apply. Needs Sahil's approval before --apply (production write)."""
@@ -245,4 +282,5 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); sp = ap.add_subparsers(dest="cmd", required=True)
     b = sp.add_parser("build"); b.add_argument("--deals", default="/tmp/deals.json"); b.add_argument("--min-score", type=float, default=65)
     pu = sp.add_parser("push"); pu.add_argument("--apply", action="store_true")
-    a = ap.parse_args(); (build if a.cmd == "build" else push)(a)
+    eg = sp.add_parser("egrid"); eg.add_argument("ids", nargs="*"); eg.add_argument("--force", action="store_true")
+    a = ap.parse_args(); {"build": build, "push": push, "egrid": add_egrid}[a.cmd](a)
