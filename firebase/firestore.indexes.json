@@ -1,0 +1,10 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {"collectionGroup": "site_plans", "fieldPath": "emb", "indexes": []},
+    {"collectionGroup": "site_plans", "fieldPath": "chunk_emb", "indexes": []},
+    {"collectionGroup": "site_plans", "fieldPath": "chunk_refs", "indexes": []},
+    {"collectionGroup": "site_plans", "fieldPath": "summary", "indexes": []},
+    {"collectionGroup": "site_plans", "fieldPath": "cites", "indexes": []}
+  ]
+}

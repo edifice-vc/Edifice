@@ -25,7 +25,8 @@ BUILT = os.path.join(PRIV, "built.json")
 STATE = os.path.join(PRIV, "sync_state.json")
 MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 DOC_LIMIT = 900_000  # stay under Firestore 1 MiB doc cap
-PLAN_OF = [(re.compile(r"contractor|cg8|olathe", re.I), "cg8-olathe"),
+PLAN_OF = [(re.compile(r"drawings/|Contractor_Garage_Concept", re.I), "ipe-topeka-cg"),
+           (re.compile(r"contractor|cg8|olathe", re.I), "cg8-olathe"),
            (re.compile(r"industrial|plaza|topeka|ipe", re.I), "ipe-topeka")]
 
 _m = None
@@ -51,9 +52,10 @@ def plan_for(path):
         if rx.search(path): return pid
 
 def load_chunks():
-    p = os.path.join(IDX, "chunks.jsonl")
-    if not os.path.exists(p): return []
-    return [json.loads(l) for l in open(p) if l.strip()]
+    out = []  # Everstow page index + private supplements (pages the index doesn't cover)
+    for p in (os.path.join(IDX, "chunks.jsonl"), os.path.join(PRIV, "extra_chunks.jsonl")):
+        if os.path.exists(p): out += [json.loads(l) for l in open(p) if l.strip()]
+    return out
 
 def build():
     recs = json.load(open(os.path.join(PRIV, "records.json")))
