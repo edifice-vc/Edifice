@@ -90,7 +90,7 @@ def search(q, a):
         best, hit = float(unpack(d["emb"], d["emb_dim"])[0] @ qv[0]), None
         if d.get("chunk_emb"):
             s = unpack(d["chunk_emb"], d["emb_dim"]) @ qv[0]; i = int(s.argmax())
-            if s[i] > best: best, hit = float(s[i]), d["chunk_refs"][i]
+            if s[i] > best: best, hit = float(s[i]), (d["chunk_refs"][i]["file"], d["chunk_refs"][i]["page"])
         res.append((best, d, hit))
     for s, d, hit in sorted(res, key=lambda x: -x[0])[: a.k]:
         print(f"{s:.3f}  {d['project']} | {d['acreage']} ac | {d['building_sf']} SF | {d['zoning']}")
