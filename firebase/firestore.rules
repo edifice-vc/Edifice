@@ -70,6 +70,24 @@ service cloud.firestore {
     match /config/{id} { allow read: if admin(); allow write: if false; }
     // Everstow reference site plans (pipeline/site_plans.py, admin SDK writes only)
     match /site_plans/{id} { allow read: if admin(); allow write: if false; }
+    // Site Planning saved schemes (one compact doc per explicit Save). Read follows deal access: admins read all;
+    // members read only non-restricted deals' schemes (restricted == false; queries must filter on it). Admins write.
+    match /site_plans_saved/{id} {
+      allow read: if admin() || (member() && resource.data.restricted == false);
+      allow create: if admin() && savedPlanOk(id);
+      allow update: if false;
+      allow delete: if admin();
+    }
+    function savedPlanOk(id) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['site_id', 'co', 'name', 'v', 'k', 'bind', 'zbind', 'circ', 'jur', 'p', 'g', 'restricted', 'by', 'ts'])
+        && d.keys().hasAll(['site_id', 'co', 'name', 'k', 'p', 'g', 'restricted', 'by', 'ts'])
+        && str(d.site_id, 80) && id.matches(d.site_id + '__[a-z0-9]{4,16}') && d.co in ['land', 'storage'] && str(d.name, 80)
+        && d.k is map && d.k.size() <= 20 && str(d.p, 8000) && str(d.g, 24000) && d.restricted is bool
+        && d.by == email() && d.ts == request.time;
+    }
+    // Zoneomics zoning per site: licensed data, ADMIN-ONLY, never redistributed. Written only by pipeline/zoneomics.py (admin SDK).
+    match /zoning/{id} { allow read: if admin(); allow write: if false; }
     // Public Mapbox map token (URL-restricted pk.): readable by any signed-in member, never client-written.
     match /config/mapbox { allow read: if member(); allow write: if false; }
     function senders() {

@@ -2,7 +2,7 @@
 import { test, before, after, beforeEach } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { setLogLevel, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, collectionGroup, getDocs, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { setLogLevel, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, collectionGroup, getDocs, writeBatch, serverTimestamp, query, where } from 'firebase/firestore';
 
 const ADMIN = 'admin@example.com', EDITOR = 'editor@example.com', VIEWER = 'viewer@example.com', STRANGER = 'nobody@example.com';
 let env;
@@ -327,4 +327,35 @@ test('record ops (merge / archive / soft delete / overrides): admins only; edito
   let d; await env.withSecurityRulesDisabled(async (c) => { d = (await getDoc(doc(c.firestore(), 'deals', 's2'))).data(); });
   if (d.merged_into !== 's1') throw new Error('merge flag lost on stage change');
   await assertFails(setDoc(doc(E, 'deals', 's2'), Object.assign(base(EDITOR), { site_id: 's2' })));            // overwrite dropping it
+});
+
+// ---- Site Planning saved schemes + Zoneomics zoning
+const plan = (by, extra = {}) => Object.assign({ site_id: 's1', co: 'land', name: 'A', v: 1, k: { it: 100 }, bind: 'Land', zbind: 'Height', circ: [], jur: '', p: '{}', g: '{"poly":[],"b":[]}', restricted: false, by, ts: serverTimestamp() }, extra);
+test('site_plans_saved: admins create, members read non-restricted only, nobody updates', async () => {
+  const A = as(ADMIN);
+  await assertSucceeds(setDoc(doc(A, 'site_plans_saved', 's1__abc123'), plan(ADMIN)));
+  await assertSucceeds(setDoc(doc(A, 'site_plans_saved', 'm-secret1__abc123'), plan(ADMIN, { site_id: 'm-secret1', restricted: true })));
+  await assertFails(setDoc(doc(as(EDITOR), 'site_plans_saved', 's1__abc124'), plan(EDITOR)));             // editors cannot write
+  await assertFails(setDoc(doc(A, 'site_plans_saved', 's1__abc125'), plan(EDITOR)));                     // must author as yourself
+  await assertFails(setDoc(doc(A, 'site_plans_saved', 's2__abc126'), plan(ADMIN)));                      // id must match site
+  await assertFails(setDoc(doc(A, 'site_plans_saved', 's1__abc127'), plan(ADMIN, { extra: 1 })));        // unknown key
+  await assertFails(setDoc(doc(A, 'site_plans_saved', 's1__abc128'), plan(ADMIN, { g: 'x'.repeat(24001) })));
+  await assertFails(updateDoc(doc(A, 'site_plans_saved', 's1__abc123'), { name: 'B' }));
+  for (const e of [ADMIN, EDITOR, VIEWER]) {
+    await assertSucceeds(getDoc(doc(as(e), 'site_plans_saved', 's1__abc123')));
+    await assertSucceeds(getDocs(query(collection(as(e), 'site_plans_saved'), where('site_id', '==', 's1'), where('restricted', '==', false))));
+  }
+  await assertSucceeds(getDoc(doc(A, 'site_plans_saved', 'm-secret1__abc123')));
+  await assertFails(getDoc(doc(as(VIEWER), 'site_plans_saved', 'm-secret1__abc123')));
+  await assertFails(getDocs(query(collection(as(VIEWER), 'site_plans_saved'), where('site_id', '==', 'm-secret1'))));
+  await assertFails(getDoc(doc(as(STRANGER), 'site_plans_saved', 's1__abc123')));
+  await assertFails(deleteDoc(doc(as(EDITOR), 'site_plans_saved', 's1__abc123')));
+  await assertSucceeds(deleteDoc(doc(A, 'site_plans_saved', 's1__abc123')));
+});
+test('zoning (Zoneomics) is admin-read only and never client-written', async () => {
+  await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), 'zoning', 's1'), { j: '{}', h: 'x', fixture: true }); });
+  await assertSucceeds(getDoc(doc(as(ADMIN), 'zoning', 's1')));
+  for (const e of [EDITOR, VIEWER, STRANGER]) await assertFails(getDoc(doc(as(e), 'zoning', 's1')));
+  await assertFails(getDocs(collection(as(EDITOR), 'zoning')));
+  await assertFails(setDoc(doc(as(ADMIN), 'zoning', 's2'), { j: '{}' }));
 });

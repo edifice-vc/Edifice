@@ -55,6 +55,51 @@
       "collectionGroup": "site_plans",
       "fieldPath": "cites",
       "indexes": []
+    },
+    {
+      "collectionGroup": "site_plans_saved",
+      "fieldPath": "p",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "site_plans_saved",
+      "fieldPath": "g",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "site_plans_saved",
+      "fieldPath": "k",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "site_plans_saved",
+      "fieldPath": "name",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "site_plans_saved",
+      "fieldPath": "circ",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "site_plans_saved",
+      "fieldPath": "zbind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "site_plans_saved",
+      "fieldPath": "bind",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "site_plans_saved",
+      "fieldPath": "jur",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "zoning",
+      "fieldPath": "j",
+      "indexes": []
     }
   ]
 }

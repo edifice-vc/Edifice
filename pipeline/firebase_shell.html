@@ -300,6 +300,20 @@ async function boot(user, email, me0) {
     removeUser: em => deleteDoc(doc(db, 'users', em.toLowerCase())),
     // Site data phase 1 (flood/slope/buildable): one chunked meta blob, read lazily when Site Planning opens (1-2 reads/session).
     siteData: () => blob('sitedata').catch(() => null),
+    // Site Planning test-fit. Saved schemes: one compact doc per explicit Save in site_plans_saved; read with ONE
+    // query per deal when the plan opens (no listeners). Members only see non-restricted deals' schemes (rules mirror deals/rdeals).
+    savedPlans: siteId => getDocs(role === 'admin' ? query(collection(db, 'site_plans_saved'), where('site_id', '==', siteId))
+        : query(collection(db, 'site_plans_saved'), where('site_id', '==', siteId), where('restricted', '==', false)))
+      .then(q => q.docs.map(d => { const x = d.data(); return Object.assign({ id: d.id }, x, { ts: x.ts && x.ts.toDate ? x.ts.toDate().toISOString() : '' }); })
+        .sort((a, b) => String(b.ts).localeCompare(String(a.ts)))),
+    savePlan(d) {
+      if (role !== 'admin') return Promise.reject(new Error('admins only'));
+      const id = d.site_id + '__' + Date.now().toString(36);
+      return setDoc(doc(db, 'site_plans_saved', id), Object.assign({}, d, { by: email, ts: serverTimestamp() })).then(() => id);
+    },
+    // Zoneomics zoning (licensed, ADMIN-ONLY, never redistributed): one doc read per opened site, never bulk-fetched.
+    zoning: siteId => role !== 'admin' ? Promise.resolve(null)
+      : getDoc(doc(db, 'zoning', siteId)).then(d => d.exists() ? JSON.parse(d.data().j) : null).catch(() => null),
     // Manual sites: clients only queue a stub or hand edits; the enrich job (service account) fills the record.
     addManual(id, d, restricted) {
       if (restricted && role !== 'admin') return Promise.reject(new Error('admins only'));
