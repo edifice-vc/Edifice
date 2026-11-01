@@ -416,7 +416,7 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
 .sptop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 12px}.sptop select{min-width:320px;max-width:100%}
 .spgrid{display:grid;grid-template-columns:260px 1fr 360px;border:1px solid var(--line);min-height:640px}
 .spin,.spout{padding:14px 16px;overflow:auto;max-height:760px}.spin{border-right:1px solid var(--line)}.spout{border-left:1px solid var(--line)}
-.spmapw{position:relative;min-height:640px}#spMap{position:absolute;inset:0}.spnote{margin:6px 0 0;color:#C9B98A}.sphint{position:absolute;left:12px;top:12px;background:rgba(10,10,10,.85);padding:6px 10px;border:1px solid var(--line);z-index:2;max-width:calc(100% - 80px)}.sphint:empty{display:none}
+.spmapw{position:relative;min-height:640px}#spMap{position:absolute;inset:0}.spseg{margin:0 0 14px}.spnote{margin:6px 0 0;color:#C9B98A}.sphint{position:absolute;left:12px;top:12px;background:rgba(10,10,10,.85);padding:6px 10px;border:1px solid var(--line);z-index:2;max-width:calc(100% - 80px)}.sphint:empty{display:none}
 .spsec{margin-bottom:14px}.spsec>.lbl{margin-bottom:6px;color:var(--t2)}.spf{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--t2)}.spf i{font-style:normal;color:var(--t3);font-size:11px}.spf input{width:96px;text-align:right;padding:5px 7px}.spf input::placeholder{color:var(--t3);font-size:10px}
 .spbig b{font:400 44px/1.1 'JetBrains Mono',monospace;color:var(--t1);display:block;margin:4px 0}.spbig b i{font-style:normal;font-size:18px;color:var(--t2)}
 .spbind{display:flex;justify-content:space-between;align-items:center;margin:14px 0;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -1123,10 +1123,10 @@ const ZCLS={P:'ann',S:'ann',I:'pend',C:'pend',X:'reg','?':'unc'};
 let DK='land';try{DK=localStorage.getItem('edks_dk')||'land'}catch(e){}if(DK!=='storage')DK='land';
 // ---- Site Planning (#plan/<siteId>), admin only. V1: estimates in the browser, plans saved in this browser only (localStorage edks_plan_<id>); nothing is written to Firestore.
 const SP_DEF={hallW:250,hallL:1000,stories:1,storyFt:30,wsf:200,pue:1.3,unitMW:10,acPer10:1,plantSet:1000,bldSet:100,gap:100,ease:150,subAc:5,gridOv:'',gasOv:'',maxH:'',cov:'',far:'',zSet:'',use:''};
-const SP={id:null,map:null,draw:null,inp:null,poly:null,res:null,ly:{}};
-function spKey(id){return 'edks_plan_'+id}
+const SP={id:null,co:'land',last:{},map:null,draw:null,inp:null,poly:null,res:null,ly:{}};
+function spKey(id,co){return ((co||SP.co)==='storage'?'edks_splan_':'edks_plan_')+id}
 function spLoad(id){try{return JSON.parse(localStorage.getItem(spKey(id))||'null')}catch(e){return null}}
-function spSum(id){if(!isAdm())return null;const p=spLoad(id);return p&&p.sum?p.sum:null}
+function spSum(id){if(!isAdm())return null;let p=null;try{p=JSON.parse(localStorage.getItem(spKey(id,'land'))||'null')}catch(e){}return p&&p.sum?p.sum:null}
 function spN(x,d=0){return x==null||!isFinite(x)?'—':Number(x).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d})}
 // grid estimate by voltage, tapered by distance (ESTIMATE): midpoint of 69≈20–50, 115≈50–100, 138≈75–150, 161≈100–200, 230≈150–300, 345≈300–600 MW
 const SP_KV=[[345,450],[230,225],[161,150],[138,110],[115,75],[69,35]];
@@ -1167,7 +1167,7 @@ function spPack(G,inp,set){const {nx,ny,C,inn,dE,bad}=G;const best=[];
 function spPlantFree(G,H,inp){const {nx,ny,C,inn,dE,bad}=G,occ=new Uint8Array(nx*ny),g=Math.ceil(inp.gap/C),out=[];
  const cnt=()=>{let c=0;for(let k=0;k<nx*ny;k++)if(inn[k]&&!bad[k]&&!occ[k]&&dE[k]>=inp.plantSet)c++;return c*C*C/43560};out.push(cnt());
  H.forEach(([i,j,w,h])=>{for(let b=Math.max(0,j-g);b<Math.min(ny,j+h+g);b++)for(let a=Math.max(0,i-g);a<Math.min(nx,i+w+g);a++)occ[b*nx+a]=1;out.push(cnt())});return out}
-function spInputs(s){const p=spLoad(s.id)||{};return Object.assign({},SP_DEF,p.inp||{})}
+function spInputs(s){const p=spLoad(s.id)||{};return Object.assign({},SP.co==='storage'?ST_DEF:SP_DEF,p.inp||{})}
 // goal seek: enumerate halls n and gas units k; IT MW = min(n·hall IT, (grid + firm gas)/PUE) subject to land, plant land, gas supply, height, coverage, FAR
 function spSolve(s,poly,inp,G0){const G=G0||spGrid(poly,inp,s),ge=spGridEst(s),gs=spGasEst(s);
  const grid=inp.gridOv!==''&&inp.gridOv!=null?+inp.gridOv:ge.mw,gasCap=inp.gasOv!==''&&inp.gasOv!=null?+inp.gasOv:gs.mw;
@@ -1192,35 +1192,95 @@ function spSolve(s,poly,inp,G0){const G=G0||spGrid(poly,inp,s),ge=spGridEst(s),g
  return {G,H,ge,gs,grid,gasCap,best:B,bind,top,hallIT,st,acU,set,areaAc:G.areaAc}}
 function spSens(s,poly,inp,G){const R=[['Grid MW','gridOv',null],['Gas supply MW','gasOv',null],['W/sf','wsf'],['PUE','pue']],b=SP.res;
  return R.map(([l,k])=>{const v=k==='gridOv'?b.grid:k==='gasOv'?b.gasCap:+inp[k];return [l,...[.8,1.2].map(f=>spSolve(s,poly,Object.assign({},inp,{[k]:v*f}),G).best.it)]})}
+// ---- Everstow self-storage site planning V1 (browser-only). Every default below is a PROPOSED ESTIMATE the user edits; none is a verified local figure.
+const ST_DEF={set:25,cov:50,maxH:40,storm:10,duW:35,aisle:28,effDU:.92,costDU:55,rentDU:1.00,mW:110,mAisle:30,stories:3,storyFt:11,effM:.78,costM:95,rentCC:1.30,office:1200,stalls:8,site:7,soft:12,occ:88,opex:38,tgt:7};
+const ST_F=[['Site · proposed estimates',[['set','Building setback','ft'],['cov','Max lot coverage','%'],['maxH','Max height','ft'],['storm','Stormwater allowance','% site']]],
+ ['Drive-up · proposed',[['duW','Building width','ft'],['aisle','Drive aisle','ft'],['effDU','Net / gross',''],['costDU','Hard cost','$/GSF'],['rentDU','Rent','$/sf/mo']]],
+ ['Multi-story climate · proposed',[['mW','Building width','ft'],['mAisle','Perimeter drive','ft'],['stories','Stories',''],['storyFt','Story height','ft'],['effM','Net / gross',''],['costM','Hard cost','$/GSF'],['rentCC','Rent','$/sf/mo']]],
+ ['Office & parking · proposed',[['office','Office / leasing','sf'],['stalls','Parking stalls','']]],
+ ['Economics · proposed',[['site','Site work','$/sf site'],['soft','Soft costs','%'],['occ','Stabilized occupancy','%'],['opex','Opex','% rev'],['tgt','Market SF per capita (target)','sf']]]];
+const ST_MIX={cc:[['5×5',25,.08],['5×10',50,.22],['10×10',100,.32],['10×15',150,.18],['10×20',200,.14],['10×30',300,.06]],du:[['10×10',100,.15],['10×15',150,.20],['10×20',200,.35],['10×30',300,.20],['12×40 RV/boat',480,.10]]};
+function stRot(p,t){const c=Math.cos(t),s=Math.sin(t);return [p[0]*c-p[1]*s,p[0]*s+p[1]*c]}
+// lay out building bands in a frame rotated by t: front reserve (office, parking, stormwater), then aisle | building | aisle ... ; mode du | mu | hy
+function stLayout(R0,I,mode,t,siteSf){const R=R0.map(p=>stRot(p,-t)),d=(x,y)=>{let m=1e9;for(let q=1;q<R.length;q++)m=Math.min(m,spSegD(x,y,R[q-1],R[q]));return m},ins=(x,y)=>spInside(x,y,R);
+ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});const st=10;
+ const res=(+I.office||0)+(+I.stalls||0)*350+(+I.storm||0)/100*siteSf;let acc=0,y=y0;while(acc<res&&y<y1){let w=0;for(let x=x0;x<=x1;x+=st)if(ins(x,y+st/2))w+=st;acc+=w*st;y+=st}const resY=y;
+ const ok=(x,a,b)=>ins(x,a)&&ins(x,b)&&d(x,a)>=I.set&&d(x,b)>=I.set&&d(x,(a+b)/2)>=I.set;const B=[];let first=true;y=resY+(+I.aisle||0);
+ while(true){const mu=mode==='mu'||(mode==='hy'&&first),W=mu?+I.mW:+I.duW,ai=mu?+I.mAisle:+I.aisle;if(!(W>0)||y+W>y1)break;let run=null;const runs=[];
+  for(let x=x0;x<=x1+st;x+=st){if(x<=x1&&ok(x,y,y+W)){if(!run)run=[x,x];run[1]=x}else if(run){runs.push(run);run=null}}
+  let any=false;runs.forEach(([a,b])=>{a+=ai/2;b-=ai/2;const mx=mu?300:250,mn=mu?100:50;while(b-a>=mn){const e=Math.min(b,a+mx);B.push({a,b:e,y:y,h:W,t:mu?'mu':'du'});any=true;a=e+30}});
+  if(any||mu)first=false;y+=W+ai}
+ // coverage cap
+ const cap=(+I.cov||100)/100*siteSf;let fp=0;const K=[];for(const b of B){const f=(b.b-b.a)*b.h;if(fp+f<=cap){K.push(b);fp+=f}else{const L=(cap-fp)/b.h;if(L>=(b.t==='mu'?100:50)){K.push(Object.assign({},b,{b:b.a+L}));fp+=L*b.h}break}}
+ const fl=Math.max(1,Math.min(+I.stories||1,Math.floor((+I.maxH||99)/(+I.storyFt||11)))),fpD=K.filter(b=>b.t==='du').reduce((a,b)=>a+(b.b-b.a)*b.h,0),fpM=K.filter(b=>b.t==='mu').reduce((a,b)=>a+(b.b-b.a)*b.h,0);
+ return {t,B:K,resY,x0,x1,y0,fl,fpD,fpM,capHit:K.length<B.length||K.some((b,i)=>b.b!==B[i].b),nD:fpD*I.effDU,nM:fpM*fl*I.effM}}
+function stSolve(s,poly,I){const P=spProj(+s.lat,+s.lon),R=poly.map(P.f),siteSf=spArea(R),set=+I.set||0;
+ let e=0,lm=0;for(let q=1;q<R.length;q++){const dx=R[q][0]-R[q-1][0],dy=R[q][1]-R[q-1][1],l=Math.hypot(dx,dy);if(l>lm){lm=l;e=Math.atan2(dy,dx)}}
+ const D=s.demand||{},C=s.competition||{},pop5=D.pop5,hh5=D.hh5,inc=D.income5||D.income,spc=C.sf_per_capita;
+ const f=inc?Math.max(.85,Math.min(1.2,inc/75000)):1,occ=Math.min(95,(+I.occ||0)+(spc==null?0:spc<3?2:spc>8?-6:0));
+ const O=[['du','Single-story drive-up'],['mu','Multi-story climate-controlled'],['hy','Hybrid · multi-story + drive-up']].map(([m,name])=>{let L=null;for(const t of [e,e+Math.PI/2]){const l=stLayout(R,I,m,t,siteSf);if(!L||l.nD+l.nM>L.nD+L.nM)L=l}
+  const nrsf=L.nD+L.nM,gsf=L.fpD+L.fpM*L.fl,hard=L.fpD*I.costDU+L.fpM*L.fl*I.costM,cost=(hard+siteSf*I.site)*(1+I.soft/100),rev=(L.nD*I.rentDU+L.nM*I.rentCC)*12*f*occ/100,noi=rev*(1-I.opex/100);
+  const units=Math.round(ST_MIX.du.reduce((a,[,sz,sh])=>a+L.nD*sh/sz,0)+ST_MIX.cc.reduce((a,[,sz,sh])=>a+L.nM*sh/sz,0));
+  return {m,name,L,nrsf,gsf,cost,rev,noi,units,cpn:nrsf?cost/nrsf:null,yoc:cost?noi/cost:null,cov:siteSf?(L.fpD+L.fpM)/siteSf:0}});
+ const best=O.slice().sort((a,b)=>b.nrsf-a.nrsf)[0],exist=spc!=null&&pop5?spc*pop5:null,gap=pop5?Math.max(0,(+I.tgt||0)*pop5-(exist||0)):null;
+ const bind=best.L.capHit?'Coverage':best.m!=='du'&&best.L.fl<(+I.stories||1)?'Height':'Setbacks / site shape';
+ return {P,R,siteSf,set,O,best,bind,pop5,hh5,inc,spc,f,occ,exist,gap,e}}
+function stRun(s){const r=stSolve(s,SP.poly,SP.inp);SP.res=r;stOut(s,r);stDraw(s,r);const p=spLoad(s.id);if(p)spSaveNow()}
+function stDraw(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;const L=r.best.L,P=r.P,bk=(a,b,y,h)=>[[a,y],[b,y],[b,y+h],[a,y+h],[a,y]].map(p=>P.b(stRot(p,L.t)));
+ m.getSource('sp-bnd').setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[SP.poly]}}]});
+ m.getSource('sp-halls').setData({type:'FeatureCollection',features:L.B.map(b=>({type:'Feature',properties:{on:b.t==='mu'},geometry:{type:'Polygon',coordinates:[bk(b.a,b.b,b.y,b.h)]}}))});
+ m.getSource('sp-plant').setData({type:'FeatureCollection',features:L.resY>L.y0?[{type:'Feature',geometry:{type:'Polygon',coordinates:[bk(L.x0+r.set,L.x1-r.set,L.y0+r.set,Math.max(0,L.resY-L.y0-r.set))]}}]:[]});
+ const bb=SP.poly.reduce((b,p)=>[[Math.min(b[0][0],p[0]),Math.min(b[0][1],p[1])],[Math.max(b[1][0],p[0]),Math.max(b[1][1],p[1])]],[[180,90],[-180,-90]]);
+ if(SP.fitFor!==s.id+SP.polySrc+SP.poly.length){SP.fitFor=s.id+SP.polySrc+SP.poly.length;m.fitBounds(bb,{padding:60,duration:0,maxZoom:18})}
+ $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':'No parcel polygon on file · '+fmt(s.acres||3,1)+'-acre square around the pin'} · ${spN(r.siteSf/43560,2)} ac · ember = multi-story · gray = drive-up · green = office, parking, stormwater`}
+function stOut(s,r){const B=r.best,I=SP.inp,E=' <span class="spest">PROPOSED ESTIMATE</span>',M=x=>x==null||!isFinite(x)?'—':'$'+spN(x/1e6,2)+'M',pct=x=>x==null?'—':spN(x*100,1)+'%';
+ const mix=(k,n)=>ST_MIX[k].map(([l,sz,sh])=>[l,Math.round(n*sh/sz),Math.round(n*sh)]).filter(x=>x[1]>0);
+ const mx=[].concat(B.L.nM?mix('cc',B.L.nM).map(x=>['Climate '+x[0],x[1],x[2]]):[],B.L.nD?mix('du',B.L.nD).map(x=>['Drive-up '+x[0],x[1],x[2]]):[]);
+ $('spOut').innerHTML=`<div class="spbig"><div class="lbl mono">Max net rentable SF</div><b class="mono">${spN(B.nrsf)}<i> NRSF</i></b><div class="lbl mono">${esc(B.name)} · ${spN(B.gsf)} GSF${B.L.fpM?' · '+B.L.fl+' stories':''} · ${spN(B.cov*100,0)}% coverage · ~${spN(B.units)} units</div></div>
+ <div class="spbind"><span class="lbl mono">Binding constraint</span><span class="spbadge">${esc(r.bind)}</span></div>
+ ${kv([['All-in cost',M(B.cost)+' · '+(B.cpn?'$'+spN(B.cpn)+'/NRSF':'—')+E],['Revenue (stabilized)',M(B.rev)+'/yr at '+spN(r.occ,0)+'% occ.'+E+'<br><small>Rents × '+spN(r.f,2)+' income factor'+(r.inc?' (5-mi median HH income $'+spN(r.inc)+')':'')+'</small>'],['NOI · yield on cost',M(B.noi)+' · '+pct(B.yoc)+E],
+  ['5-mi population',r.pop5?spN(r.pop5)+(r.hh5?' · '+spN(r.hh5)+' households':''):'Not available'],['Supply per capita',r.spc!=null?spN(r.spc,1)+' sf/person (mapped competitors)':'Not available'],
+  ['Market gap (5 mi)',r.gap!=null?spN(r.gap)+' sf at '+I.tgt+' sf/person target'+E+(r.gap&&B.nrsf?'<br><small>This plan = '+pct(B.nrsf/r.gap)+' of the gap · assumes 3-mi supply density holds to 5 mi</small>':''):'Needs 5-mi population']])}
+ <div class="lbl mono" style="margin-top:14px">Options · goal-seek max NRSF</div><table class="lt sptbl"><thead><tr><th>Option</th><th>NRSF</th><th>$/NRSF</th><th>Revenue</th><th>Yield</th></tr></thead><tbody>${r.O.map(o=>`<tr class="${o===B?'on':''}"><td>${esc(o.name)}</td><td class="n">${spN(o.nrsf)}</td><td class="n">${o.cpn?'$'+spN(o.cpn):'—'}</td><td class="n">${M(o.rev)}</td><td class="n">${pct(o.yoc)}</td></tr>`).join('')}</tbody></table>
+ <div class="lbl mono" style="margin-top:14px">Unit mix · ${esc(B.name)} (proposed)</div><table class="lt sptbl"><thead><tr><th>Unit</th><th>Count</th><th>NRSF</th></tr></thead><tbody>${mx.map(([l,n,a])=>`<tr><td>${l}</td><td class="n">${spN(n)}</td><td class="n">${spN(a)}</td></tr>`).join('')||'<tr><td colspan="3">No buildable area</td></tr>'}</tbody></table>`}
+
 // ---- UI
 const SP_F=[['Data hall',[['hallW','Hall width','ft'],['hallL','Hall length','ft'],['stories','Stories',''],['storyFt','Story height','ft'],['gap','Gap between halls','ft'],['bldSet','Building setback','ft']]],
  ['Load',[['wsf','IT density','W/sf'],['pue','PUE','']]],
  ['Power',[['gridOv','Grid MW override','MW'],['gasOv','Gas supply MW override','MW'],['unitMW','Recip engine size (N+1)','MW'],['acPer10','Plant land per 10 MW','ac'],['plantSet','Plant noise setback','ft'],['subAc','Substation yard','ac'],['ease','Easement buffer on lines','ft']]],
  ['Zoning · Zoneomics: pending',[['use','Data center use','text'],['maxH','Max height','ft'],['cov','Max lot coverage','%'],['far','Max FAR',''],['zSet','Zoning setback','ft']]]];
 // picker = Terrafice deals at Contacted or later in pipeline order (New, Under Consideration, Reviewing and Passed excluded)
-function spOK(s){const st=stageOf('land',s.id),i=STAGES.indexOf(st);return i>=STAGES.indexOf('Contacted')&&st!=='Passed'}
-function spSites(){return S.filter(s=>s.lat&&s.lon&&!(typeof hidK==='function'&&hidK('land',s.id))&&spOK(s)).slice().sort((a,b)=>a.name.localeCompare(b.name))}
+function spOK(s,v){const st=stageOf(v||'land',s.id),i=STAGES.indexOf(st);return i>=STAGES.indexOf('Contacted')&&st!=='Passed'}
+function spSites(co){co=co||SP.co;const A=co==='storage'?SR:S;return A.filter(s=>s.lat&&s.lon&&!(typeof hidK==='function'&&hidK(co,s.id))&&spOK(s,co)).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)))}
 function spShell(){const el=$('viewPlan');if(el.dataset.ok)return;el.dataset.ok=1;
- el.innerHTML=`<div class="eyebrow mono">Site planning · admin</div><h1>Max MW <strong>from grid &amp; gas.</strong></h1>
+ el.innerHTML=`<div class="dealseg spseg" id="spSeg" role="tablist" aria-label="Company"><button type="button" role="tab" data-spco="land">Terrafice</button><button type="button" role="tab" data-spco="storage">Everstow</button></div><div class="eyebrow mono" id="spEye">Site planning · admin</div><h1 id="spH1">Max MW <strong>from grid &amp; gas.</strong></h1>
  <div class="sptop"><label class="lbl mono" for="spPick">Deal</label><select id="spPick" class="inp"></select><button class="tbtn" type="button" id="spDraw">Draw boundary</button><button class="tbtn" type="button" id="spReset">Use acre square</button><button class="tbtn" type="button" id="spSave">Save plan</button><span class="lbl mono" id="spMsg"></span></div><div class="lbl mono spnote" id="spNote" hidden></div>
  <div class="spgrid"><aside class="spin" id="spIn"></aside><div class="spmapw"><div id="spMap"></div><div class="lbl mono sphint" id="spHint"></div></div><aside class="spout" id="spOut"></aside></div>
- <p class="lbl mono spfoot">Estimates only. Grid MW from voltage and distance; gas MW from pipeline type and distance. Confirm with the utility and pipeline. Plans are saved in this browser only.</p>`;
- $('spPick').onchange=e=>{location.hash='#plan/'+e.target.value};
- $('spDraw').onclick=spDrawStart;$('spReset').onclick=()=>{const s=spSite();SP.poly=spSquare(s,s.acres);SP.polySrc='square';SP.G=null;spRun()};
+ <p class="lbl mono spfoot" id="spFoot"></p>`;
+ $('spSeg').addEventListener('click',e=>{const b=e.target.closest('[data-spco]');if(!b||b.dataset.spco===SP.co)return;location.hash='#plan/'+b.dataset.spco+(SP.last[b.dataset.spco]?'/'+SP.last[b.dataset.spco]:'')});
+ $('spPick').onchange=e=>{location.hash='#plan/'+SP.co+'/'+e.target.value};
+ $('spDraw').onclick=spDrawStart;$('spReset').onclick=()=>{const s=spSite();SP.poly=spSquare(s,s.acres||(SP.co==='storage'?3:100));SP.stL=null;SP.polySrc='square';SP.G=null;spRun()};
  $('spSave').onclick=()=>{spSaveNow();$('spMsg').textContent='Saved in this browser '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})};
- $('spIn').addEventListener('input',e=>{const t=e.target;if(!t.dataset.sp)return;const k=t.dataset.sp;SP.inp[k]=t.type==='number'?(t.value===''?'':+t.value):t.value;if(['ease','plantSet'].includes(k))SP.G=null;clearTimeout(SP.t);SP.t=setTimeout(spRun,250)})}
-const spSite=()=>S.find(x=>x.id===SP.id);
-function spSaveNow(){const s=spSite();if(!s||!SP.res)return;const b=SP.res.best;
+ $('spIn').addEventListener('input',e=>{const t=e.target;if(!t.dataset.sp)return;const k=t.dataset.sp;SP.inp[k]=t.type==='number'?(t.value===''?'':+t.value):t.value;if(['ease','plantSet'].includes(k))SP.G=null;SP.stL=null;clearTimeout(SP.t);SP.t=setTimeout(spRun,250)})}
+const spSite=()=>(SP.co==='storage'?SR:S).find(x=>x.id===SP.id);
+function spSaveNow(){const s=spSite();if(!s||!SP.res)return;if(SP.co==='storage'){const b=SP.res.best;try{localStorage.setItem(spKey(s.id),JSON.stringify({v:1,inp:SP.inp,poly:SP.polySrc==='drawn'?SP.poly:null,sum:{nrsf:Math.round(b.nrsf),opt:b.name,units:b.units,cost:Math.round(b.cost),ts:new Date().toISOString()}}))}catch(e){}return}const b=SP.res.best;
  try{localStorage.setItem(spKey(s.id),JSON.stringify({v:1,inp:SP.inp,poly:SP.polySrc==='drawn'?SP.poly:null,sum:{it:Math.round(b.it*10)/10,fac:Math.round(b.fac*10)/10,bind:SP.res.bind,halls:b.n,grid:Math.round(b.gridUse),gas:Math.round(b.gasUse),ts:new Date().toISOString()}}))}catch(e){}
  if(typeof render==='function')render()}
-function spShow(id){if(!isAdm()){location.hash='#deals';return}spShell();const L=spSites();if(!S.find(x=>x.id===id))id=(L.find(s=>/Dodge City Business/.test(s.name))||L[0]||{}).id;
- const opt=(s,x)=>`<option value="${esc(s.id)}">${esc(s.name)} · ${esc(s.county)} Co · ${fmt(s.acres,0)} ac${x||''}</option>`,cur=S.find(x=>x.id===id),out=cur&&!L.includes(cur);
- $('spPick').innerHTML=(out?opt(cur,' · '+stL(stageOf('land',cur.id))):'')+L.map(s=>opt(s)).join('');const nt=$('spNote');nt.hidden=!out;if(out)nt.textContent=`Opened directly: this deal is at "${stL(stageOf('land',cur.id))}", outside the picker list (Contacted or later, excluding Passed).`;
- if(!id){nt.hidden=false;nt.textContent='No Terrafice deals at Contacted or later yet.';return}
- if(location.hash!=='#plan/'+id)history.replaceState(null,'',location.pathname+'#plan/'+id);
- if(SP.id!==id){SP.id=id;const s=spSite(),p=spLoad(id);SP.inp=spInputs(s);SP.poly=p&&p.poly?p.poly:spSquare(s,s.acres);SP.polySrc=p&&p.poly?'drawn':'square';SP.G=null;$('spMsg').textContent=p?'Saved plan loaded':''}
- $('spPick').value=id;spForm();spMapInit().then(()=>spRun())}
-function spForm(){const I=SP.inp;$('spIn').innerHTML=SP_F.map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,u])=>`<label class="spf"><span>${l}${u&&u!=='text'?' <i>'+u+'</i>':''}</span><input class="inp mono" data-sp="${k}" type="${u==='text'?'text':'number'}" step="any" value="${esc(I[k])}" placeholder="${k==='gridOv'||k==='gasOv'?'estimate':h.startsWith('Zoning')?'Zoneomics: pending':''}"></label>`).join('')}</div>`).join('')}
+function spShow(id,co){if(!isAdm()){location.hash='#deals';return}spShell();co=co==='storage'?'storage':'land';const A=co==='storage'?SR:S,V=co==='storage'?'Everstow':'Terrafice';
+ if(co!==SP.co){SP.co=co;SP.id=null;SP.res=null}
+ document.querySelectorAll('[data-spco]').forEach(b=>b.setAttribute('aria-selected',b.dataset.spco===co));
+ $('spEye').textContent='Site planning · '+V+' · admin';$('spH1').innerHTML=co==='storage'?'Max NRSF <strong>within setbacks &amp; coverage.</strong>':'Max MW <strong>from grid &amp; gas.</strong>';
+ $('spFoot').textContent=co==='storage'?'Proposed estimates only: every default (widths, aisles, coverage, costs, rents, occupancy) is an editable assumption, not a verified figure. Demand uses Census ACS 5-mi population/households and mapped competitor supply where available. Confirm zoning, stormwater and pricing locally. Plans are saved in this browser only.':'Estimates only. Grid MW from voltage and distance; gas MW from pipeline type and distance. Confirm with the utility and pipeline. Plans are saved in this browser only.';
+ const L=spSites(co);if(!A.find(x=>x.id===id))id=(co==='land'&&L.find(s=>/Dodge City Business/.test(s.name))||L[0]||{}).id;
+ const opt=(s,x)=>`<option value="${esc(s.id)}">${esc(s.name)} · ${co==='storage'?esc(s.city||''):esc(s.county)+' Co'} · ${fmt(s.acres,co==='storage'?1:0)} ac${x||''}</option>`,cur=A.find(x=>x.id===id),out=cur&&!L.includes(cur);
+ $('spPick').innerHTML=(out?opt(cur,' · '+stL(stageOf(co,cur.id))):'')+L.map(s=>opt(s)).join('');const nt=$('spNote');nt.hidden=!out;if(out)nt.textContent=`Opened directly: this deal is at "${stL(stageOf(co,cur.id))}", outside the picker list (Contacted or later, excluding Passed).`;
+ ['spIn','spOut'].forEach(k=>{if(!id)$(k).innerHTML=''});
+ if(!id){nt.hidden=false;nt.textContent=`No ${V} deals at Contacted or later yet.`;if(SP.map)spLyrVis();return}
+ SP.last[co]=id;const hh='#plan/'+co+'/'+id;if(location.hash!==hh)history.replaceState(null,'',location.pathname+hh);
+ if(SP.id!==id){SP.id=id;const s=spSite(),p=spLoad(id);SP.inp=spInputs(s);SP.poly=p&&p.poly?p.poly:spSquare(s,s.acres||(co==='storage'?3:100));SP.polySrc=p&&p.poly?'drawn':'square';SP.G=null;SP.stL=null;$('spMsg').textContent=p?'Saved plan loaded':''}
+ $('spPick').value=id;spForm();spMapInit().then(()=>{spLyrVis();spRun()})}
+function spLyrVis(){const m=SP.map;if(!m)return;const on=SP.co!=='storage';['sp-lines','sp-gas','sp-subs','sp-subl','sp-linel'].forEach(k=>{if(m.getLayer(k))m.setLayoutProperty(k,'visibility',on?'visible':'none')})}
+function spForm(){const I=SP.inp;$('spIn').innerHTML=(SP.co==='storage'?ST_F:SP_F).map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,u])=>`<label class="spf"><span>${l}${u&&u!=='text'?' <i>'+u+'</i>':''}</span><input class="inp mono" data-sp="${k}" type="${u==='text'?'text':'number'}" step="any" value="${esc(I[k])}" placeholder="${k==='gridOv'||k==='gasOv'?'estimate':h.startsWith('Zoning')?'Zoneomics: pending':''}"></label>`).join('')}</div>`).join('')}
 async function spLayers(){const get=k=>SP.ly[k]?Promise.resolve(SP.ly[k]):fetch(KM_LBASE+k+'.geojson').then(r=>r.ok?r.json():null).then(j=>(SP.ly[k]=j)).catch(()=>null);await Promise.all(['lines','gas','subs'].map(get))}
 async function spMapInit(){await spLayers();if(SP.map)return;try{await loadGL()}catch(e){$('spHint').textContent='Map library did not load; numbers still run';return}
  const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessToken=KM_TOK;const s=spSite();
@@ -1240,9 +1300,9 @@ async function spMapInit(){await spLayers();if(SP.map)return;try{await loadGL()}
 function spDrawStart(){if(!SP.map)return;SP.draw=[];SP.map.doubleClickZoom.disable();SP.map.getCanvas().style.cursor='crosshair';$('spHint').textContent='Click corners · double-click to finish · Esc to cancel';spDrawShow()}
 function spDrawShow(){const d=SP.draw||[];SP.map.getSource('sp-draw').setData({type:'FeatureCollection',features:d.length>1?[{type:'Feature',geometry:{type:'LineString',coordinates:d}}]:[]})}
 function spDrawEnd(cancel){const d=SP.draw;SP.draw=null;SP.map.getCanvas().style.cursor='';setTimeout(()=>SP.map.doubleClickZoom.enable(),300);$('spHint').textContent='';spDrawShow();
- if(!cancel&&d&&d.length>=3){SP.poly=d.concat([d[0]]);SP.polySrc='drawn';SP.G=null;spRun()}}
+ if(!cancel&&d&&d.length>=3){SP.poly=d.concat([d[0]]);SP.polySrc='drawn';SP.G=null;SP.stL=null;spRun()}}
 addEventListener('keydown',e=>{if(e.key==='Escape'&&SP.draw)spDrawEnd(true)});
-function spRun(){const s=spSite();if(!s)return;if(!SP.G)SP.G=spGrid(SP.poly,SP.inp,s);const r=spSolve(s,SP.poly,SP.inp,SP.G);SP.res=r;r.sens=spSens(s,SP.poly,SP.inp,SP.G);spOut(s,r);spDrawMap(s,r);
+function spRun(){const s=spSite();if(!s)return;if(SP.co==='storage'){stRun(s);return}if(!SP.G)SP.G=spGrid(SP.poly,SP.inp,s);const r=spSolve(s,SP.poly,SP.inp,SP.G);SP.res=r;r.sens=spSens(s,SP.poly,SP.inp,SP.G);spOut(s,r);spDrawMap(s,r);
  const p=spLoad(s.id);if(p)spSaveNow()}
 function spDrawMap(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;const G=r.G,P=G.P;
  m.getSource('sp-bnd').setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[SP.poly]}}]});
@@ -1267,8 +1327,8 @@ function spOut(s,r){const B=r.best,I=SP.inp,est=(ov)=>ov===''||ov==null?' <span 
 function spDealSec(s){const p=spSum(s.id);if(!isAdm())return '';return `<div class="sec spdeal"><h4>Site plan</h4>${p?kv([['Max IT load',`<b class="mono">${spN(p.it,1)} MW</b> · ${spN(p.fac,1)} MW facility`],['Binding',`<span class="spbadge">${esc(p.bind)}</span>`],['Mix',`Grid ${spN(p.grid)} MW · gas ${spN(p.gas)} MW · ${p.halls} halls`],['Saved',esc(new Date(p.ts).toLocaleString())+' · this browser']]):'<p class="desc muted">No plan saved in this browser.</p>'}<div class="btns"><a class="btn" href="#plan/${esc(s.id)}" onclick="dlg.close()">${p?'Open plan':'Plan this site'}</a></div></div>`}
 function spUI(){const b=$('planTab');if(b)b.hidden=!isAdm();document.body.classList.toggle('spadm',isAdm())}
 function spHide(){const v=$('viewPlan');if(v)v.hidden=true;document.body.classList.remove('planon')}
-function planView(v){const id=v.indexOf('/')>0?v.slice(v.indexOf('/')+1):(SP.id||'');$('dealSeg').hidden=true;$('viewMap').hidden=true;document.body.classList.remove('mapfull');$('viewLand').hidden=true;$('viewStorage').hidden=true;$('viewPlan').hidden=false;document.body.classList.add('planon');
- document.querySelectorAll('[data-top]').forEach(b=>b.setAttribute('aria-selected',b.dataset.top==='plan'));spShow(id);if(SP.map)setTimeout(()=>SP.map.resize(),50)}
+function planView(v){const seg=v.split('/').slice(1).filter(Boolean);let co=null,id='';if(seg[0]==='land'||seg[0]==='storage'){co=seg[0];id=seg[1]||SP.last[co]||''}else{id=seg[0]||SP.id||'';co=id&&!S.find(x=>x.id===id)&&SR.find(x=>x.id===id)?'storage':(id?'land':SP.co)}$('dealSeg').hidden=true;$('viewMap').hidden=true;document.body.classList.remove('mapfull');$('viewLand').hidden=true;$('viewStorage').hidden=true;$('viewPlan').hidden=false;document.body.classList.add('planon');
+ document.querySelectorAll('[data-top]').forEach(b=>b.setAttribute('aria-selected',b.dataset.top==='plan'));spShow(id,co);if(SP.map)setTimeout(()=>SP.map.resize(),50)}
 function vHash(v){return v==='map'?'#map':'#deals/'+v}
 function setView(v,keep){if(/^plan(\/|$)/.test(v)){if(isAdm()){planView(v);return}v=DK}spHide();if(v==='deals')v=DK;const mp=v==='map',st=v==='storage';if(!mp){DK=v;try{localStorage.setItem('edks_dk',v)}catch(e){}}$('dealSeg').hidden=mp;document.querySelectorAll('[data-dk]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dk===v));if(!dlg.open&&location.hash!==vHash(v))history.replaceState(null,'',location.pathname+vHash(v));$('viewMap').hidden=!mp;document.body.classList.toggle('mapfull',mp);if(mp)scrollTo(0,0);$('viewLand').hidden=mp||st;$('viewStorage').hidden=mp||!st;if(!mp)$('view').value=st?'storage':'land';try{localStorage.setItem('edks_view',v)}catch(e){}
  document.querySelectorAll('[data-top]').forEach(b=>b.setAttribute('aria-selected',b.dataset.top===(mp?'map':'deals')));
