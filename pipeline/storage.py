@@ -545,20 +545,51 @@ def ramp(v, lo, hi):
     if v is None: return None
     return max(0.0, min(1.0, (v - lo) / (hi - lo)))
 
-WEIGHTS = {"demand": 30, "competition": 25, "visibility": 15, "zoning": 20, "price": 10}
+SCORE_CFG = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "everstow_score.json")))
+WEIGHTS = SCORE_CFG["weights"]
+BGPOP_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sunflower", "layers", "bgpop.json")
+
+def ring5(lat, lon, bg=[]):
+    """5-mi population / households / renter share / HH-weighted median income from ACS block groups (bgpop.json)."""
+    if not bg:
+        try: d = json.load(open(BGPOP_FILE)); bg.extend(d["p"]); bg.insert(0, d.get("release", ""))
+        except Exception: return {}
+    rel, pts = bg[0], bg[1:]; p = h = rn = 0; iw = []
+    for la, lo, pp, hh, rr, inc in pts:
+        if abs(la - lat) > 0.08 or abs(lo - lon) > 0.1: continue
+        if hav(lat, lon, la, lo) <= 5 * 1609.344:
+            p += pp; h += hh; rn += rr
+            if inc and inc > 0 and hh: iw.append((inc, hh))
+    return {"pop5": p or None, "hh5": h or None, "renter5_pct": round(rn / h * 100, 1) if h else None,
+            "income5": round(sum(a * b for a, b in iw) / sum(b for _, b in iw), -2) if iw else None, "ring_src": f"Census {rel} block groups"}
+
+def visibility(tr):
+    """0-1 visibility from nearest counted road: AADT (log), distance to it, road class. Returns (value, parts)."""
+    V = SCORE_CFG["visibility"]; a = (tr or {}).get("aadt")
+    if not a: return 0.2, {"note": "no counted road nearby; default 20%"}
+    fa = ramp(math.log10(a), math.log10(V["aadt"]["lo"]), math.log10(V["aadt"]["hi"]))
+    dm = tr.get("aadt_m"); fd = 0.5 if dm is None else 1 - ramp(dm, V["dist"]["best_m"], V["dist"]["zero_m"])
+    rd = str(tr.get("road") or ""); ck = "I" if re.search(r"\bI[ -]?\d|Interstate|Turnpike", rd) else "U" if re.search(r"\bUS[ -]?\d", rd) else "K" if re.search(r"\bK[ -]?\d", rd) else "other"
+    fc = V["class"][ck]
+    v = V["aadt"]["share"] * fa + V["dist"]["share"] * fd + V["class"]["share"] * fc
+    return v, {"aadt": round(fa, 2), "dist": round(fd, 2), "class": ck, "class_f": fc}
 
 X_CAP = 55             # land that needs a rezoning can't outrank sites where storage is allowed
 SPC_BOUNDS = [4, 14]   # replaced at run time by the 20th/80th percentile of mapped SF/person across rows
 
 def score(r):
     dm = r["demand"]; parts = {}
-    sub = [(ramp(dm.get("pop3"), 15000, 90000), 11), (ramp(dm.get("growth_pct"), -2, 8), 6), (ramp(dm.get("income"), 45000, 100000), 5),
-           (ramp(dm.get("renter_pct"), 25, 50), 3), (ramp(dm.get("permits_per_1k"), 0, 8), 3), (1.0 if (dm.get("lake_mi") or 99) <= 15 else 0.5 if (dm.get("lake_mi") or 99) <= 30 else 0.0, 2)]
-    parts["demand"] = round(sum((v if v is not None else 0.4) * w for v, w in sub), 1)
+    D = SCORE_CFG["demand"]; br = {}
+    for k, c in D.items():
+        if k == "lake": v = 1.0 if (dm.get("lake_mi") or 99) <= 15 else 0.5 if (dm.get("lake_mi") or 99) <= 30 else 0.0
+        else: v = ramp(dm.get(k), c["lo"], c["hi"])
+        br[k] = round((v if v is not None else 0.4) * c["w"], 1)
+    parts["demand"] = round(sum(br.values()), 1); r["demand_parts"] = br
     spc = r["competition"].get("sf_per_capita")
     parts["competition"] = round(WEIGHTS["competition"] * (1 - ramp(spc, *SPC_BOUNDS)) if spc is not None else WEIGHTS["competition"] * 0.4, 1)
     a = r["traffic"].get("aadt")
-    parts["visibility"] = round(WEIGHTS["visibility"] * (ramp(math.log10(a), math.log10(2000), math.log10(30000)) if a else 0.2), 1)
+    vv, vp = visibility(r["traffic"]); r["visibility"] = dict(vp, score=round(vv * 100))
+    parts["visibility"] = round(WEIGHTS["visibility"] * vv, 1)
     st = r["zoning"]["status"]
     if r["kind"] == "facility": z = {"P": 1, "S": 1, "I": 0.85, "C": 0.75, "X": 0.5, "?": 0.6}[st]
     else: z = {"P": 1, "S": 0.9, "I": 0.7, "C": 0.5, "X": 0.1, "?": 0.35}[st]
@@ -734,6 +765,7 @@ def main():
         r["demand"] = {"pop3": pop3 or None, "tracts": len(tt), "hh3": hh or None, "renter_pct": round(rent / hh * 100, 1) if hh else None,
                        "income": round(sum(a * b for a, b in incw) / sum(b for _, b in incw), -2) if incw else None,
                        "growth_pct": ci["growth_pct"], "permits": ci["permits"], "permits_year": ci["permits_year"], "permits_per_1k": ci["permits_per_1k"],
+                       **ring5(lat, lon),
                        "lake": lk[0][1]["name"] if lk else None, "lake_mi": round(lk[0][0], 1) if lk else None, "marinas_25mi": len(mar)}
         if r["competition"].get("count") is not None and pop3:
             r["competition"]["sf_per_capita"] = round(r["competition"]["est_nrsf"] / pop3, 1)
@@ -770,9 +802,9 @@ def main():
            "comps": [{"name": x["name"], "city": CITY_LABEL.get(x["city"], x["city"]), "price": x["price"], "sf": x["sf"], "url": x["url"], "address": x["address"]} for x in comps],
            "status": STATUS, "weights": WEIGHTS, "zoning_rules": {k: {kk: v[kk] for kk in v} for k, v in ZONING.items()},
            "own_facility": OWN_FACILITY | (own or {}), "acs_release": acs_rel,
-           "method": {"demand": "3-mi trade area = Census tracts whose centroid is within 3 mi (ACS 2020-24 5-yr). Population 11 pts (15k→0, 90k→full), city growth 2020-24 6 (−2%→0, +8%→full), HH-weighted tract median income 5 ($45k→$100k), renter share 3 (25%→50%), city permits per 1k residents 3 (0→8), lake within 15 mi 2.",
+           "method": {"demand": "Weights in pipeline/everstow_score.json. " + "; ".join(f"{c['label']} {c['w']} pts" + (f" ({c['lo']:,}→0, {c['hi']:,}→full)" if "lo" in c else "") for c in SCORE_CFG["demand"].values()) + ". 3-mi = ACS tracts with centroid ≤3 mi; 5-mi = ACS 5-yr block groups (2020 population-weighted centroids) ≤5 mi. Missing data scores 40%.",
                       "competition": f"Self-storage mapped in OpenStreetMap within 3 mi (a site polygon, its buildings and node within 150 m count as one facility). NRSF estimated from the mapped footprint (buildings × levels × 85%, or site polygon × 40%); facilities mapped as points get the metro median. OSM maps only part of the real supply (US average is about 7-8 SF/person; mapped KS supply is far lower), so the score is RELATIVE: 25 pts at or below the 20th percentile of rows ({SPC_BOUNDS[0]:g} SF/person), 0 at or above the 80th ({SPC_BOUNDS[1]:g}). Check rent comps and a supply study before an offer.",
-                      "visibility": "KDOT AADT on the frontage segment (≤250 m); log scale 2,000→0, 30,000→15 pts.",
+                      "visibility": "Visibility 0-100 = 65% nearest KDOT-counted road AADT (log scale 2,000→0, 30,000→full) + 20% distance to that segment (≤30 m full, ≥400 m zero) + 15% road class (Interstate 1.0, US 0.85, K-route 0.7, city street 0.4, from the OSM frontage road name). No count nearby = 20. Scaled to 15 pts. Frontage length is not scored yet (no parcel geometry).",
                       "zoning": "Land: by right 20, by right w/ standards 18, interpretation 14, conditional/SUP 10, unknown 7, not permitted 2. Existing facilities: zoning risk only (non-conforming = expansion risk). Land that needs a rezoning is capped at 55 overall.",
                       "price": "Land $/acre log scale $80k→10 pts, $700k→0. Facilities $/SF $40→10, $160→0. Unpriced = 4."}}
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)

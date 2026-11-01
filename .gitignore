@@ -14,3 +14,6 @@ __pycache__/
 node_modules/
 *.log
 .firebase/
+!pipeline/everstow_score.json
+!pipeline/everstow_permits.json
+!sunflower/layers/bgpop.json
