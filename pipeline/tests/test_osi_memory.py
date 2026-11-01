@@ -108,5 +108,10 @@ class OsiMemory(unittest.TestCase):
             self.assertTrue(all(len(json.dumps(docs[k], default=str)) <= 3000 or len(docs[k]["facts"]) == 1 for k in facts))
         finally: self.m.MAX_DOC = old
 
+    def test_layout_marker_and_no_expiry_on_pending(self):
+        docs = self.m.sync_docs()
+        self.assertTrue(all(d["layout_version"] == 2 and d["osi_spec"] == "0.1.1" for d in docs.values()))
+        self.assertTrue(all("expire_at" not in d for d in docs.values()))
+
 if __name__ == "__main__":
     unittest.main()

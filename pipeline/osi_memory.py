@@ -279,7 +279,7 @@ def cmd_weekly(a):
     if a.push:   # one document per week (was N+1 writes)
         sys.path.insert(0, HERE); import edks
         edks.db().collection("osi_proposals").document(f"weekly-{week}").set(
-            {k: v for k, v in out.items() if k != "proposals"} | {"type": "weekly_summary", "count": len(props), "items": {p["id"]: p for p in props}})
+            {k: v for k, v in out.items() if k != "proposals"} | {"type": "weekly_summary", "expire_at": dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=WEEKLY_TTL_DAYS), "count": len(props), "items": {p["id"]: p for p in props}})
         print(f"pushed weekly-{week} ({len(props)} proposal(s)) in 1 write")
 
 def coverage():
@@ -375,6 +375,8 @@ def cmd_export(a):
     if bad: sys.exit(1)
 
 def slug(s): return re.sub(r"[^a-z0-9]+", "-", str(s).lower()).strip("-")[:80] or "_"
+LAYOUT = {"layout_version": 2, "osi_spec": "0.1.1"}   # bump layout_version on any doc-shape change
+WEEKLY_TTL_DAYS = 90   # osi_proposals/weekly-* carry expire_at; Firestore TTL deletes them
 MAX_DOC = 900_000   # bytes; Firestore hard limit is 1 MiB per document
 def sync_docs():
     """Firestore layout (all OSI-mapped, document counts kept low):
@@ -404,6 +406,7 @@ def sync_docs():
     hit, tot = outcome_accuracy()
     docs["osi_meta/summary"] = {"type": "metrics", "coverage": {k: list(v) for k, v in coverage().items() if k != "private"},
                                 "outcome_hits": hit, "outcome_n": tot, "groups": sum(k.startswith("osi_facts/") for k in docs)}
+    for v in docs.values(): v.update(LAYOUT)   # forward-compat marker on every synced doc (never on weekly-*)
     return docs
 def h(d): return hashlib.sha1(json.dumps(d, sort_keys=True, default=str).encode()).hexdigest()[:16]
 
