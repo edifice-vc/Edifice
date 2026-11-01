@@ -69,7 +69,7 @@ def build():
         d = {k: v for k, v in r.items()}
         d.update(emb_model=model, emb_dim=dim, emb=pack(vecs[0]),
                  chunk_emb=pack(vecs[1:]) if mine else None,
-                 chunk_refs=[[c.get("file", c.get("source")), c.get("page")] for c in mine],
+                 chunk_refs=[{"file": c.get("file", c.get("source")), "page": c.get("page")} for c in mine],
                  chunk_count=len(mine))
         d["hash"] = hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()[:16]
         docs[r["plan_id"]] = d
