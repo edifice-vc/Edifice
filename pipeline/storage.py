@@ -159,17 +159,26 @@ def fmt_allowed(city, district, key):
     return ""
 
 # --------------------------------------------------------------------------- http helpers
+DEAD_HOSTS = {}  # host -> reason; a host that can't be reached is skipped for the rest of the run
+
 def get(url, *, params=None, timeout=60, tries=3, headers=None, method="GET", js=None):
-    last = None
+    host = requests.utils.urlparse(url).netloc
+    if host in DEAD_HOSTS: raise RuntimeError(f"{url}: skipped, host unreachable earlier this run ({DEAD_HOSTS[host]})")
+    last = None; conn_fail = 0
     for i in range(tries):
         try:
-            r = S.request(method, url, params=params, json=js, timeout=timeout, headers=headers or {})
+            # (connect, read): an unreachable host fails in 10 s instead of blocking for minutes
+            r = S.request(method, url, params=params, json=js, timeout=(10, timeout), headers=headers or {})
             if r.status_code == 200: return r
             last = f"HTTP {r.status_code}"
             if r.status_code in (401, 403, 404): break
+        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as e:
+            last = repr(e)[:200]; conn_fail += 1
         except Exception as e:
             last = repr(e)[:200]
-        time.sleep(2 * (i + 1))
+        if i < tries - 1: time.sleep(2 * (i + 1))
+    if conn_fail == tries:
+        DEAD_HOSTS[host] = "connect failed"; print(f"::warning::storage: {host} unreachable; skipping it for this run", flush=True)
     raise RuntimeError(f"{url}: {last}")
 
 def cached(cache_dir, name, fn, max_age_h=20):

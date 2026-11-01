@@ -108,14 +108,14 @@ jobs:
       # storage_state.enc. If the live listing pull fails, retry reusing the last good pull (<72 h).
       - name: Storage (land 4-12 ac + facilities for sale)
         continue-on-error: true
-        timeout-minutes: 40
+        timeout-minutes: 25
         run: |
-          run() { python3 -W ignore pipeline/storage.py \
+          run() { timeout 12m python3 -W ignore pipeline/storage.py \
             --out "$RUNNER_TEMP/data/storage.json" \
             --state "$RUNNER_TEMP/storage_state.json" \
             --cache-dir "$RUNNER_TEMP/geocache/storage" \
             --point-cache-dir "$RUNNER_TEMP/stpoint"; }
-          run || STORAGE_REUSE_STATE_H=72 run
+          run || STORAGE_REUSE_STATE_H=72 run || { echo "::warning::Storage scrape failed; keeping last good storage data"; exit 0; }
 
       # Site data, roster-gated, lives in Firestore; nothing about the sites is in the public page.
       # Keyless: GitHub's OIDC token is exchanged for a short-lived token of the pipeline service account.
@@ -230,7 +230,13 @@ jobs:
           git reset -q -- 'gha-creds-*.json' 2>/dev/null || true
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "Refresh Kansas sites $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push
+          for i in 1 2 3 4 5; do
+            git push && exit 0
+            echo "push rejected (attempt $i); rebasing on origin/main"
+            git pull --rebase origin main || { git rebase --abort; exit 1; }
+            sleep $((i * 5))
+          done
+          exit 1
 
       - name: Scrub plaintext
         if: always()
