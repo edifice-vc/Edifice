@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Sunflower · Edifice</title>
+<title>SunflowerOS · Edifice</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 48'%3E%3Cpath d='M19 1 L31 13 L31 22 L19 34 L19 27 L27 19 L27 16 L19 8 Z' fill='none' stroke='%23F14B21' stroke-width='3'/%3E%3Cpath d='M14 13 L14 20 L6 28 L6 31 L14 39 L14 46 L2 34 L2 25 Z' fill='none' stroke='%23F14B21' stroke-width='3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@ a{color:var(--fg)}
 .wrap{max-width:1280px;margin:0 auto;padding:20px 16px 80px}
 header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:16px}
 .logo{display:flex;align-items:flex-end;gap:10px;text-decoration:none}
-.wordmark{font-size:24px;font-weight:500;line-height:1}
+.wordmark{font-family:Jost,sans-serif;font-size:28px;font-weight:600;letter-spacing:-.02em;line-height:1;color:#fff}.wordmark b{font-weight:300;color:#F14B21;margin-left:1px}
 .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
 .eyebrow{font-size:12px;letter-spacing:.14em;color:var(--acc);text-transform:uppercase;margin:28px 0 6px}
 h1{font-weight:300;font-size:clamp(32px,6vw,64px);line-height:1.02;margin:0 0 10px}
@@ -432,7 +432,7 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
 <header>
  <a class="logo" href="https://edifice.vc/">
   <svg width="20" height="30" viewBox="0 0 32 48" fill="none" aria-hidden="true"><path d="M19 1 L31 13 L31 22 L19 34 L19 27 L27 19 L27 16 L19 8 Z" stroke="#F14B21" stroke-width="3"/><path d="M14 13 L14 20 L6 28 L6 31 L14 39 L14 46 L2 34 L2 25 Z" stroke="#F14B21" stroke-width="3"/></svg>
-  <span class="wordmark">Sunflower</span>
+  <span class="wordmark">Sunflower<b>OS</b></span>
  </a>
  <div class="hdr-r"><span class="lbl mono" id="refreshed"></span><span class="lbl mono syncst off" id="sync" role="status" title="Pipeline sync status">Not synced</span><span class="who lbl mono" id="whoWrap" hidden><label for="me">Signed in as</label><select id="me"></select></span><span class="acct lbl mono" id="acct" hidden><span id="acctWho"></span><button type="button" id="setBtn" hidden>Settings</button><button type="button" id="outBtn">Sign out</button></span></div>
 </header>
@@ -1530,6 +1530,7 @@ function csvOut(v,ids){const q=x=>{x=x==null?'':String(x);return /[",\n]/.test(x
 #gate .gk .logo{gap:8px}#gate .gk .logo span{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em}
 #gate .sw{font-family:Jost,sans-serif;font-weight:300;font-size:clamp(44px,11vw,64px);line-height:1;letter-spacing:-.01em;margin:44px 0 6px;color:#fff}
 #gate h1{font-family:'JetBrains Mono',monospace;font-weight:400;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:0 0 28px}
+#gate .tag{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#F14B21;margin:0 0 28px}
 #gate .sub{font-size:15px;line-height:1.55;color:#cfcfcf;margin:0;border-top:1px solid var(--line);padding-top:20px}
 #gate .btn{cursor:pointer;margin-top:24px;width:100%;border-radius:0;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
 #gate .btn.pri{background:#F14B21;border-color:#F14B21;color:#000}
@@ -1546,8 +1547,9 @@ body.gated .wrap{visibility:hidden}
 <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gateT"><div class="box">
  <div class="gk"><div class="logo"><svg width="14" height="21" viewBox="0 0 32 48" fill="none" aria-hidden="true"><path d="M19 1 L31 13 L31 22 L19 34 L19 27 L27 19 L27 16 L19 8 Z" stroke="#F14B21" stroke-width="3"/><path d="M14 13 L14 20 L6 28 L6 31 L14 39 L14 46 L2 34 L2 25 Z" stroke="#F14B21" stroke-width="3"/></svg><span>Edifice</span></div><span>Private</span></div>
  <div class="sw">Sunflower</div>
+ <div class="tag">A proprietary operating system for Edifice</div>
  <h1 id="gateT">Kansas deal pipeline</h1>
- <p class="sub" id="gateSub">Private research and deal pipeline. Sign in with your Edifice Google account.</p>
+ <p class="sub" id="gateSub">Sign in with your Edifice Google account.</p>
  <button class="btn pri" type="button" id="gateIn" hidden>Sign in with Google</button>
  <button class="btn" type="button" id="gateOut" hidden>Sign out</button>
  <div class="lbl mono msg" id="gateMsg" role="status">Checking sign-in</div>
@@ -1644,7 +1646,7 @@ window.addEventListener('error', ev => { if (!started && ev.error) showErr('Unex
 let started = false;
 onAuthStateChanged(auth, async user => {
   if (started) { if (!user) location.reload(); return; }
-  if (!user) { $g('gateT').textContent = 'Kansas deal pipeline'; gate('Private research and deal pipeline. Sign in with your Edifice Google account.', '', 'in'); return; }
+  if (!user) { $g('gateT').textContent = 'Kansas deal pipeline'; gate('Sign in with your Edifice Google account.', '', 'in'); return; }
   const email = (user.email || '').toLowerCase();
   gate(null, 'Checking access for ' + email);
   const retry = () => location.reload();
