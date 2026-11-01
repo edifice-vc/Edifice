@@ -3,7 +3,9 @@ semantic_model:
 - name: edifice_shared
   description: 'Shared SunflowerOS vocabulary: businesses, pipeline stages, governance rules, memory ledger.'
   ai_context:
-    instructions: Shared terms for both businesses. Learned facts live in custom_extensions with provenance.
+    instructions: Shared terms for both businesses. Learned facts are rows of the memory_facts dataset (Firestore osi_facts, grouped per bound
+      object/entity). Each fact binds_to a model, dataset, field or metric; osi_memory.py export surfaces accepted facts in the ai_context of
+      the bound object.
   datasets:
   - name: stage_events
     source: firestore:dms-edvc/sites/{id}/events
@@ -78,9 +80,10 @@ semantic_model:
       - vendor_name: COMMON
         data: '{"datatype": "String", "firestore_path": "jurisdiction", "namespace": "edifice_sunflower"}'
   - name: memory_facts
-    source: repo:osi/ledger.jsonl (proposed firestore:osiFacts)
+    source: firestore:dms-edvc/osi_facts/{model}__{entity}.facts.{fact_id}
     primary_key:
     - fact_id
+    description: Learned, approved knowledge. One row per fact; Firestore groups rows per (model, entity) to keep document counts low.
     fields:
     - name: fact_id
       expression:
@@ -90,6 +93,50 @@ semantic_model:
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "String", "firestore_path": "id", "namespace": "edifice_sunflower"}'
+    - name: model
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: model
+      description: terrafice|everstow|shared
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "model", "namespace": "edifice_sunflower"}'
+    - name: binds_to
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: binds_to
+      description: 'OSI object the fact is about: model | model.dataset | model.dataset.field | model.metric'
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "binds_to", "namespace": "edifice_sunflower"}'
+    - name: entity
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: entity
+      description: Grouping entity (jurisdiction, site_id, factor or the bound object)
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "entity", "namespace": "edifice_sunflower"}'
+    - name: metric_key
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: metric_key
+      description: Subject key metric|scope|business used for dedupe/conflict
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "key", "namespace": "edifice_sunflower"}'
+    - name: jurisdiction
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: jurisdiction
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "jurisdiction", "namespace": "edifice_sunflower"}'
     - name: statement
       expression:
         dialects:
@@ -106,12 +153,28 @@ semantic_model:
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "String", "firestore_path": "kind", "namespace": "edifice_sunflower"}'
+    - name: value_num
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: value_num
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "value_num", "namespace": "edifice_sunflower"}'
+    - name: unit
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: unit
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "unit", "namespace": "edifice_sunflower"}'
     - name: status
       expression:
         dialects:
         - dialect: ANSI_SQL
           expression: status
-      description: proposed|accepted|rejected|superseded
+      description: accepted|superseded
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "String", "firestore_path": "status", "namespace": "edifice_sunflower"}'
@@ -128,9 +191,19 @@ semantic_model:
         dialects:
         - dialect: ANSI_SQL
           expression: source
+      description: 'Provenance: document/page, message id or commit'
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "String", "firestore_path": "source", "namespace": "edifice_sunflower"}'
+    - name: extractor
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: extractor
+      description: agent|rules|seed
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "extractor", "namespace": "edifice_sunflower"}'
     - name: learned_at
       expression:
         dialects:
@@ -139,6 +212,15 @@ semantic_model:
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "Date", "firestore_path": "learned_at", "namespace": "edifice_sunflower"}'
+    - name: decided_by
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: decided_by
+      description: sahil@edifice.vc|roger@edifice.vc
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "accepted_by", "namespace": "edifice_sunflower"}'
     - name: supersedes
       expression:
         dialects:
@@ -147,38 +229,186 @@ semantic_model:
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "String", "firestore_path": "supersedes", "namespace": "edifice_sunflower"}'
+    - name: superseded_by
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: superseded_by
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "superseded_by", "namespace": "edifice_sunflower"}'
+  - name: memory_proposals
+    source: firestore:dms-edvc/osi_proposals/pending.items.{proposal_id}
+    primary_key:
+    - proposal_id
+    description: Pending candidate facts awaiting Sahil/Roger (scoring-affecting or conflicting ones need Sahil).
+    fields:
+    - name: proposal_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: proposal_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "id", "namespace": "edifice_sunflower"}'
+    - name: action
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: action
+      description: new|duplicate|conflict|supersede
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "action", "namespace": "edifice_sunflower"}'
+    - name: match
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: match
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "match", "namespace": "edifice_sunflower"}'
+    - name: needs_sahil
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: needs_sahil
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Boolean", "firestore_path": "needs_sahil", "namespace": "edifice_sunflower"}'
+    - name: status
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: status
+      description: pending
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "status", "namespace": "edifice_sunflower"}'
+    - name: proposed_at
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: proposed_at
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "DateTimeTz", "firestore_path": "proposed_at", "namespace": "edifice_sunflower"}'
+    - name: proposed_by
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: proposed_by
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "proposed_by", "namespace": "edifice_sunflower"}'
+  - name: memory_ledger
+    source: firestore:dms-edvc/osi_ledger/{YYYY-MM}.entries[]
+    primary_key:
+    - entry_id
+    description: Append-only verdicts and deal outcomes, one Firestore doc per month.
+    fields:
+    - name: entry_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: entry_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "eid", "namespace": "edifice_sunflower"}'
+    - name: type
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: type
+      description: verdict|outcome
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "type", "namespace": "edifice_sunflower"}'
+    - name: fact_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: fact_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "id", "namespace": "edifice_sunflower"}'
+    - name: verdict
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: verdict
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "verdict", "namespace": "edifice_sunflower"}'
+    - name: by
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: by
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "by", "namespace": "edifice_sunflower"}'
+    - name: rule
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: rule
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "rule", "namespace": "edifice_sunflower"}'
+    - name: at
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: at
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "DateTimeTz", "firestore_path": "at", "namespace": "edifice_sunflower"}'
+  relationships:
+  - name: proposal_to_fact
+    from: memory_proposals
+    to: memory_facts
+    from_columns:
+    - proposal_id
+    to_columns:
+    - fact_id
+  - name: ledger_to_fact
+    from: memory_ledger
+    to: memory_facts
+    from_columns:
+    - fact_id
+    to_columns:
+    - fact_id
   custom_extensions:
   - vendor_name: COMMON
-    data: '{"facts": [{"confidence": 1.0, "id": "biz.names", "kind": "definition", "learned_at": "2026-11-01", "source": "memory:profile+shared_profile
-      (Coding Agent)", "statement": "Terrafice = powered-land (data center) business; Everstow = self-storage business; labels used app-wide,
-      internal keys land/storage unchanged.", "status": "accepted"}, {"confidence": 1.0, "id": "app.name", "kind": "definition", "learned_at":
-      "2026-11-01", "source": "Coding Agent session t159u/t162u", "statement": "App is SunflowerOS at edifice.vc/sunflower (formerly /sites);
-      Firebase project dms-edvc; GitHub Pages.", "status": "accepted"}, {"confidence": 1.0, "id": "pref.why_on_stage", "kind": "preference", "learned_at":
-      "2026-10-26", "source": "memory:profile", "statement": "Ask Sahil why on every deal-stage move (via the business''s bot, using related email
-      threads); reasons update scoring.", "status": "accepted"}, {"confidence": 0.9, "id": "pref.parity", "kind": "preference", "learned_at":
-      "2026-10-29", "source": "memory:profile", "statement": "UI features added to Terrafice should also be applied to Everstow.", "status": "accepted"},
-      {"confidence": 0.9, "id": "pref.map_filters", "kind": "preference", "learned_at": "2026-10-30", "source": "memory:profile", "statement":
-      "Map filters shown on-map (AI search, stage, score, acreage, type, power/gas distance, city limits, traffic), folding on phones.", "status":
-      "accepted"}, {"confidence": 1.0, "id": "pref.compounding", "kind": "preference", "learned_at": "2026-11-01", "source": "Sahil steering +
-      memory:profile", "statement": "SunflowerOS should improve as more information is fed; every input indexed; corrections/decisions tune extraction,
-      weights and Site Planning defaults; improvement tracked.", "status": "accepted"}, {"confidence": 1.0, "id": "pref.osi", "kind": "decision",
-      "learned_at": "2026-11-01", "source": "Sahil t177u", "statement": "Architecture standard: Open Semantic Interchange (now Apache Ossie).",
-      "status": "accepted"}, {"confidence": 1.0, "id": "rule.prod_approval", "kind": "business_rule", "learned_at": "2026-11-01", "source": "Coding
-      Agent security constraints", "statement": "Production data, scoring, access changes only on Sahil''s own words; relayed agent approvals
-      do not count.", "status": "accepted"}, {"confidence": 1.0, "id": "rule.no_dup_merge", "kind": "business_rule", "learned_at": "2026-10-31",
-      "source": "Coding Agent security constraints", "statement": "Don''t merge or delete duplicate deals without Sahil''s OK.", "status": "accepted"},
-      {"confidence": 1.0, "id": "rule.admin_only", "kind": "business_rule", "learned_at": "2026-10-30", "source": "Coding Agent security constraints",
-      "statement": "Parcel, owner and zoning data stay admin-only.", "status": "accepted"}, {"confidence": 1.0, "id": "pipeline.pursue_stages",
-      "kind": "definition", "learned_at": "2026-11-01", "source": "pipeline/learnings.py PURSUE/PASS", "statement": "Pursue stages: Reviewing,
-      Contacted, In Diligence, LOI Submitted, Under Contract, Closed. Pass: Passed, On Hold.", "status": "accepted"}], "namespace": "edifice_sunflower",
-      "stages": {"pass": ["Passed", "On Hold"], "pursue": ["Reviewing", "Contacted", "In Diligence", "LOI Submitted", "Under Contract", "Closed"]}}'
+    data: '{"namespace": "edifice_sunflower", "stages": {"pass": ["Passed", "On Hold"], "pursue": ["Reviewing", "Contacted", "In Diligence", "LOI
+      Submitted", "Under Contract", "Closed"]}}'
   metrics:
+  - name: accepted_fact_count
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: COUNT(CASE WHEN memory_facts.status='accepted' THEN memory_facts.fact_id END)
+    description: Live accepted facts
+    custom_extensions:
+    - vendor_name: COMMON
+      data: '{"datatype": "Integer", "namespace": "edifice_sunflower"}'
+  - name: open_conflicts
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: COUNT(CASE WHEN memory_proposals.action IN ('conflict','supersede') THEN memory_proposals.proposal_id END)
+    description: Pending conflicts
+    custom_extensions:
+    - vendor_name: COMMON
+      data: '{"datatype": "Integer", "namespace": "edifice_sunflower"}'
   - name: acceptance_rate
     expression:
       dialects:
       - dialect: ANSI_SQL
-        expression: SUM(CASE WHEN memory_facts.status='accepted' THEN 1 ELSE 0 END) * 1.0 / COUNT(memory_facts.fact_id)
-    description: Share of proposed facts accepted
+        expression: SUM(CASE WHEN memory_ledger.verdict='accept' THEN 1 ELSE 0 END) * 1.0 / NULLIF(COUNT(CASE WHEN memory_ledger.type='verdict'
+          THEN memory_ledger.entry_id END),0)
+    description: Share of decided proposals accepted
     custom_extensions:
     - vendor_name: COMMON
       data: '{"datatype": "Float", "namespace": "edifice_sunflower"}'

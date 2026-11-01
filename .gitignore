@@ -22,3 +22,4 @@ osi/private/
 osi/state/
 osi/inbox/
 !osi/sources/standards.json
+osi/dist/

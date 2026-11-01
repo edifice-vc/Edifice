@@ -1,0 +1,1 @@
+Official JSON Schemas from github.com/open-semantic-interchange/OSI (Apache-2.0): osi-0.1.1 = tag osi-0.1.1-rc1 core-spec/osi-schema.json; ossie-0.2.0.dev0 = main@e2f3698 core-spec/ossie-schema.json (2026-11-01).

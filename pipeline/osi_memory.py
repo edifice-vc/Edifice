@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
-"""SunflowerOS memory: OSI (Apache Ossie) 0.1.1 models that learn from everything you feed them.
+"""SunflowerOS memory, stored natively in OSI (Apache Ossie) 0.1.1.
 
-Loop: ingest -> propose -> diff -> accept/reject -> metrics. Every input is indexed; every verdict and deal
-outcome goes to an append-only ledger that tunes extraction (per-rule precision) and is measured.
+OSI layout: osi/*.yaml are the semantic models (datasets, fields, metrics, relationships). Learned knowledge is
+DATA, not model metadata: each fact is a row of the OSI dataset edifice_shared.memory_facts (osi/facts/<model>.jsonl,
+Firestore osi_facts) and names the OSI object it is about in `binds_to` (model | model.dataset[.field] | model.metric).
+`export` folds accepted facts into the bound objects' ai_context (the spec's slot for AI knowledge) and validates the
+result against the official JSON Schema in osi/schema/.
 
-  osi_memory.py ingest [PATH...] [--kind email|chat|doc|note]   index files/dirs (default drop folder osi/inbox/)
-  osi_memory.py propose                     reconcile candidates vs model facts by subject key (dedupe/conflict/supersede)
-  osi_memory.py diff                        show pending proposals
+Loop: ingest|submit -> propose -> diff -> accept/reject -> metrics -> sync/export.
+  osi_memory.py submit FILE.json [--by grok-bot]   agent-supplied facts (no LLM key): [{statement, kind, source, ...}]
+  osi_memory.py ingest [PATH...] [--kind ...]       regex rules over files (fallback, no network)
+  osi_memory.py propose | diff | metrics
   osi_memory.py accept ID --by EMAIL / reject ID --by EMAIL [--why ...]
   osi_memory.py outcome SITE_ID STAGE --predicted SCORE
-  osi_memory.py weekly [--weights FILE] [--push]   outcome-based weight proposals for the weekly scoring report
-  osi_memory.py metrics
-  osi_memory.py sync                        push public facts / proposals / ledger to Firestore osi_* (pipeline SA)
+  osi_memory.py weekly [--weights FILE] [--push]
+  osi_memory.py validate                      validate osi/*.yaml against osi/schema
+  osi_memory.py export [--spec 0.1.1|0.2] [--from local|firestore] [--out DIR]
+  osi_memory.py sync [--dry-run]              cost-aware Firestore push: 1 read + only changed docs
 
 Governance: only Sahil or Roger may accept or reject; anything that changes scoring, Site Planning defaults or a
-conflicting fact needs Sahil. Weight proposals are proposals only; nothing here edits score configs.
-Extraction: model-based when OSI_LLM_API_KEY (or XAI_API_KEY) is set, else regex rules. The private model is never synced.
+conflicting fact needs Sahil. Weight proposals are proposals only. The private model/facts are never synced or exported.
 """
 import argparse, datetime as dt, difflib, hashlib, json, os, re, sys
 import yaml
@@ -23,8 +27,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.environ.get("OSI_DIR", os.path.join(HERE, "..", "osi"))
 MODELS = {"terrafice": "terrafice.yaml", "everstow": "everstow.yaml", "shared": "shared.yaml", "private": "private/private.yaml"}
 P = lambda *a: os.path.join(ROOT, *a)
-INDEX, CAND, PROP, LEDGER, WEEKLY = (P("state/index.jsonl"), P("state/candidates.jsonl"), P("state/proposals.jsonl"),
-                                     P("state/ledger.jsonl"), P("state/weight_proposals.json"))
+INDEX, CAND, PROP, LEDGER, WEEKLY, SYNCC = (P("state/index.jsonl"), P("state/candidates.jsonl"), P("state/proposals.jsonl"),
+                                     P("state/ledger.jsonl"), P("state/weight_proposals.json"), P("state/sync_cache.json"))
+FACTS = {"terrafice": "facts/terrafice.jsonl", "everstow": "facts/everstow.jsonl", "shared": "facts/shared.jsonl", "private": "private/facts.jsonl"}
+PUBLIC = ("terrafice", "everstow", "shared")
 NS = "edifice_sunflower"
 SAHIL, ROGER = "sahil@edifice.vc", "roger@edifice.vc"
 ACCEPTORS = {"sahil": SAHIL, SAHIL: SAHIL, "roger": ROGER, ROGER: ROGER}
@@ -85,23 +91,21 @@ def norm(s): return re.sub(r"[^a-z0-9$.% ]+", " ", s.lower()).split()
 
 def load_doc(k): return yaml.safe_load(open(P(MODELS[k]))) if os.path.exists(P(MODELS[k])) else None
 def sm(doc): return doc["semantic_model"][0]
-def ext(m):
-    for e in m.get("custom_extensions") or []:
-        d = json.loads(e["data"])
-        if d.get("namespace") == NS: return e, d
-    e = {"vendor_name": "COMMON", "data": json.dumps({"namespace": NS})}; m.setdefault("custom_extensions", []).append(e); return e, {"namespace": NS}
 def model_facts(include_private=True):
     out = []
-    for k in MODELS:
+    for k in FACTS:
         if k == "private" and not include_private: continue
-        doc = load_doc(k)
-        if not doc: continue
-        m = sm(doc); _, d = ext(m); fs = list(d.get("facts", []))
-        for ds in m["datasets"]:                       # dataset-level facts (e.g. cited local standards)
-            for e in ds.get("custom_extensions") or []:
-                dd = json.loads(e["data"])
-                if dd.get("namespace") == NS: fs += dd.get("facts", [])
-        out += [dict(f, model=k, key=f.get("key") or subject_key(f["statement"], k)) for f in fs]
+        out += [dict(f, model=k, key=f.get("key") or subject_key(f["statement"], k)) for f in rj(P(FACTS[k]))]
+    return out
+def save_facts(k, rows): wj(P(FACTS[k]), [{x: v for x, v in sorted(r.items()) if v is not None} for r in rows])
+
+def osi_objects(k):
+    """Names a fact may bind to in model k: model, model.dataset, model.dataset.field, model.metric."""
+    doc = load_doc(k)
+    if not doc: return {k}
+    m = sm(doc); out = {k} | {f"{k}.{x['name']}" for x in m.get("metrics") or []}
+    for ds in m["datasets"]:
+        out.add(f"{k}.{ds['name']}"); out |= {f"{k}.{ds['name']}.{f['name']}" for f in ds.get("fields") or []}
     return out
 
 def rule_precision():
@@ -118,29 +122,7 @@ def text_of(path):
         return subprocess.run(["pdftotext", "-layout", path, "-"], capture_output=True, text=True).stdout
     return ""
 
-def llm_key(): return os.environ.get("OSI_LLM_API_KEY") or os.environ.get("XAI_API_KEY")
-def llm_extract(text):
-    """Model-based extraction (OpenAI-compatible chat endpoint). Returns [{statement, kind, model}] or None."""
-    key = llm_key()
-    if not key: return None
-    import urllib.request
-    url = os.environ.get("OSI_LLM_URL", "https://api.x.ai/v1/chat/completions")
-    prompt = ("Extract durable business facts for a land-sourcing firm (Terrafice = data-center powered land; Everstow = self storage). "
-              "Return JSON {\"facts\":[{\"statement\":str,\"kind\":one of preference|decision|business_rule|metric_definition|default|observation|local_standard|caveat,"
-              "\"model\":terrafice|everstow|shared}]}. Only facts stated in the text; no guesses.\n\n" + text[:24000])
-    body = {"model": os.environ.get("OSI_LLM_MODEL", "grok-4"), "messages": [{"role": "user", "content": prompt}],
-            "response_format": {"type": "json_object"}, "temperature": 0}
-    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
-    try:
-        out = json.load(urllib.request.urlopen(req, timeout=120))["choices"][0]["message"]["content"]
-        return json.loads(out).get("facts") or []
-    except Exception as ex:
-        print(f"[osi] model extraction failed ({type(ex).__name__}); using rules"); return None
-
 def extract(t, prec):
-    got = llm_extract(t)
-    if got is not None:
-        return [("llm", " ".join(str(f.get("statement", "")).split())[:400], f.get("kind", "observation"), f.get("model")) for f in got if f.get("statement")]
     out = []
     for rid, rx, kind, hint in RULES:
         p, n = prec.get(rid, (0.5, 0))
@@ -160,7 +142,7 @@ def cmd_ingest(a):
         sha = hashlib.sha1(t.encode()).hexdigest()
         if sha in idx_seen: continue
         aj(INDEX, {"path": os.path.basename(f), "sha": sha, "chars": len(t), "indexed_at": now(), "source_kind": a.kind,
-                   "extractor": "llm" if llm_key() else "rules"})
+                   "extractor": "rules"})
         for rid, s, kind, hint in extract(t, prec):
             cid = hashlib.sha1((rid + s).encode()).hexdigest()[:10]
             if cid in seen: continue
@@ -169,9 +151,36 @@ def cmd_ingest(a):
             if kind == "observation" and scoring_key(key) and re.search(r"\b(filter|hide|weight|should|want)\b", s, re.I): kind = "business_rule"
             aj(CAND, {"id": cid, "statement": s, "kind": kind, "rule": rid, "model": model, "key": key,
                       "confidence": round(prec.get(rid, (0.5, 0))[0], 2), "source": f"{a.kind}:{os.path.basename(f)}",
-                      "learned_at": dt.date.today().isoformat(), "status": "candidate"})
+                      "learned_at": dt.date.today().isoformat(), "status": "candidate", "extractor": "rules", "proposed_by": "rules"})
             seen.add(cid); new += 1
-    print(f"indexed {len(files)} file(s) with {'model' if llm_key() else 'rule'} extraction; {new} new candidate fact(s)")
+    print(f"indexed {len(files)} file(s) with rule extraction; {new} new candidate fact(s)")
+
+KINDS = {"preference","decision","business_rule","metric_definition","default","observation","local_standard","caveat","definition"}
+def cmd_submit(a):
+    """Agent path (no LLM key): the agent reads mail/files itself and hands over JSON facts. Same gates as ingest."""
+    rows = json.load(open(a.file)); rows = rows.get("facts", rows) if isinstance(rows, dict) else rows
+    seen = {c["id"] for c in rj(CAND)}; new = bad = 0
+    for f in rows:
+        s = " ".join(str(f.get("statement", "")).split())[:400]
+        if not s or not f.get("source") or f.get("kind") not in KINDS: bad += 1; continue
+        model = f.get("model") if f.get("model") in MODELS else None
+        if PRIVATE_RX.search(s) or f.get("private"): model = "private"
+        model = model or ("terrafice" if LAND_RX.search(s) else "everstow" if STOR_RX.search(s) else "shared")
+        bt = f.get("binds_to") or model
+        if model != "private" and bt not in osi_objects(model): bt = model   # unknown object: bind to the model; new metrics need a model change
+        cid = f.get("id") or hashlib.sha1(("agent" + s).encode()).hexdigest()[:10]
+        if cid in seen: continue
+        key = f.get("key") or subject_key(s, model)
+        kind = f["kind"]
+        if kind == "observation" and scoring_key(key) and re.search(r"\b(filter|hide|weight|should|want)\b", s, re.I): kind = "business_rule"
+        aj(CAND, {"id": cid, "statement": s, "kind": kind, "rule": "agent", "model": model, "key": key, "binds_to": bt,
+                  "entity": f.get("entity") or f.get("jurisdiction") or bt, "jurisdiction": f.get("jurisdiction"),
+                  "value_num": f.get("value_num"), "unit": f.get("unit"),
+                  "confidence": float(f.get("confidence", 0.7)), "source": str(f["source"])[:300],
+                  "learned_at": f.get("learned_at") or dt.date.today().isoformat(), "status": "candidate",
+                  "extractor": "agent", "proposed_by": a.by})
+        seen.add(cid); new += 1
+    print(f"{new} agent fact(s) queued as candidates; {bad} rejected (need statement, source and a known kind)")
 
 def reconcile(c, facts):
     """Keyed match first (same metric+scope), then wording. Returns (action, match, similarity)."""
@@ -221,17 +230,18 @@ def _verdict(a, v):
     if v == "accept" and p["action"] != "duplicate":
         if p["action"] in ("supersede", "conflict") and p.get("match"):   # the new fact lives beside the one it replaces
             p["model"] = next((f["model"] for f in model_facts() if f["id"] == p["match"]), p["model"])
-        doc = load_doc(p["model"]); m = sm(doc); e, d = ext(m); fs = d.setdefault("facts", [])
-        if p["action"] in ("supersede", "conflict") and p.get("match"):
-            for host in [e] + [x for ds in m["datasets"] for x in ds.get("custom_extensions") or []]:
-                hd = d if host is e else json.loads(host["data"])
-                for f in hd.get("facts", []):
-                    if f["id"] == p["match"]: f["status"] = "superseded"; f["superseded_by"] = p["id"]
-                if host is not e: host["data"] = json.dumps(hd, sort_keys=True)
-        fs.append({k: p[k] for k in ("id", "statement", "kind", "source", "learned_at", "confidence", "key")}
-                  | {"status": "accepted", "accepted_by": by, "rule": p["rule"], **({"supersedes": p["match"]} if p["action"] in ("supersede", "conflict") else {})})
-        e["data"] = json.dumps(d, sort_keys=True)
-        yaml.safe_dump(doc, open(P(MODELS[p["model"]]), "w"), sort_keys=False, allow_unicode=True, width=140)
+            for k in FACTS:
+                rows = rj(P(FACTS[k])); hit = False
+                for f in rows:
+                    if f["id"] == p["match"]: f["status"] = "superseded"; f["superseded_by"] = p["id"]; hit = True
+                if hit: save_facts(k, rows)
+        rows = rj(P(FACTS[p["model"]]))
+        rows.append({k: p.get(k) for k in ("id", "statement", "kind", "source", "learned_at", "confidence", "key", "binds_to", "entity",
+                                           "jurisdiction", "value_num", "unit", "extractor", "proposed_by")}
+                    | {"model": p["model"], "binds_to": p.get("binds_to") or p["model"], "entity": p.get("entity") or p.get("binds_to") or p["model"],
+                       "status": "accepted", "accepted_by": by, "decided_at": p["decided_at"], "rule": p["rule"],
+                       **({"supersedes": p["match"]} if p["action"] in ("supersede", "conflict") else {})})
+        save_facts(p["model"], rows)
     wj(PROP, props)
     aj(LEDGER, {"type": "verdict", "id": p["id"], "rule": p["rule"], "kind": p["kind"], "key": p.get("key"), "verdict": v, "by": by, "why": a.why, "at": now()})
     print(f"{p['id']} {v}ed by {by}")
@@ -266,11 +276,11 @@ def cmd_weekly(a):
            "note": "Proposals only. Nothing changes until Sahil approves; approved changes ship as a reviewed commit."}
     os.makedirs(os.path.dirname(WEEKLY), exist_ok=True); json.dump(out, open(WEEKLY, "w"), indent=1)
     print(f"{len(props)} weight proposal(s) for {week} -> {WEEKLY}")
-    if a.push:
-        sys.path.insert(0, HERE); import edks; c = edks.db()
-        for p in props: c.collection("osi_proposals").document(p["id"]).set(p, merge=True)
-        c.collection("osi_proposals").document(f"weekly-{week}").set({k: v for k, v in out.items() if k != "proposals"} | {"type": "weekly_summary", "count": len(props)})
-        print(f"pushed {len(props)} to osi_proposals")
+    if a.push:   # one document per week (was N+1 writes)
+        sys.path.insert(0, HERE); import edks
+        edks.db().collection("osi_proposals").document(f"weekly-{week}").set(
+            {k: v for k, v in out.items() if k != "proposals"} | {"type": "weekly_summary", "count": len(props), "items": {p["id"]: p for p in props}})
+        print(f"pushed weekly-{week} ({len(props)} proposal(s)) in 1 write")
 
 def coverage():
     res = {}
@@ -278,7 +288,7 @@ def coverage():
         doc = load_doc(k)
         if not doc: continue
         m = sm(doc); fl = [f for ds in m["datasets"] for f in ds.get("fields", [])]
-        _, d = ext(m); res[k] = (len([f for f in d.get("facts", []) if f.get("status") != "superseded"]), sum(bool(f.get("description") or f.get("ai_context")) for f in fl), len(fl))
+        res[k] = (len([f for f in rj(P(FACTS[k])) if f.get("status") != "superseded"]), sum(bool(f.get("description") or f.get("ai_context")) for f in fl), len(fl))
     return res
 
 def cmd_metrics(a):
@@ -291,28 +301,136 @@ def cmd_metrics(a):
     print(f"  open conflicts: {sum(p['status']=='pending' and p['action'] in ('conflict','supersede') for p in props)}")
     for k, (nf, doc, tot) in coverage().items(): print(f"  {k:<9} facts {nf:>3} | field coverage (described) {doc}/{tot}")
 
-def cmd_sync(a):
-    """Firestore osi_facts / osi_proposals / osi_ledger via the pipeline service account (Admin SDK).
-    Public models only; the private model is never synced. Collections are admin-read-only (firestore.rules)."""
+SCHEMAS = {"0.1.1": "schema/osi-0.1.1.schema.json", "0.2": "schema/ossie-0.2.0.dev0.schema.json"}
+def validate_doc(doc, spec="0.1.1"):
+    import jsonschema
+    v = jsonschema.Draft202012Validator(json.load(open(P(SCHEMAS[spec]))))
+    return [f"{'/'.join(map(str, e.path))}: {e.message[:160]}" for e in v.iter_errors(doc)]
+
+def cmd_validate(a):
+    bad = 0
+    for k in MODELS:
+        doc = load_doc(k)
+        if not doc: continue
+        errs = validate_doc(doc); bad += len(errs)
+        print(f"{MODELS[k]:<22} {'OK' if not errs else str(len(errs)) + ' error(s)'}"); [print("   ", e) for e in errs[:10]]
+    if bad: sys.exit(1)
+
+def _facts_firestore():
     sys.path.insert(0, HERE); import edks
-    c = edks.db(); b = c.batch(); n = 0
-    def put(col, did, d):
-        nonlocal b, n
-        b.set(c.collection(col).document(re.sub(r"[/]", "_", did)), d); n += 1
-        if n % 400 == 0: b.commit(); b = c.batch()
-    for f in model_facts(include_private=False): put("osi_facts", f"{f['model']}__{f['id']}", f)
-    for p in rj(PROP):
-        if p["model"] != "private": put("osi_proposals", p["id"], p)
-    for r in rj(LEDGER): put("osi_ledger", hashlib.sha1(json.dumps(r, sort_keys=True).encode()).hexdigest()[:16], r)
+    out = []   # one read per (model, entity) group document, not per fact
+    for d in edks.db().collection("osi_facts").stream(): out += [dict(f, model=d.to_dict()["model"]) for f in d.to_dict().get("facts", [])]
+    return out
+
+def build_export(facts, spec="0.1.1"):
+    """Valid OSI documents with accepted facts folded into the ai_context of the object each fact binds_to."""
+    import copy
+    docs = {}
+    for k in PUBLIC:
+        doc = copy.deepcopy(load_doc(k)); m = sm(doc)
+        objs = {k: m} | {f"{k}.{x['name']}": x for x in m.get("metrics") or []}
+        for ds in m["datasets"]:
+            objs[f"{k}.{ds['name']}"] = ds; objs |= {f"{k}.{ds['name']}.{f['name']}": f for f in ds.get("fields") or []}
+        bound = {}
+        for f in facts:
+            if f.get("model") != k or f.get("status") != "accepted": continue
+            bound.setdefault(f.get("binds_to") if f.get("binds_to") in objs else k, []).append(f)
+        for name, fs in bound.items():
+            o = objs[name]; ac = o.get("ai_context") or {}
+            ac = {"instructions": ac} if isinstance(ac, str) else dict(ac)
+            lines = [f"- {f['statement']} [{f['id']}; {f.get('kind')}; source: {f.get('source')}; approved by {f.get('accepted_by', 'seed')}]"
+                     for f in sorted(fs, key=lambda x: x["id"])]
+            ac["instructions"] = ((ac.get("instructions") or "") + "\nLearned facts (SunflowerOS memory, approved):\n" + "\n".join(lines)).strip()
+            o["ai_context"] = ac
+            o.setdefault("custom_extensions", []).append({"vendor_name": "COMMON", "data": json.dumps(
+                {"namespace": NS, "memory_facts": [f["id"] for f in fs], "dataset": "edifice_shared.memory_facts"}, sort_keys=True)})
+        docs[k] = to_v02(doc) if spec == "0.2" else doc
+    return docs
+
+def to_v02(doc):
+    """0.1.1 -> 0.2.0.dev0: flat root, native datatype, free-form vendor token."""
+    m = sm(doc); m = {"version": "0.2.0.dev0", **m}
+    def fix(o):
+        keep = []
+        for e in o.get("custom_extensions") or []:
+            d = json.loads(e["data"])
+            if d.get("datatype"): o["datatype"] = d.pop("datatype")
+            d.pop("namespace", None)
+            if d: keep.append({"vendor_name": "EDIFICE_SUNFLOWER", "data": json.dumps(d, sort_keys=True)})
+        if keep: o["custom_extensions"] = keep
+        else: o.pop("custom_extensions", None)
+    fix(m)
+    for ds in m["datasets"]:
+        fix(ds); [fix(f) for f in ds.get("fields") or []]
+    [fix(x) for x in m.get("metrics") or []]; [fix(x) for x in m.get("relationships") or []]
+    return m
+
+def cmd_export(a):
+    facts = _facts_firestore() if a.src == "firestore" else model_facts(include_private=False)
+    out = a.out or P("dist", a.spec); os.makedirs(out, exist_ok=True); bad = 0
+    for k, doc in build_export(facts, a.spec).items():
+        errs = validate_doc(doc, a.spec); bad += len(errs)
+        yaml.safe_dump(doc, open(os.path.join(out, f"{k}.yaml"), "w"), sort_keys=False, allow_unicode=True, width=140)
+        print(f"{k}.yaml -> {out} (OSI {a.spec}): {'valid' if not errs else errs[:3]}")
+    if bad: sys.exit(1)
+
+def slug(s): return re.sub(r"[^a-z0-9]+", "-", str(s).lower()).strip("-")[:80] or "_"
+def sync_docs():
+    """Firestore layout (all OSI-mapped, document counts kept low):
+       osi_facts/{model}__{entity}  {model, entity, binds_to:[...], facts:[memory_facts rows]}   one doc per group
+       osi_proposals/pending        {items:[memory_proposals rows]}                           one doc
+       osi_ledger/{YYYY-MM}         {entries:[memory_ledger rows]}                            one doc per month
+       osi_meta/summary             metrics; osi_meta/sync holds content hashes (the dedupe index)"""
+    docs = {}
+    for f in model_facts(include_private=False):
+        g = docs.setdefault(f"osi_facts/{f['model']}__{slug(f.get('entity') or f['model'])}",
+                            {"model": f["model"], "entity": f.get("entity") or f["model"], "binds_to": [], "facts": []})
+        g["facts"].append(f); g["binds_to"] = sorted(set(g["binds_to"]) | {f.get("binds_to") or f["model"]})
+    for g in docs.values(): g["facts"].sort(key=lambda x: x["id"])
+    if os.path.exists(PROP):
+        docs["osi_proposals/pending"] = {"items": sorted([p for p in rj(PROP) if p["status"] == "pending" and p["model"] != "private"], key=lambda x: x["id"])}
+    if os.path.exists(LEDGER):
+        for r in rj(LEDGER):
+            r = dict(r, eid=hashlib.sha1(json.dumps(r, sort_keys=True).encode()).hexdigest()[:16])
+            docs.setdefault(f"osi_ledger/{r.get('at', '')[:7] or 'undated'}", {"entries": []})["entries"].append(r)
     hit, tot = outcome_accuracy()
-    put("osi_ledger", "_metrics", {"type": "metrics", "at": now(), "coverage": {k: list(v) for k, v in coverage().items() if k != "private"},
-                                   "outcome_hits": hit, "outcome_n": tot})
-    b.commit(); print(f"[osi] synced {n} doc(s) to osi_facts/osi_proposals/osi_ledger (private model excluded)")
+    docs["osi_meta/summary"] = {"type": "metrics", "coverage": {k: list(v) for k, v in coverage().items() if k != "private"},
+                                "outcome_hits": hit, "outcome_n": tot, "groups": sum(k.startswith("osi_facts/") for k in docs)}
+    return docs
+def h(d): return hashlib.sha1(json.dumps(d, sort_keys=True, default=str).encode()).hexdigest()[:16]
+
+def cmd_sync(a):
+    """1 read (osi_meta/sync hash index) + one batched write per changed document. No collection scans."""
+    docs = sync_docs(); new = {k: h(v) for k, v in docs.items()}
+    if a.dry_run:
+        old = json.load(open(SYNCC)) if os.path.exists(SYNCC) else {}
+    else:
+        sys.path.insert(0, HERE); import edks
+        c = edks.db(); s = c.collection("osi_meta").document("sync").get()
+        old = (s.to_dict() or {}).get("hashes", {}) if s.exists else {}
+    changed = [k for k in docs if old.get(k) != new[k]]
+    gone = [k for k in old if k.startswith("osi_facts/") and k not in docs]   # regrouped fact docs only; ledger is never deleted
+    if a.dry_run:
+        print(f"[osi] dry run: {len(docs)} doc(s), {len(changed)} changed, {len(gone)} stale -> would cost 1 read + "
+              f"{len(changed) + len(gone) + bool(changed or gone)} write(s)")
+        os.makedirs(os.path.dirname(SYNCC), exist_ok=True); json.dump(new, open(SYNCC, "w")); return
+    if not changed and not gone: print("[osi] no changes: 1 read, 0 writes"); return
+    b = c.batch(); n = 0
+    for k in changed:
+        col, did = k.split("/", 1); b.set(c.collection(col).document(did), docs[k] | {"synced_at": now()}); n += 1
+        if n % 400 == 0: b.commit(); b = c.batch()
+    for k in gone: col, did = k.split("/", 1); b.delete(c.collection(col).document(did)); n += 1
+    b.set(c.collection("osi_meta").document("sync"), {"hashes": new, "at": now()}); n += 1
+    b.commit(); print(f"[osi] synced: 1 read, {n} write(s) ({len(changed)} changed, {len(gone)} removed); private model excluded")
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter); sp = ap.add_subparsers(dest="c", required=True)
     x = sp.add_parser("ingest"); x.add_argument("paths", nargs="*"); x.add_argument("--kind", default="file"); x.set_defaults(f=cmd_ingest)
-    for n, f in (("propose", cmd_propose), ("diff", cmd_diff), ("metrics", cmd_metrics), ("sync", cmd_sync)): sp.add_parser(n).set_defaults(f=f)
+    for n, f in (("propose", cmd_propose), ("diff", cmd_diff), ("metrics", cmd_metrics), ("validate", cmd_validate)): sp.add_parser(n).set_defaults(f=f)
+    x = sp.add_parser("sync"); x.add_argument("--dry-run", action="store_true"); x.set_defaults(f=cmd_sync)
+    x = sp.add_parser("submit"); x.add_argument("file"); x.add_argument("--by", default="grok-bot"); x.set_defaults(f=cmd_submit)
+    x = sp.add_parser("export"); x.add_argument("--spec", choices=["0.1.1", "0.2"], default="0.1.1"); x.add_argument("--from", dest="src", choices=["local", "firestore"], default="local")
+    x.add_argument("--out"); x.set_defaults(f=cmd_export)
     for n in ("accept", "reject"):
         x = sp.add_parser(n); x.add_argument("id"); x.add_argument("--by"); x.add_argument("--why"); x.set_defaults(f=lambda a, n=n: _verdict(a, n))
     x = sp.add_parser("outcome"); x.add_argument("site_id"); x.add_argument("stage"); x.add_argument("--predicted", type=float); x.set_defaults(f=cmd_outcome)

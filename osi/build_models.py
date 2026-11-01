@@ -94,8 +94,9 @@ std={"name":"local_standards","source":"repo:dc-references/standards/standards.j
      "fields":[F("standard_id","index","Integer"),F("jurisdiction","jurisdiction","String"),F("category","category","String"),
                F("value","value","String"),F("source_doc","source","String"),F("page","page","String"),F("label","label","String")]}
 s=json.load(open(ST))["standards"]
-std["custom_extensions"]=X(facts=[dict(id=f"std.{i}",statement=f"{x['jurisdiction']} {x['category']}: {x['value']}",kind="local_standard",
-       source=f"{x['source']} {x['page']}",label=x['label'],learned_at="2026-11-01",confidence=0.9 if x['label']=="code requirement" else 0.7,status="accepted") for i,x in enumerate(s)])
+STD_FACTS=[dict(id=f"std.{i}",statement=f"{x['jurisdiction']} {x['category']}: {x['value']}",kind="local_standard",binds_to="terrafice.local_standards",
+       entity=x['jurisdiction'].split(" (")[0],jurisdiction=x['jurisdiction'].split(" (")[0],
+       source=f"{x['source']} {x['page']}",label=x['label'],learned_at="2026-11-01",confidence=0.9 if x['label']=="code requirement" else 0.7,status="accepted") for i,x in enumerate(s)]
 
 land=site_ds("land",[F("price_per_acre","j.price.per_acre","Decimal",syn=["$/acre"]),
   F("line_kv_best","j.power.lines_by_class[].class","Integer","Highest nearby line voltage (kV)"),
@@ -126,7 +127,7 @@ tf={"version":V,"name":"terrafice","description":"Terrafice (powered land / data
       {"name":"plans_to_site","from":"site_plans","to":"land_sites","from_columns":["site_id"],"to_columns":["site_id"]},
       {"name":"standards_to_jurisdiction","from":"local_standards","to":"jurisdictions","from_columns":["jurisdiction"],"to_columns":["jurisdiction"]}],
     "metrics":[M("mw_per_acre","SUM(site_plans.it_mw) / SUM(land_sites.acres)","Planned IT MW per acre",syn=["density"])],
-    "custom_extensions":X(facts=TF,market_score_config=mc,provenance="pipeline/market_score.json; Sahil messages; memory")}
+    "custom_extensions":X(market_score_config=mc,provenance="pipeline/market_score.json; Sahil messages; memory")}
 es_cfg=json.load(open(f"{R}/everstow_score.json"))
 st=site_ds("storage",[F("price","j.price","Decimal"),F("price_per_acre","j.price_per_acre","Decimal"),
   F("pop3","j.demand.pop3","Integer",syn=["3 mile population"]),F("pop5","j.demand.pop5","Integer",syn=["5 mile population"]),
@@ -143,19 +144,59 @@ es={"version":V,"name":"everstow","description":"Everstow (self-storage) semanti
     "ai_context":{"instructions":"Everstow = Sahil's self-storage business (internal view key 'storage'). Demand layers are Everstow-only.","synonyms":["self storage","storage"]},
     "datasets":[st,ev|{"name":"stage_events"},comp,perm],
     "relationships":[{"name":"events_to_site","from":"stage_events","to":"storage_sites","from_columns":["site_id"],"to_columns":["site_id"]}],
-    "custom_extensions":X(facts=ES,score_config=es_cfg)}
+    "custom_extensions":X(score_config=es_cfg)}
 sh={"version":V,"name":"edifice_shared","description":"Shared SunflowerOS vocabulary: businesses, pipeline stages, governance rules, memory ledger.",
-    "ai_context":{"instructions":"Shared terms for both businesses. Learned facts live in custom_extensions with provenance."},
+    "ai_context":{"instructions":"Shared terms for both businesses. Learned facts are rows of the memory_facts dataset (Firestore osi_facts, grouped per bound object/entity). Each fact binds_to a model, dataset, field or metric; osi_memory.py export surfaces accepted facts in the ai_context of the bound object."},
     "datasets":[ev,juris,
-      {"name":"memory_facts","source":"repo:osi/ledger.jsonl (proposed firestore:osiFacts)","primary_key":["fact_id"],
-       "fields":[F("fact_id","id","String"),F("statement","statement","String"),F("kind","kind","String"),F("status","status","String","proposed|accepted|rejected|superseded"),
-                 F("confidence","confidence","Float"),F("source","source","String"),F("learned_at","learned_at","Date"),F("supersedes","supersedes","String")],
-       "metrics":[M("acceptance_rate","SUM(CASE WHEN status='accepted' THEN 1 ELSE 0 END) * 1.0 / COUNT(fact_id)","Share of proposed facts accepted","Float")]}],
-    "custom_extensions":X(facts=SH,stages={"pursue":["Reviewing","Contacted","In Diligence","LOI Submitted","Under Contract","Closed"],"pass":["Passed","On Hold"]})}
+      {"name":"memory_facts","source":"firestore:dms-edvc/osi_facts/{model}__{entity}.facts.{fact_id}","primary_key":["fact_id"],
+       "description":"Learned, approved knowledge. One row per fact; Firestore groups rows per (model, entity) to keep document counts low.",
+       "fields":[F("fact_id","id","String"),F("model","model","String","terrafice|everstow|shared"),
+                 F("binds_to","binds_to","String","OSI object the fact is about: model | model.dataset | model.dataset.field | model.metric"),
+                 F("entity","entity","String","Grouping entity (jurisdiction, site_id, factor or the bound object)"),
+                 F("metric_key","key","String","Subject key metric|scope|business used for dedupe/conflict"),
+                 F("jurisdiction","jurisdiction","String"),F("statement","statement","String"),F("kind","kind","String"),
+                 F("value_num","value_num","Decimal"),F("unit","unit","String"),
+                 F("status","status","String","accepted|superseded"),F("confidence","confidence","Float"),
+                 F("source","source","String","Provenance: document/page, message id or commit"),F("extractor","extractor","String","agent|rules|seed"),
+                 F("learned_at","learned_at","Date"),F("decided_by","accepted_by","String","sahil@edifice.vc|roger@edifice.vc"),
+                 F("supersedes","supersedes","String"),F("superseded_by","superseded_by","String")],
+       "metrics":[M("accepted_fact_count","COUNT(CASE WHEN status='accepted' THEN fact_id END)","Live accepted facts","Integer")]},
+      {"name":"memory_proposals","source":"firestore:dms-edvc/osi_proposals/pending.items.{proposal_id}","primary_key":["proposal_id"],
+       "description":"Pending candidate facts awaiting Sahil/Roger (scoring-affecting or conflicting ones need Sahil).",
+       "fields":[F("proposal_id","id","String"),F("action","action","String","new|duplicate|conflict|supersede"),
+                 F("match","match","String"),F("needs_sahil","needs_sahil","Boolean"),F("status","status","String","pending"),
+                 F("proposed_at","proposed_at","DateTimeTz"),F("proposed_by","proposed_by","String")],
+       "metrics":[M("open_conflicts","COUNT(CASE WHEN action IN ('conflict','supersede') THEN proposal_id END)","Pending conflicts","Integer")]},
+      {"name":"memory_ledger","source":"firestore:dms-edvc/osi_ledger/{YYYY-MM}.entries[]","primary_key":["entry_id"],
+       "description":"Append-only verdicts and deal outcomes, one Firestore doc per month.",
+       "fields":[F("entry_id","eid","String"),F("type","type","String","verdict|outcome"),F("fact_id","id","String"),F("verdict","verdict","String"),
+                 F("by","by","String"),F("rule","rule","String"),F("at","at","DateTimeTz")],
+       "metrics":[M("acceptance_rate","SUM(CASE WHEN verdict='accept' THEN 1 ELSE 0 END) * 1.0 / NULLIF(COUNT(CASE WHEN type='verdict' THEN entry_id END),0)","Share of decided proposals accepted","Float")]}],
+    "relationships":[
+      {"name":"proposal_to_fact","from":"memory_proposals","to":"memory_facts","from_columns":["proposal_id"],"to_columns":["fact_id"]},
+      {"name":"ledger_to_fact","from":"memory_ledger","to":"memory_facts","from_columns":["fact_id"],"to_columns":["fact_id"]}],
+    "custom_extensions":X(stages={"pursue":["Reviewing","Contacted","In Diligence","LOI Submitted","Under Contract","Closed"],"pass":["Passed","On Hold"]})}
 pv={"version":V,"name":"edifice_private","description":"Confidential facts (contacts, deal ids, licence terms, CIM). Never commit.",
     "datasets":[{"name":"contacts","source":"firestore:dms-edvc/sites.contact (admin-only)","primary_key":["contact_id"],"fields":[F("contact_id","id","String")]}],
-    "custom_extensions":X(facts=PRIV)}
+    "custom_extensions":X(memory="facts live in osi/private/facts.jsonl (never synced, never committed)")}
 import re as _re
+def emit_facts(path,model,rows):
+    """Seed facts upsert by id; learned (non-seed) rows and supersede marks already in the store are preserved."""
+    os.makedirs(os.path.dirname(path),exist_ok=True)
+    cur={}
+    if os.path.exists(path):
+        for l in open(path):
+            if l.strip(): r=json.loads(l); cur[r["id"]]=r
+    for f in rows:
+        r=dict(model=model,binds_to=f.get("binds_to",model),entity=f.get("entity",f.get("binds_to",model)),extractor="seed",accepted_by="sahil@edifice.vc")|f
+        old=cur.get(r["id"])
+        if old and old.get("extractor")!="seed": continue
+        if old and old.get("status")=="superseded": r|={k:old[k] for k in ("status","superseded_by") if k in old}
+        cur[r["id"]]=r
+    with open(path,"w") as fh:
+        for r in cur.values(): fh.write(json.dumps(r,sort_keys=True)+"\n")
+emit_facts("facts/terrafice.jsonl","terrafice",TF+STD_FACTS); emit_facts("facts/everstow.jsonl","everstow",ES)
+emit_facts("facts/shared.jsonl","shared",SH); emit_facts("private/facts.jsonl","private",PRIV)
 def to011(m):
     """0.1.1 has no dataset-scoped metrics: lift them to the model, qualifying field names as dataset.field."""
     for ds in m["datasets"]:
