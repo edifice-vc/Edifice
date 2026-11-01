@@ -23,3 +23,4 @@ osi/state/
 osi/inbox/
 !osi/sources/standards.json
 osi/dist/
+!osi/schema/*.json
