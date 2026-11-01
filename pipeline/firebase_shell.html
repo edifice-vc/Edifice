@@ -1,28 +1,37 @@
 <!-- Firebase shell: Google sign-in gate. No site data ships in this page; after an allowed account
      signs in, the data and the private draft engine are read from Firestore and the app starts. -->
 <style>
-#gate{position:fixed;inset:0;z-index:100;background:var(--bg);background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:72px 72px;display:flex;align-items:center;justify-content:center;padding:24px}
+#gate{position:fixed;inset:0;z-index:100;background:#070707;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:72px 72px;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
 #gate[hidden],#gate [hidden]{display:none!important}
-#gate .box{width:min(440px,100%);border:1px solid var(--line);background:var(--bg);padding:28px 24px}
-#gate h1{font-size:clamp(32px,8vw,48px);margin:18px 0 8px}
-#gate .btn{cursor:pointer;margin-top:18px}
+#gate .box{width:min(460px,100%);border:1px solid var(--line);background:rgba(10,10,10,.92);padding:40px 32px 28px;border-radius:0}
+#gate .gk{display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+#gate .gk .logo{gap:8px}#gate .gk .logo span{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em}
+#gate .sw{font-family:Jost,sans-serif;font-weight:300;font-size:clamp(44px,11vw,64px);line-height:1;letter-spacing:-.01em;margin:44px 0 6px;color:#fff}
+#gate h1{font-family:'JetBrains Mono',monospace;font-weight:400;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:0 0 28px}
+#gate .sub{font-size:15px;line-height:1.55;color:#cfcfcf;margin:0;border-top:1px solid var(--line);padding-top:20px}
+#gate .btn{cursor:pointer;margin-top:24px;width:100%;border-radius:0;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+#gate .btn.pri{background:#F14B21;border-color:#F14B21;color:#000}
 #gate .btn[disabled]{opacity:.4;cursor:default}
-#gate .msg{min-height:1.4em;margin-top:14px;color:var(--mut)}
+#gate .msg{min-height:1.4em;margin-top:16px;color:var(--mut)}
 #gate .dash{border:1px dashed var(--line);padding:10px 12px;margin-top:14px}
+#gate .gf{margin-top:28px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#5f5f5f}
 #gateErr{border:1px solid #F14B21;padding:10px 12px;margin-top:14px}
 #gateErr pre{white-space:pre-wrap;word-break:break-word;margin:0;font-size:12px;line-height:1.5;max-height:40vh;overflow:auto}
-#gateErr .row{display:flex;gap:8px;flex-wrap:wrap}
+#gateErr .row{display:flex;gap:8px;flex-wrap:wrap}#gateErr .btn{width:auto;margin-top:10px}
+@media(max-width:480px){#gate{padding:16px}#gate .box{padding:32px 20px 24px}#gate .sw{margin-top:36px}}
 body.gated .wrap{visibility:hidden}
 </style>
 <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gateT"><div class="box">
- <div class="logo"><svg width="20" height="30" viewBox="0 0 32 48" fill="none" aria-hidden="true"><path d="M19 1 L31 13 L31 22 L19 34 L19 27 L27 19 L27 16 L19 8 Z" stroke="#F14B21" stroke-width="3"/><path d="M14 13 L14 20 L6 28 L6 31 L14 39 L14 46 L2 34 L2 25 Z" stroke="#F14B21" stroke-width="3"/></svg><span class="wordmark">Edifice</span></div>
- <h1 id="gateT">Kansas sites.</h1>
+ <div class="gk"><div class="logo"><svg width="14" height="21" viewBox="0 0 32 48" fill="none" aria-hidden="true"><path d="M19 1 L31 13 L31 22 L19 34 L19 27 L27 19 L27 16 L19 8 Z" stroke="#F14B21" stroke-width="3"/><path d="M14 13 L14 20 L6 28 L6 31 L14 39 L14 46 L2 34 L2 25 Z" stroke="#F14B21" stroke-width="3"/></svg><span>Edifice</span></div><span>Private</span></div>
+ <div class="sw">Sunflower</div>
+ <h1 id="gateT">Kansas deal pipeline</h1>
  <p class="sub" id="gateSub">Private research and deal pipeline. Sign in with your Edifice Google account.</p>
  <button class="btn pri" type="button" id="gateIn" hidden>Sign in with Google</button>
  <button class="btn" type="button" id="gateOut" hidden>Sign out</button>
  <div class="lbl mono msg" id="gateMsg" role="status">Checking sign-in</div>
  <div id="gateErr" role="alert" hidden><pre class="mono" id="gateErrTxt"></pre>
   <div class="row"><button class="btn" type="button" id="gateRetry">Try again</button><button class="btn" type="button" id="gateCopy">Copy error details</button></div></div>
+ <div class="gf">Terrafice · Everstow · Access by invitation</div>
 </div></div>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/__FB_VER__/firebase-app.js';
@@ -113,7 +122,7 @@ window.addEventListener('error', ev => { if (!started && ev.error) showErr('Unex
 let started = false;
 onAuthStateChanged(auth, async user => {
   if (started) { if (!user) location.reload(); return; }
-  if (!user) { $g('gateT').textContent = 'Kansas sites.'; gate('Private research and deal pipeline. Sign in with your Edifice Google account.', '', 'in'); return; }
+  if (!user) { $g('gateT').textContent = 'Kansas deal pipeline'; gate('Private research and deal pipeline. Sign in with your Edifice Google account.', '', 'in'); return; }
   const email = (user.email || '').toLowerCase();
   gate(null, 'Checking access for ' + email);
   const retry = () => location.reload();

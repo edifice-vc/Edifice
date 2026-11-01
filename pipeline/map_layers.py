@@ -11,7 +11,7 @@ Sources (all public, no keys):
 import json, os, time, urllib.parse, urllib.request
 
 BBOX = (-102.06, 36.99, -94.58, 40.01)
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sites", "layers")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sunflower", "layers")
 UA = {"User-Agent": "edifice-sites-map/1.0"}
 LINES = "https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Electric_Power_Transmission_Lines/FeatureServer/0"
 GAS = "https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/Natural_Gas_Interstate_and_Intrastate_Pipelines_1/FeatureServer/0"

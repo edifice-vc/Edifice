@@ -148,7 +148,7 @@ def encrypt(plain_path, out_dir, password_env):
     env = dict(os.environ, STATICRYPT_PASSWORD=pw)
     cmd = ["npx", "-y", "staticrypt@3", plain_path, "-d", out_dir, "-c", "false", "--short", "--salt", SALT,
            "--remember", "30",
-           "--template-title", "Edifice — Kansas Sites",
+           "--template-title", "Sunflower · Edifice",
            "--template-instructions", "Private research. Enter the password to continue.",
            "--template-button", "Unlock", "--template-placeholder", "Password",
            "--template-color-primary", "#F14B21", "--template-color-secondary", "#0A0A0A"]

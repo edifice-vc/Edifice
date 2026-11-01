@@ -109,7 +109,7 @@ def main():
     ap.add_argument("--snapshots", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--top", type=int, default=10)
-    ap.add_argument("--page-url", default="https://edifice.vc/sites/")
+    ap.add_argument("--page-url", default="https://edifice.vc/sunflower/")
     a = ap.parse_args()
     cur = load(a.data); today = dt.date.today().isoformat()
     os.makedirs(a.snapshots, exist_ok=True); os.makedirs(a.out, exist_ok=True)
@@ -148,7 +148,7 @@ def main():
         for x in comm(s).get("issues", []): affected.setdefault(x, []).append(s)
     fails = [f"{k}: {v['detail']}" for k, v in cur["sources"].items() if not v["ok"]]
 
-    md = [f"# Edifice — Kansas data-center sites: weekly report ({today})", "",
+    md = [f"# Sunflower — Kansas sites: weekly report ({today})", "",
           f"{cur['count']} sites tracked · {len(new)} new · {len(changed)} changed · {len(removed)} removed since {since}. "
           f"Full list (password): {a.page_url}", ""]
     md += ["## New sites", ""] + ([f"- {site_line(s)}" for s in sorted(new, key=lambda s: -ov(s))] or ["- None"]) + [""]
