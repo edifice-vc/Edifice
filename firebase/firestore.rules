@@ -222,25 +222,12 @@ service cloud.firestore {
         && d.date is string && d.date.size() <= 40 && d.created == request.time;
     }
 
-    // SunflowerOS memory (OSI / Apache Ossie). Written only by the pipeline service account (Admin SDK bypasses
-    // these rules). Admins read. Sahil or Roger may accept/reject a pending proposal (status + who/when only);
-    // proposals that change scoring, Site Planning defaults or an existing fact (needs_sahil) are Sahil's alone.
-    // The private model is never written here.
-    function osiDecider() {
-      return admin() && email() in ['sahil@edifice.vc', 'roger@edifice.vc'];
-    }
-    match /osi_facts/{id} { allow read: if admin(); allow write: if false; }
-    match /osi_ledger/{id} { allow read: if admin(); allow write: if false; }
-    match /osi_proposals/{id} {
-      allow read: if admin();
-      allow create, delete: if false;
-      allow update: if osiDecider()
-        && resource.data.status == 'pending'
-        && (resource.data.get('needs_sahil', true) == false || email() == 'sahil@edifice.vc')
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'decided_by', 'decided_at', 'why'])
-        && request.resource.data.status in ['accepted', 'rejected']
-        && request.resource.data.decided_by == email() && request.resource.data.decided_at == request.time
-        && str(request.resource.data.get('why', ''), 2000);
+    // SunflowerOS memory (OSI / Apache Ossie): osi_facts, osi_proposals, osi_ledger, osi_meta (+ any future osi_*).
+    // Written only by the pipeline (Admin SDK bypasses rules). Admins read; no client writes. Accept/reject runs
+    // through osi_memory.py (Sahil or Roger only; scoring/conflicting proposals Sahil only). Private model never here.
+    match /{col}/{id} {
+      allow read: if col.matches('osi_.*') && admin();
+      allow write: if false;
     }
 
     // Lets the realtime collection-group listener read every deal's events.
