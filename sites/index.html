@@ -411,6 +411,20 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
 .rnote{padding:10px 12px;border:1px solid var(--ln2);margin-top:12px}
 .rtoast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1C1C1C;border:1px solid var(--ln2);color:var(--t1);padding:12px 16px;display:flex;gap:18px;align-items:center;z-index:1000;font-size:13px;max-width:calc(100vw - 32px)}.rtoast[hidden]{display:none}
 .rtoast .linkbtn{background:none;border:0;color:#fff!important;text-decoration:underline;cursor:pointer;font:inherit}
+.topnav button[hidden]{display:none!important}
+.spmod{margin-top:12px}.spmod[hidden]{display:none!important}
+.sptop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0 12px}.sptop select{min-width:320px;max-width:100%}
+.spgrid{display:grid;grid-template-columns:260px 1fr 360px;border:1px solid var(--line);min-height:640px}
+.spin,.spout{padding:14px 16px;overflow:auto;max-height:760px}.spin{border-right:1px solid var(--line)}.spout{border-left:1px solid var(--line)}
+.spmapw{position:relative;min-height:640px}#spMap{position:absolute;inset:0}.sphint{position:absolute;left:12px;top:12px;background:rgba(10,10,10,.85);padding:6px 10px;border:1px solid var(--line);z-index:2;max-width:calc(100% - 80px)}.sphint:empty{display:none}
+.spsec{margin-bottom:14px}.spsec>.lbl{margin-bottom:6px;color:var(--t2)}.spf{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--t2)}.spf i{font-style:normal;color:var(--t3);font-size:11px}.spf input{width:96px;text-align:right;padding:5px 7px}.spf input::placeholder{color:var(--t3);font-size:10px}
+.spbig b{font:400 44px/1.1 'JetBrains Mono',monospace;color:var(--t1);display:block;margin:4px 0}.spbig b i{font-style:normal;font-size:18px;color:var(--t2)}
+.spbind{display:flex;justify-content:space-between;align-items:center;margin:14px 0;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.spbadge{display:inline-block;border:1px solid #E0B341;color:#E0B341;font:500 11px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px}
+.spest{font:500 9px 'JetBrains Mono',monospace;letter-spacing:.12em;color:#E0B341;border:1px solid rgba(224,179,65,.5);padding:1px 4px;margin-left:4px;vertical-align:middle}.spest.ov{color:var(--t2);border-color:var(--line)}
+.spbar{height:8px;background:#6F9E7D;margin:6px 0}.spbar i{display:block;height:100%;background:#B5B3AE}.spmr{display:flex;justify-content:space-between;font-size:11px;color:var(--t2)}
+.sptbl{width:100%;margin-top:6px}.sptbl tr.on td{color:var(--t1);box-shadow:inset 2px 0 0 #F14B21}.spfoot{margin-top:10px;color:var(--t3)}
+@media(max-width:1100px){.spgrid{grid-template-columns:1fr}.spin,.spout{border:0;border-bottom:1px solid var(--line);max-height:none}.spmapw{min-height:420px}.spin{order:2}.spout{order:3}}
 </style>
 </head>
 <body class="gated">
@@ -422,10 +436,11 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
  </a>
  <div class="hdr-r"><span class="lbl mono" id="refreshed"></span><span class="lbl mono syncst off" id="sync" role="status" title="Pipeline sync status">Not synced</span><span class="who lbl mono" id="whoWrap" hidden><label for="me">Signed in as</label><select id="me"></select></span><span class="acct lbl mono" id="acct" hidden><span id="acctWho"></span><button type="button" id="setBtn" hidden>Settings</button><button type="button" id="outBtn">Sign out</button></span></div>
 </header>
-<div class="viewbar"><nav class="topnav" role="tablist" aria-label="Modules"><button type="button" role="tab" data-top="deals">Deals</button><button type="button" role="tab" data-top="map">Map</button></nav><select id="view" aria-label="Choose table" hidden><option value="land">Powered Land</option><option value="storage">Storage</option></select></div>
+<div class="viewbar"><nav class="topnav" role="tablist" aria-label="Modules"><button type="button" role="tab" data-top="deals">Deals</button><button type="button" role="tab" data-top="map">Map</button><button type="button" role="tab" data-top="plan" id="planTab" hidden>Site Planning</button></nav><select id="view" aria-label="Choose table" hidden><option value="land">Powered Land</option><option value="storage">Storage</option></select></div>
 <div class="ais" role="search"><label class="lbl mono" for="aiQ">AI search</label><input id="aiQ" type="search" autocomplete="off" spellcheck="false" aria-describedby="aiChips" placeholder="Ask in plain English"><kbd title="Press / to search">/</kbd></div><div class="aichips" id="aiChips" aria-live="polite"></div>
 <div class="dealseg" id="dealSeg" role="tablist" aria-label="Deal type"><button type="button" role="tab" data-dk="land">Powered Land<span class="n" id="dkL"></span></button><button type="button" role="tab" data-dk="storage">Self Storage<span class="n" id="dkS"></span></button></div>
 <div id="viewMap" class="mapmod" hidden aria-label="Kansas map"><div class="mapside" id="kmSide"></div><div id="kmMap"></div></div>
+<div id="viewPlan" class="spmod" hidden aria-label="Site planning"></div>
 <div id="viewLand">
 <div class="eyebrow mono">Kansas · Data-center land</div>
 <h1>Sites <strong>with power &amp; gas.</strong></h1>
@@ -437,7 +452,7 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
 <div id="listL">
 <div class="cards" id="cards"></div>
 <div class="tblwrap"><table id="tbl"><thead><tr>
- <th data-c="sel" class="selc"><input type="checkbox" data-selall="land" aria-label="Select all visible"></th><th data-k="stage">Stage</th><th data-k="score">Overall</th><th data-k="infra">Infra</th><th data-k="comm">Comm</th><th data-k="name">Site</th><th data-k="county">County</th><th data-k="acres">Acres</th><th data-k="price">Price</th><th data-k="ppa">$/acre<th data-k="dom">Days on mkt</th><th data-k="tx">Best line</th><th data-k="sub">Substation</th><th data-k="gas">Gas pipeline</th><th>Contact</th>
+ <th data-c="sel" class="selc"><input type="checkbox" data-selall="land" aria-label="Select all visible"></th><th data-k="stage">Stage</th><th data-k="score">Overall</th><th data-k="infra">Infra</th><th data-k="comm">Comm</th><th data-k="name">Site</th><th data-k="county">County</th><th data-k="acres">Acres</th><th data-k="price">Price</th><th data-k="ppa">$/acre<th data-k="dom">Days on mkt</th><th data-k="tx">Best line</th><th data-k="sub">Substation</th><th data-k="gas">Gas pipeline</th><th data-c="plan">Plan MW</th><th>Contact</th>
 </tr></thead><tbody></tbody></table></div>
 </div>
 <details class="lr" id="lrL"><summary>What your decisions say</summary><div class="db" id="lrLb"></div></details>
@@ -640,7 +655,7 @@ function render(){
  document.querySelectorAll('th[data-k]').forEach(th=>th.classList.toggle('s',th.dataset.k===k));
  $('count').textContent=`${R.length} of ${S.filter(o=>!hidK('land',o.id)).length} sites`;$('dkL').textContent=R.length;{const sb=$('fdLgo');if(sb)sb.textContent=`Show ${R.length} sites`}afterRender('land',R);
  $('cards').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv);return `<div class="card" data-id="${s.id}">${selBox('land',s.id)}<div class="score">${scTxt('land',s)}</div><div>${stB('land',s.id)}${badges(s)}${annexBadge(s)}${regFlag(s)}</div><h3>${esc(s.name)}</h3><div class="lbl mono">${esc(s.city)} · ${esc(s.county)} Co · ${fmt(s.acres,0)} ac${dom('land',s.id)!=null?' · '+dom('land',s.id)+' days on mkt':''}</div><div class="subs">${subLine(s)}</div><div class="row mono"><span>$ ${priceLine(s)}</span></div><div class="row mono"><span><span class="lbl">Line</span> ${bl?bl.kv+' kV '+fmt(bl.mi)+' mi':'—'}</span><span><span class="lbl">Sub</span> ${sb?(sb.kv?sb.kv+' kV ':'')+fmt(sb.mi)+' mi':'—'}</span><span><span class="lbl">Gas</span> ${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</span></div></div>`}).join('');
- document.querySelector('#tbl tbody').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv),c=topContact(s);return `<tr data-id="${s.id}"><td class="selc">${selBox('land',s.id)}</td><td>${stB('land',s.id)}</td><td class="n sc">${scTxt('land',s)}</td><td class="n">${s.infra_score}</td><td class="n">${cm(s)?cm(s).score+'<div class="lbl">L'+cm(s).laws.score+' N'+cm(s).news.score+' E'+cm(s).edc.score+'</div>':'—'}</td><td>${badges(s)}${annexBadge(s)}${regFlag(s)}<div class="nm">${esc(s.name)}</div><div class="lbl">${esc(s.city)}</div></td><td>${esc(s.county)}</td><td class="n">${fmt(s.acres,0)}</td><td class="n">${totTxt(s)}</td><td class="n">${ppaTxt(s)}</td><td class="n">${domTxt('land',s.id)}</td><td class="n">${bl?bl.kv+' kV · '+fmt(bl.mi)+' mi':'—'}</td><td class="n">${sb?(sb.kv?sb.kv+' kV · ':'')+fmt(sb.mi)+' mi':'—'}</td><td class="n">${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</td><td>${c?esc(c.name||c.org)+'<div class="lbl">'+esc(c.org&&c.name?c.org:'')+'</div>':'—'}</td></tr>`}).join('');
+ document.querySelector('#tbl tbody').innerHTML=R.map(s=>{const bl=bestLine(s,minKv),sb=sub(s,minKv),c=topContact(s);return `<tr data-id="${s.id}"><td class="selc">${selBox('land',s.id)}</td><td>${stB('land',s.id)}</td><td class="n sc">${scTxt('land',s)}</td><td class="n">${s.infra_score}</td><td class="n">${cm(s)?cm(s).score+'<div class="lbl">L'+cm(s).laws.score+' N'+cm(s).news.score+' E'+cm(s).edc.score+'</div>':'—'}</td><td>${badges(s)}${annexBadge(s)}${regFlag(s)}<div class="nm">${esc(s.name)}</div><div class="lbl">${esc(s.city)}</div></td><td>${esc(s.county)}</td><td class="n">${fmt(s.acres,0)}</td><td class="n">${totTxt(s)}</td><td class="n">${ppaTxt(s)}</td><td class="n">${domTxt('land',s.id)}</td><td class="n">${bl?bl.kv+' kV · '+fmt(bl.mi)+' mi':'—'}</td><td class="n">${sb?(sb.kv?sb.kv+' kV · ':'')+fmt(sb.mi)+' mi':'—'}</td><td class="n">${s.gasline?fmt(s.gasline.mi)+' mi':'—'}</td><td class="n">${(()=>{const q=spSum(s.id);return q?spN(q.it,0)+'<div class="lbl">'+esc(q.bind)+'</div>':'—'})()}</td><td>${c?esc(c.name||c.org)+'<div class="lbl">'+esc(c.org&&c.name?c.org:'')+'</div>':'—'}</td></tr>`}).join('');
 }
 document.addEventListener('click',e=>{const b=e.target.closest('[data-panel]');if(b){openPanel(b.dataset.site,b.dataset.panel);return}const el=e.target.closest('[data-id]');if(el&&!el.closest('dialog')&&!e.target.closest('select,input,textarea,label')){if(/^st-/.test(el.dataset.id))openStorage(el.dataset.id);else openSite(el.dataset.id)}});
 const dlg=$('dlg');
@@ -719,7 +734,7 @@ function openSite(id){const s=S.find(x=>x.id===id);if(!s)return;
  const contacts=(s.contacts||[]).map(c=>`<div class="contact"><div class="role">${esc(c.role)}</div><div><b>${esc(c.name||c.org)}</b>${c.title?' · '+esc(c.title):''}</div>${c.name&&c.org?`<div class="lbl">${esc(c.org)}</div>`:''}<div class="btns">${c.phone?`<a class="btn" href="${tel(c.phone)}">Call ${esc(c.phone)}</a>`:''}${c.email?`<a class="btn" href="mailto:${esc(c.email)}?subject=${encodeURIComponent(s.name+' ('+s.city+', KS)')}">Email ${esc(c.email)}</a>`:''}</div>${c.note?`<div class="src">${esc(c.note)}</div>`:''}${c.source?`<div class="src">Source: ${c.source.split(' ; ').map(u=>/^https?:/.test(u)?`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a>`:esc(u)).join(' · ')}</div>`:''}</div>`).join('');
  $('dBadges').innerHTML=stB('land',s.id)+$('dBadges').innerHTML;
  openDeal('land',s,`${s.county} County · ${s.city}${s.zip?' '+s.zip:''}`,landTiles(s),{
- overview:`${manSec(s)}${driversSec('land',s)}${dealBox('land',s)}
+ overview:`${manSec(s)}${driversSec('land',s)}${dealBox('land',s)}${spDealSec(s)}
  <div class="btns" style="margin:0 0 16px"><a class="btn" href="${esc(s.url)}" target="_blank" rel="noopener">Listing ↗</a><a class="btn" href="https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}" target="_blank" rel="noopener">Map ↗</a>${s.certified?`<a class="btn" href="${esc(D.cert_list_url)}" target="_blank" rel="noopener">Certified list ↗</a>`:''}</div>
  <div class="cols">${col(outreachSec(s))}${col(overallSec(s))}</div>`,
  site:`${landFacts(s)}<div class="cols">${col(`<div class="sec"><h4>Infrastructure score breakdown (${s.infra_score}/100)</h4>${parts}</div>`)}${col(floodSec(s))}${col(optSec(s))}${col(priceSec(s))}${col(annexSec(s))}
@@ -789,7 +804,7 @@ function openPanel(id,which){const s=S.find(x=>x.id===id);const c=cm(s);if(!c)re
   ${quotes(E.incentives,'Incentives (quoted from the EDC site)')}${quotes(F.data_center,'Data-center / large-load marketing')}${quotes(F.policy,'Data-center / large-load policy')}${quotes(F.tech,'Tech / advanced-industry marketing')}
   ${(E.pages||[]).length?'<details><summary>Pages reviewed ('+E.pages.length+')</summary><div class="src">'+E.pages.map(p=>lnk(p.url,p.title)).join('<br>')+'</div></details>':''}</div>`}
  $('ipBody').innerHTML=body;ip.showModal();ip.scrollTop=0}
-dlg.addEventListener('close',()=>history.replaceState(null,'',location.pathname+(mapOn()?'#map':'#deals/'+DK)));
+dlg.addEventListener('close',()=>history.replaceState(null,'',location.pathname+(document.body.classList.contains('planon')&&SP.id?'#plan/'+SP.id:mapOn()?'#map':'#deals/'+DK)));
 /*__EMAIL__*/
 function cl(u,t){return u?lnk(u,t||u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]):''}
 function outreachSec(s){const O=s.outreach;if(!O)return '';
@@ -980,7 +995,7 @@ function kmBuild(){const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessT
   map.addLayer({id:'deals-rk',type:'symbol',source:'deals',filter:['all',UNC,['>',['get','r'],0]],layout:{'text-field':['to-string',['get','r']],'text-font':KF,'text-size':['case',['>=',['get','r'],100],9.5,11],'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#0A0A0A'}});
   map.on('click','deals-cl',e=>{const f=e.features[0],src=map.getSource('deals'),go=z=>map.easeTo({center:f.geometry.coordinates,zoom:z+0.2});const r=src.getClusterExpansionZoom(f.properties.cluster_id,(err,z)=>{if(!err)go(z)});if(r&&r.then)r.then(go).catch(()=>{})});
   map.on('mouseenter','deals-cl',()=>map.getCanvas().style.cursor='pointer');map.on('mouseleave','deals-cl',()=>map.getCanvas().style.cursor='');
-  map.on('mousemove','deals',e=>{map.getCanvas().style.cursor='pointer';const p=e.features[0].properties;map.setFilter('deals-halo',['==',['get','id'],p.id]);pop.setLngLat(e.features[0].geometry.coordinates).setHTML(`<div class="kph">${esc(p.n)}</div><div class="mpr"><span>${p.v==='land'?'Powered land':'Storage'}</span><b>${esc(p.k)}</b></div><div class="mpr"><span>Score</span><b class="mono">${esc(p.s)}</b></div><div class="mpr"><span>Rank</span><b class="mono">${p.r>0?'#'+p.r:'—'}</b></div><div class="kpf">Click to open</div>`).addTo(map)});
+  map.on('mousemove','deals',e=>{map.getCanvas().style.cursor='pointer';const p=e.features[0].properties;map.setFilter('deals-halo',['==',['get','id'],p.id]);pop.setLngLat(e.features[0].geometry.coordinates).setHTML(`<div class="kph">${esc(p.n)}</div><div class="mpr"><span>${p.v==='land'?'Powered land':'Storage'}</span><b>${esc(p.k)}</b></div><div class="mpr"><span>Score</span><b class="mono">${esc(p.s)}</b></div><div class="mpr"><span>Rank</span><b class="mono">${p.r>0?'#'+p.r:'—'}</b></div>${(()=>{const q=p.v==='land'&&spSum(p.id);return q?`<div class="mpr"><span>Plan</span><b class="mono">${spN(q.it,0)} MW · ${esc(q.bind)}</b></div>`:''})()}<div class="kpf">Click to open</div>`).addTo(map)});
   map.on('mouseleave','deals',()=>{map.getCanvas().style.cursor='';pop.remove();map.setFilter('deals-halo',['==',['get','id'],''])});
   map.on('click','deals',e=>{const p=e.features[0].properties;pop.remove();kmCard(p.v,p.id);map.setFilter('deals-halo',['==',['get','id'],p.id])});
   KM_M.ready=true;KM_MLY.forEach(k=>toggleLayer(k,true));drawMap()})}
@@ -1058,15 +1073,159 @@ const FMT={drive_up:'Drive-up',climate:'Indoor climate',multistory:'Multi-story'
 const PARTS=[['demand','Demand'],['competition','Competition'],['visibility','Visibility'],['zoning','Zoning'],['price','Price']];
 const ZCLS={P:'ann',S:'ann',I:'pend',C:'pend',X:'reg','?':'unc'};
 let DK='land';try{DK=localStorage.getItem('edks_dk')||'land'}catch(e){}if(DK!=='storage')DK='land';
+// ---- Site Planning (#plan/<siteId>), admin only. V1: estimates in the browser, plans saved in this browser only (localStorage edks_plan_<id>); nothing is written to Firestore.
+const SP_DEF={hallW:250,hallL:1000,stories:1,storyFt:30,wsf:200,pue:1.3,unitMW:10,acPer10:1,plantSet:1000,bldSet:100,gap:100,ease:150,subAc:5,gridOv:'',gasOv:'',maxH:'',cov:'',far:'',zSet:'',use:''};
+const SP={id:null,map:null,draw:null,inp:null,poly:null,res:null,ly:{}};
+function spKey(id){return 'edks_plan_'+id}
+function spLoad(id){try{return JSON.parse(localStorage.getItem(spKey(id))||'null')}catch(e){return null}}
+function spSum(id){if(!isAdm())return null;const p=spLoad(id);return p&&p.sum?p.sum:null}
+function spN(x,d=0){return x==null||!isFinite(x)?'—':Number(x).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:d})}
+// grid estimate by voltage, tapered by distance (ESTIMATE): midpoint of 69≈20–50, 115≈50–100, 138≈75–150, 161≈100–200, 230≈150–300, 345≈300–600 MW
+const SP_KV=[[345,450],[230,225],[161,150],[138,110],[115,75],[69,35]];
+function spKvMW(kv){for(const [k,m] of SP_KV)if(kv>=k)return m;return kv>=34?10:0}
+function spGridEst(s){const P=s.power||{},C=[];
+ (P.subs_by_class||[]).forEach(x=>x.kv&&x.mi!=null&&C.push({src:'Substation'+(x.name?' '+x.name:''),kv:x.kv,mi:x.mi,f:1}));
+ (P.lines_by_class||[]).forEach(x=>x.kv>0&&x.mi!=null&&C.push({src:'Line ('+own(x.owner)+')',kv:x.kv,mi:x.mi,f:.8}));
+ let b=null;C.forEach(c=>{const t=Math.max(0,1-Math.max(0,c.mi-1)*.06),mw=spKvMW(c.kv)*c.f*t;if(!b||mw>b.mw)b=Object.assign({},c,{mw})});
+ if(!b)return {mw:0,why:'No mapped line or substation',cost:0,months:0};
+ const perMi=b.kv>=230?3.5:b.kv>=115?2:1.2,cost=perMi*Math.max(0,b.mi)+(b.kv>=230?40:b.kv>=115?20:10);
+ return {mw:Math.round(b.mw),kv:b.kv,mi:b.mi,why:`${b.kv} kV ${b.src.toLowerCase().startsWith('line')?'line':'substation'} ${fmt(b.mi)} mi`,cost,months:b.kv>=230?54:b.kv>=115?42:30}}
+// gas estimate from pipeline type and distance plus any listed distribution main (ESTIMATE). EIA layer has no diameter or pressure.
+function spGasEst(s){const g=s.gasline||{},L=s.gas||{};let mw=0,why='No mapped pipeline',mi=null;
+ if(g.mi!=null&&g.mi<=25){const base=/inter/i.test(g.type||'')?300:100;mw=base*Math.max(.3,1-.07*g.mi);mi=g.mi;why=`${g.type||'Pipeline'} ${fmt(g.mi)} mi (${g.operator||'operator unknown'})`}
+ const d=+L.main_in||+L.line_in||0,p=+L.psi||0;if(d&&p){const m=d*d*p/400;if(m>mw){mw=m;mi=0;why=`Listed ${d}″ main at ${p} psi${L.provider?' ('+L.provider+')':''}`}}
+ return {mw:Math.round(mw),mi,why,lat:mi==null?0:2.5*mi}}
+// local feet projection around a pin
+function spProj(lat,lon){const kx=364000*Math.cos(lat*Math.PI/180),ky=364000;return {f:(p)=>[(p[0]-lon)*kx,(p[1]-lat)*ky],b:(q)=>[lon+q[0]/kx,lat+q[1]/ky]}}
+function spSquare(s,ac){const h=Math.sqrt((ac||100)*43560)/2,P=spProj(+s.lat,+s.lon);return [[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]].map(P.b)}
+function spInside(x,y,R){let c=false;for(let i=0,j=R.length-1;i<R.length;j=i++){const [a,b]=R[i],[e,f]=R[j];if((b>y)!==(f>y)&&x<(e-a)*(y-b)/(f-b)+a)c=!c}return c}
+function spSegD(x,y,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;let t=l?((x-a[0])*dx+(y-a[1])*dy)/l:0;t=Math.max(0,Math.min(1,t));const X=a[0]+t*dx-x,Y=a[1]+t*dy-y;return Math.sqrt(X*X+Y*Y)}
+function spArea(R){let a=0;for(let i=0,j=R.length-1;i<R.length;j=i++)a+=(R[j][0]+R[i][0])*(R[j][1]-R[i][1]);return Math.abs(a/2)}
+// rasterise the boundary into 50 ft cells; mark easement cells (within 150 ft of a mapped line or pipeline) and edge distance
+function spGrid(poly,inp,s){const P=spProj(+s.lat,+s.lon),R=poly.map(P.f),C=50;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});
+ const nx=Math.ceil((x1-x0)/C),ny=Math.ceil((y1-y0)/C),N=nx*ny,inn=new Uint8Array(N),dE=new Float32Array(N),bad=new Uint8Array(N);
+ const segs=[];['lines','gas'].forEach(k=>{const G=SP.ly[k];if(!G)return;G.features.forEach(f=>{const g=f.geometry;if(!g)return;(g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]).forEach(L=>{for(let i=1;i<L.length;i++){const a=P.f(L[i-1]),b=P.f(L[i]);if(Math.max(a[0],b[0])<x0-500||Math.min(a[0],b[0])>x1+500||Math.max(a[1],b[1])<y0-500||Math.min(a[1],b[1])>y1+500)continue;segs.push([a,b])}})})});
+ let area=0;for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const x=x0+(i+.5)*C,y=y0+(j+.5)*C,k=j*nx+i;if(!spInside(x,y,R))continue;inn[k]=1;area+=C*C;let d=1e9;for(let q=1;q<R.length;q++)d=Math.min(d,spSegD(x,y,R[q-1],R[q]));dE[k]=d;for(const [a,b] of segs)if(spSegD(x,y,a,b)<inp.ease){bad[k]=1;break}}
+ return {nx,ny,C,inn,dE,bad,x0,y0,P,areaAc:spArea(R)/43560,easeAc:bad.reduce((a,v,i)=>a+(v&&inn[i]?C*C:0),0)/43560,segs:segs.length}}
+// pack halls (both orientations, keep the better), gap between halls for roads, yards and generators
+function spPack(G,inp,set){const {nx,ny,C,inn,dE,bad}=G;const best=[];
+ for(const rot of [0,1]){const w=Math.ceil((rot?inp.hallL:inp.hallW)/C),h=Math.ceil((rot?inp.hallW:inp.hallL)/C),g=Math.ceil(inp.gap/C),occ=new Uint8Array(nx*ny),H=[];
+  const ok=(i,j)=>{for(let b=j;b<j+h;b++)for(let a=i;a<i+w;a++){if(a>=nx||b>=ny)return false;const k=b*nx+a;if(!inn[k]||bad[k]||occ[k]||dE[k]<set)return false}return true};
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)if(ok(i,j)){for(let b=Math.max(0,j-g);b<Math.min(ny,j+h+g);b++)for(let a=Math.max(0,i-g);a<Math.min(nx,i+w+g);a++)occ[b*nx+a]=b>=j&&b<j+h&&a>=i&&a<i+w?2:Math.max(occ[b*nx+a],1);H.push([i,j,w,h]);i+=w+g-1}
+  if(H.length>best.length){best.length=0;best.push(...H);best.rot=rot}}
+ // order halls from the edge inward so the interior stays free for the gas plant (noise setback)
+ const cx=nx/2,cy=ny/2;best.sort((a,b)=>Math.hypot(b[0]+b[2]/2-cx,b[1]+b[3]/2-cy)-Math.hypot(a[0]+a[2]/2-cx,a[1]+a[3]/2-cy));return best}
+// free plant area (acres) after the first n halls, counting cells at least plantSet ft from the boundary
+function spPlantFree(G,H,inp){const {nx,ny,C,inn,dE,bad}=G,occ=new Uint8Array(nx*ny),g=Math.ceil(inp.gap/C),out=[];
+ const cnt=()=>{let c=0;for(let k=0;k<nx*ny;k++)if(inn[k]&&!bad[k]&&!occ[k]&&dE[k]>=inp.plantSet)c++;return c*C*C/43560};out.push(cnt());
+ H.forEach(([i,j,w,h])=>{for(let b=Math.max(0,j-g);b<Math.min(ny,j+h+g);b++)for(let a=Math.max(0,i-g);a<Math.min(nx,i+w+g);a++)occ[b*nx+a]=1;out.push(cnt())});return out}
+function spInputs(s){const p=spLoad(s.id)||{};return Object.assign({},SP_DEF,p.inp||{})}
+// goal seek: enumerate halls n and gas units k; IT MW = min(n·hall IT, (grid + firm gas)/PUE) subject to land, plant land, gas supply, height, coverage, FAR
+function spSolve(s,poly,inp,G0){const G=G0||spGrid(poly,inp,s),ge=spGridEst(s),gs=spGasEst(s);
+ const grid=inp.gridOv!==''&&inp.gridOv!=null?+inp.gridOv:ge.mw,gasCap=inp.gasOv!==''&&inp.gasOv!=null?+inp.gasOv:gs.mw;
+ const set=Math.max(+inp.bldSet||0,inp.zSet!==''?+inp.zSet:0),H=G.H&&G.Hset===set+'|'+inp.hallW+'|'+inp.hallL+'|'+inp.gap?G.H:spPack(G,inp,set);G.H=H;G.Hset=set+'|'+inp.hallW+'|'+inp.hallL+'|'+inp.gap;
+ const pf=G.pf&&G.pfK===G.Hset+'|'+inp.plantSet?G.pf:spPlantFree(G,H,inp);G.pf=pf;G.pfK=G.Hset+'|'+inp.plantSet;
+ const fp=inp.hallW*inp.hallL,maxSt=inp.maxH!==''?Math.max(0,Math.floor(+inp.maxH/inp.storyFt)):99,st=Math.min(inp.stories,maxSt);
+ const siteSf=G.areaAc*43560,covN=inp.cov!==''?Math.floor(siteSf*(+inp.cov)/100/fp):1e9,farN=inp.far!==''&&st?Math.floor(siteSf*(+inp.far)/(fp*st)):1e9;
+ const hallIT=fp*st*inp.wsf/1e6,u=+inp.unitMW||10,acU=u/10*inp.acPer10,O=[];
+ for(let n=0;n<=H.length;n++){if(n>covN||n>farN||st<1)break;const plantAc=Math.max(0,pf[n]-(grid>0?inp.subAc:0));
+  const kLand=Math.floor(plantAc/acU),kGas=Math.floor(gasCap/u),kMax=Math.min(kLand,kGas);
+  const need=n*hallIT*inp.pue,kNeed=Math.max(0,need-grid)>0?Math.ceil((need-grid)/u)+1:0,k=Math.min(kMax,kNeed);
+  const firm=k>1?(k-1)*u:0,sup=grid+firm,it=Math.min(n*hallIT,sup/inp.pue);
+  const gridUse=Math.min(grid,it*inp.pue),gasUse=Math.max(0,it*inp.pue-gridUse);
+  const cost=(gridUse>0?ge.cost:0)+(k?k*u*1.4+gs.lat:0),months=Math.max(gridUse>0?ge.months:0,k?20:0);
+  O.push({n,k,it,fac:it*inp.pue,gridUse,gasUse,inst:k*u,cost,months,kLand,kGas,need,sup,bind:''})}
+ O.sort((a,b)=>Math.round(b.it*10)-Math.round(a.it*10)||a.n-b.n||a.cost-b.cost);const B=O[0]||{n:0,k:0,it:0,fac:0,gridUse:0,gasUse:0,cost:0,months:0,need:0,sup:0};
+ // binding constraint for the best option
+ let bind='Land';
+ if(st<1)bind='Height';else if(B.need>B.sup+1e-6){bind=B.kGas<=B.kLand?(gasCap>0?'Gas supply':'Grid (no gas)'):'Land (gas plant)'}
+ else if(B.n>=covN&&covN<=H.length)bind='Coverage';else if(B.n>=farN&&farN<=H.length)bind='FAR';else bind=st<inp.stories?'Height':'Land';
+ const top=[],seen=new Set();for(const o of O){if(o.n>Math.ceil(o.it/hallIT-1e-9))continue;const kk=Math.round(o.it);if(seen.has(kk))continue;seen.add(kk);top.push(o);if(top.length>=5)break}
+ return {G,H,ge,gs,grid,gasCap,best:B,bind,top,hallIT,st,acU,set,areaAc:G.areaAc}}
+function spSens(s,poly,inp,G){const R=[['Grid MW','gridOv',null],['Gas supply MW','gasOv',null],['W/sf','wsf'],['PUE','pue']],b=SP.res;
+ return R.map(([l,k])=>{const v=k==='gridOv'?b.grid:k==='gasOv'?b.gasCap:+inp[k];return [l,...[.8,1.2].map(f=>spSolve(s,poly,Object.assign({},inp,{[k]:v*f}),G).best.it)]})}
+// ---- UI
+const SP_F=[['Data hall',[['hallW','Hall width','ft'],['hallL','Hall length','ft'],['stories','Stories',''],['storyFt','Story height','ft'],['gap','Gap between halls','ft'],['bldSet','Building setback','ft']]],
+ ['Load',[['wsf','IT density','W/sf'],['pue','PUE','']]],
+ ['Power',[['gridOv','Grid MW override','MW'],['gasOv','Gas supply MW override','MW'],['unitMW','Recip engine size (N+1)','MW'],['acPer10','Plant land per 10 MW','ac'],['plantSet','Plant noise setback','ft'],['subAc','Substation yard','ac'],['ease','Easement buffer on lines','ft']]],
+ ['Zoning · Zoneomics: pending',[['use','Data center use','text'],['maxH','Max height','ft'],['cov','Max lot coverage','%'],['far','Max FAR',''],['zSet','Zoning setback','ft']]]];
+function spSites(){return S.filter(s=>s.lat&&s.lon&&!(typeof hidK==='function'&&hidK('land',s.id))).slice().sort((a,b)=>a.name.localeCompare(b.name))}
+function spShell(){const el=$('viewPlan');if(el.dataset.ok)return;el.dataset.ok=1;
+ el.innerHTML=`<div class="eyebrow mono">Site planning · admin</div><h1>Max MW <strong>from grid &amp; gas.</strong></h1>
+ <div class="sptop"><label class="lbl mono" for="spPick">Deal</label><select id="spPick" class="inp"></select><button class="tbtn" type="button" id="spDraw">Draw boundary</button><button class="tbtn" type="button" id="spReset">Use acre square</button><button class="tbtn" type="button" id="spSave">Save plan</button><span class="lbl mono" id="spMsg"></span></div>
+ <div class="spgrid"><aside class="spin" id="spIn"></aside><div class="spmapw"><div id="spMap"></div><div class="lbl mono sphint" id="spHint"></div></div><aside class="spout" id="spOut"></aside></div>
+ <p class="lbl mono spfoot">Estimates only. Grid MW from voltage and distance; gas MW from pipeline type and distance. Confirm with the utility and pipeline. Plans are saved in this browser only.</p>`;
+ $('spPick').innerHTML=spSites().map(s=>`<option value="${esc(s.id)}">${esc(s.name)} · ${esc(s.county)} Co · ${fmt(s.acres,0)} ac</option>`).join('');
+ $('spPick').onchange=e=>{location.hash='#plan/'+e.target.value};
+ $('spDraw').onclick=spDrawStart;$('spReset').onclick=()=>{const s=spSite();SP.poly=spSquare(s,s.acres);SP.polySrc='square';SP.G=null;spRun()};
+ $('spSave').onclick=()=>{spSaveNow();$('spMsg').textContent='Saved in this browser '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})};
+ $('spIn').addEventListener('input',e=>{const t=e.target;if(!t.dataset.sp)return;const k=t.dataset.sp;SP.inp[k]=t.type==='number'?(t.value===''?'':+t.value):t.value;if(['ease','plantSet'].includes(k))SP.G=null;clearTimeout(SP.t);SP.t=setTimeout(spRun,250)})}
+const spSite=()=>S.find(x=>x.id===SP.id);
+function spSaveNow(){const s=spSite();if(!s||!SP.res)return;const b=SP.res.best;
+ try{localStorage.setItem(spKey(s.id),JSON.stringify({v:1,inp:SP.inp,poly:SP.polySrc==='drawn'?SP.poly:null,sum:{it:Math.round(b.it*10)/10,fac:Math.round(b.fac*10)/10,bind:SP.res.bind,halls:b.n,grid:Math.round(b.gridUse),gas:Math.round(b.gasUse),ts:new Date().toISOString()}}))}catch(e){}
+ if(typeof render==='function')render()}
+function spShow(id){if(!isAdm()){location.hash='#deals';return}spShell();const L=spSites();if(!S.find(x=>x.id===id))id=(L.find(s=>/Dodge City Business/.test(s.name))||L[0]||{}).id;if(!id)return;
+ if(location.hash!=='#plan/'+id)history.replaceState(null,'',location.pathname+'#plan/'+id);
+ if(SP.id!==id){SP.id=id;const s=spSite(),p=spLoad(id);SP.inp=spInputs(s);SP.poly=p&&p.poly?p.poly:spSquare(s,s.acres);SP.polySrc=p&&p.poly?'drawn':'square';SP.G=null;$('spMsg').textContent=p?'Saved plan loaded':''}
+ $('spPick').value=id;spForm();spMapInit().then(()=>spRun())}
+function spForm(){const I=SP.inp;$('spIn').innerHTML=SP_F.map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,u])=>`<label class="spf"><span>${l}${u&&u!=='text'?' <i>'+u+'</i>':''}</span><input class="inp mono" data-sp="${k}" type="${u==='text'?'text':'number'}" step="any" value="${esc(I[k])}" placeholder="${k==='gridOv'||k==='gasOv'?'estimate':h.startsWith('Zoning')?'Zoneomics: pending':''}"></label>`).join('')}</div>`).join('')}
+async function spLayers(){const get=k=>SP.ly[k]?Promise.resolve(SP.ly[k]):fetch(KM_LBASE+k+'.geojson').then(r=>r.ok?r.json():null).then(j=>(SP.ly[k]=j)).catch(()=>null);await Promise.all(['lines','gas','subs'].map(get))}
+async function spMapInit(){await spLayers();if(SP.map)return;try{await loadGL()}catch(e){$('spHint').textContent='Map library did not load; numbers still run';return}
+ const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessToken=KM_TOK;const s=spSite();
+ const map=new G.Map({container:'spMap',style:KM_MB?'mapbox://styles/mapbox/dark-v11':'https://tiles.openfreemap.org/styles/dark',center:[+s.lon,+s.lat],zoom:13,attributionControl:false,dragRotate:false,preserveDrawingBuffer:true});
+ map.addControl(new G.AttributionControl({compact:true}),'bottom-right');map.addControl(new G.NavigationControl({showCompass:false}),'top-right');map.addControl(new G.ScaleControl({unit:'imperial'}),'bottom-left');SP.map=map;
+ await new Promise(ok=>map.on('load',ok));kmTone(map);
+ ['lines','gas','subs'].forEach(k=>{if(!SP.ly[k])return;map.addSource('sp-'+k,{type:'geojson',data:SP.ly[k]});map.addLayer(Object.assign({id:'sp-'+k,source:'sp-'+k},JSON.parse(JSON.stringify(KM_GL[k]))))});
+ if(SP.ly.subs)map.addLayer({id:'sp-subl',type:'symbol',source:'sp-subs',minzoom:10,filter:['>',['coalesce',['get','kv'],0],0],layout:{'text-field':['concat',['to-string',['get','kv']],' kV'],'text-size':11,'text-offset':[0,1.1],'text-font':KM_MB?['DIN Pro Medium','Arial Unicode MS Regular']:['Noto Sans Regular']},paint:{'text-color':'#F5F3EF','text-halo-color':'#0A0A0A','text-halo-width':1.2}});
+ if(SP.ly.lines)map.addLayer({id:'sp-linel',type:'symbol',source:'sp-lines',minzoom:11,filter:['>',['coalesce',['get','kv'],0],0],layout:{'symbol-placement':'line','text-field':['concat',['to-string',['get','kv']],' kV'],'text-size':10,'text-font':KM_MB?['DIN Pro Medium','Arial Unicode MS Regular']:['Noto Sans Regular']},paint:{'text-color':'#B5B3AE','text-halo-color':'#0A0A0A','text-halo-width':1.2}});
+ const E={type:'FeatureCollection',features:[]};['sp-bnd','sp-halls','sp-plant','sp-draw'].forEach(k=>map.addSource(k,{type:'geojson',data:E}));
+ map.addLayer({id:'sp-bndf',type:'fill',source:'sp-bnd',paint:{'fill-color':'#F5F3EF','fill-opacity':.04}});map.addLayer({id:'sp-bndl',type:'line',source:'sp-bnd',paint:{'line-color':'#F5F3EF','line-width':1.4,'line-dasharray':[3,2]}});
+ map.addLayer({id:'sp-plantf',type:'fill',source:'sp-plant',paint:{'fill-color':'#6F9E7D','fill-opacity':.45}});
+ map.addLayer({id:'sp-hallf',type:'fill',source:'sp-halls',paint:{'fill-color':['case',['get','on'],'#F14B21','#3A3A3A'],'fill-opacity':['case',['get','on'],.55,.35]}});map.addLayer({id:'sp-halll',type:'line',source:'sp-halls',paint:{'line-color':['case',['get','on'],'#F14B21','#6A6A6A'],'line-width':1}});
+ map.addLayer({id:'sp-drawl',type:'line',source:'sp-draw',paint:{'line-color':'#F14B21','line-width':2}});
+ map.on('click',e=>{if(!SP.draw)return;SP.draw.push([e.lngLat.lng,e.lngLat.lat]);spDrawShow()});
+ map.on('dblclick',e=>{if(!SP.draw)return;e.preventDefault();spDrawEnd()})}
+function spDrawStart(){if(!SP.map)return;SP.draw=[];SP.map.doubleClickZoom.disable();SP.map.getCanvas().style.cursor='crosshair';$('spHint').textContent='Click corners · double-click to finish · Esc to cancel';spDrawShow()}
+function spDrawShow(){const d=SP.draw||[];SP.map.getSource('sp-draw').setData({type:'FeatureCollection',features:d.length>1?[{type:'Feature',geometry:{type:'LineString',coordinates:d}}]:[]})}
+function spDrawEnd(cancel){const d=SP.draw;SP.draw=null;SP.map.getCanvas().style.cursor='';setTimeout(()=>SP.map.doubleClickZoom.enable(),300);$('spHint').textContent='';spDrawShow();
+ if(!cancel&&d&&d.length>=3){SP.poly=d.concat([d[0]]);SP.polySrc='drawn';SP.G=null;spRun()}}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&SP.draw)spDrawEnd(true)});
+function spRun(){const s=spSite();if(!s)return;if(!SP.G)SP.G=spGrid(SP.poly,SP.inp,s);const r=spSolve(s,SP.poly,SP.inp,SP.G);SP.res=r;r.sens=spSens(s,SP.poly,SP.inp,SP.G);spOut(s,r);spDrawMap(s,r);
+ const p=spLoad(s.id);if(p)spSaveNow()}
+function spDrawMap(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;const G=r.G,P=G.P;
+ m.getSource('sp-bnd').setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[SP.poly]}}]});
+ const rect=(i,j,w,h)=>{const x=G.x0+i*G.C,y=G.y0+j*G.C,X=x+w*G.C,Y=y+h*G.C;return [[x,y],[X,y],[X,Y],[x,Y],[x,y]].map(P.b)};
+ m.getSource('sp-halls').setData({type:'FeatureCollection',features:r.H.map((h,i)=>({type:'Feature',properties:{on:i<r.best.n},geometry:{type:'Polygon',coordinates:[rect(...h)]}}))});
+ // gas plant: show its footprint as a block of eligible free cells nearest the deepest interior point
+ const F=[];if(r.best.k){const need=Math.ceil(r.best.inst/10*SP.inp.acPer10*43560/(G.C*G.C)),occ=new Uint8Array(G.nx*G.ny),g=Math.ceil(SP.inp.gap/G.C);r.H.slice(0,r.best.n).forEach(([i,j,w,h])=>{for(let b=Math.max(0,j-g);b<Math.min(G.ny,j+h+g);b++)for(let a=Math.max(0,i-g);a<Math.min(G.nx,i+w+g);a++)occ[b*G.nx+a]=1});
+  const el=[];for(let k=0;k<G.nx*G.ny;k++)if(G.inn[k]&&!G.bad[k]&&!occ[k]&&G.dE[k]>=SP.inp.plantSet)el.push(k);let c=el.reduce((a,k)=>G.dE[k]>G.dE[a]?k:a,el[0]);
+  if(c!=null){const ci=c%G.nx,cj=Math.floor(c/G.nx);el.sort((a,b)=>Math.hypot(a%G.nx-ci,Math.floor(a/G.nx)-cj)-Math.hypot(b%G.nx-ci,Math.floor(b/G.nx)-cj));el.slice(0,need).forEach(k=>F.push({type:'Feature',geometry:{type:'Polygon',coordinates:[rect(k%G.nx,Math.floor(k/G.nx),1,1)]}}))}}
+ m.getSource('sp-plant').setData({type:'FeatureCollection',features:F});
+ const bb=SP.poly.reduce((b,p)=>[[Math.min(b[0][0],p[0]),Math.min(b[0][1],p[1])],[Math.max(b[1][0],p[0]),Math.max(b[1][1],p[1])]],[[180,90],[-180,-90]]);
+ if(SP.fitFor!==s.id+SP.polySrc+SP.poly.length){SP.fitFor=s.id+SP.polySrc+SP.poly.length;m.fitBounds(bb,{padding:60,duration:0,maxZoom:16})}
+ $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':'No parcel polygon on file · '+fmt(s.acres,0)+'-acre square around the pin'} · ${spN(r.areaAc)} ac · ${r.H.length} hall slots · easements ${spN(G.easeAc,1)} ac`}
+function spOut(s,r){const B=r.best,I=SP.inp,est=(ov)=>ov===''||ov==null?' <span class="spest">ESTIMATE</span>':' <span class="spest ov">OVERRIDE</span>';const fl=s.floodplain;
+ const mix=B.fac?Math.round(100*B.gridUse/B.fac):0,mt=x=>x?Math.round(x)+' mo':'—';
+ $('spOut').innerHTML=`<div class="spbig"><div class="lbl mono">Max IT load</div><b class="mono">${spN(B.it,1)}<i> MW</i></b><div class="lbl mono">${spN(B.fac,1)} MW facility at PUE ${I.pue} · ${B.n} hall${B.n===1?'':'s'} × ${spN(r.hallIT,1)} MW IT${r.st>1?' · '+r.st+' stories':''}</div></div>
+ <div class="spbind"><span class="lbl mono">Binding constraint</span><span class="spbadge">${esc(r.bind)}</span></div>
+ <div class="spmix"><div class="lbl mono">Power mix</div><div class="spbar"><i style="width:${mix}%"></i></div><div class="spmr mono"><span>Grid ${spN(B.gridUse)} MW</span><span>Gas ${spN(B.gasUse)} MW${B.k?' · '+B.k+'×'+I.unitMW+' MW (N+1)':''}</span></div></div>
+ ${kv([['Grid available',spN(r.grid)+' MW'+est(I.gridOv)+'<br><small>'+esc(r.ge.why)+'</small>'],['Gas supply',spN(r.gasCap)+' MW'+est(I.gasOv)+'<br><small>'+esc(r.gs.why)+'</small>'],['Power capex',B.fac?'$'+spN(B.cost)+'M · $'+spN(B.cost/B.fac,2)+'M/MW <span class="spest">ESTIMATE</span>':'—'],['Time to power',mt(B.months)+(B.months?' <span class="spest">ESTIMATE</span>':'')],['Site',spN(r.areaAc)+' ac · '+r.H.length+' hall slots'+(fl&&fl.pct!=null?' · '+fmt(fl.pct)+'% in FEMA 100-yr floodplain':'')],['Zoning',(I.use||'<span class="muted">Zoneomics: pending</span>')+(I.maxH!==''?' · '+I.maxH+' ft max':'')+(I.cov!==''?' · '+I.cov+'% cov':'')],['Not modelled','Water, emissions permit']])}
+ <div class="lbl mono" style="margin-top:14px">Top options</div><table class="lt sptbl"><thead><tr><th>Halls</th><th>IT MW</th><th>Grid</th><th>Gas</th><th>$M/MW</th><th>Months</th></tr></thead><tbody>${r.top.map((o,i)=>`<tr class="${i?'':'on'}"><td class="n">${o.n}</td><td class="n">${spN(o.it,1)}</td><td class="n">${spN(o.gridUse)}</td><td class="n">${spN(o.gasUse)}</td><td class="n">${o.fac?spN(o.cost/o.fac,2):'—'}</td><td class="n">${o.months||'—'}</td></tr>`).join('')}</tbody></table>
+ <div class="lbl mono" style="margin-top:14px">Sensitivity · IT MW at −20% / +20%</div><table class="lt sptbl"><tbody>${r.sens.map(([l,a,b])=>`<tr><td>${l}</td><td class="n">${spN(a,1)}</td><td class="n">${spN(b,1)}</td></tr>`).join('')}</tbody></table>`}
+function spDealSec(s){const p=spSum(s.id);if(!isAdm())return '';return `<div class="sec spdeal"><h4>Site plan</h4>${p?kv([['Max IT load',`<b class="mono">${spN(p.it,1)} MW</b> · ${spN(p.fac,1)} MW facility`],['Binding',`<span class="spbadge">${esc(p.bind)}</span>`],['Mix',`Grid ${spN(p.grid)} MW · gas ${spN(p.gas)} MW · ${p.halls} halls`],['Saved',esc(new Date(p.ts).toLocaleString())+' · this browser']]):'<p class="desc muted">No plan saved in this browser.</p>'}<div class="btns"><a class="btn" href="#plan/${esc(s.id)}" onclick="dlg.close()">${p?'Open plan':'Plan this site'}</a></div></div>`}
+function spUI(){const b=$('planTab');if(b)b.hidden=!isAdm();document.body.classList.toggle('spadm',isAdm())}
+function spHide(){const v=$('viewPlan');if(v)v.hidden=true;document.body.classList.remove('planon')}
+function planView(v){const id=v.indexOf('/')>0?v.slice(v.indexOf('/')+1):(SP.id||'');$('dealSeg').hidden=true;$('viewMap').hidden=true;document.body.classList.remove('mapfull');$('viewLand').hidden=true;$('viewStorage').hidden=true;$('viewPlan').hidden=false;document.body.classList.add('planon');
+ document.querySelectorAll('[data-top]').forEach(b=>b.setAttribute('aria-selected',b.dataset.top==='plan'));spShow(id);if(SP.map)setTimeout(()=>SP.map.resize(),50)}
 function vHash(v){return v==='map'?'#map':'#deals/'+v}
-function setView(v,keep){if(v==='deals')v=DK;const mp=v==='map',st=v==='storage';if(!mp){DK=v;try{localStorage.setItem('edks_dk',v)}catch(e){}}$('dealSeg').hidden=mp;document.querySelectorAll('[data-dk]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dk===v));if(!dlg.open&&location.hash!==vHash(v))history.replaceState(null,'',location.pathname+vHash(v));$('viewMap').hidden=!mp;document.body.classList.toggle('mapfull',mp);if(mp)scrollTo(0,0);$('viewLand').hidden=mp||st;$('viewStorage').hidden=mp||!st;if(!mp)$('view').value=st?'storage':'land';try{localStorage.setItem('edks_view',v)}catch(e){}
+function setView(v,keep){if(/^plan(\/|$)/.test(v)){if(isAdm()){planView(v);return}v=DK}spHide();if(v==='deals')v=DK;const mp=v==='map',st=v==='storage';if(!mp){DK=v;try{localStorage.setItem('edks_dk',v)}catch(e){}}$('dealSeg').hidden=mp;document.querySelectorAll('[data-dk]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dk===v));if(!dlg.open&&location.hash!==vHash(v))history.replaceState(null,'',location.pathname+vHash(v));$('viewMap').hidden=!mp;document.body.classList.toggle('mapfull',mp);if(mp)scrollTo(0,0);$('viewLand').hidden=mp||st;$('viewStorage').hidden=mp||!st;if(!mp)$('view').value=st?'storage':'land';try{localStorage.setItem('edks_view',v)}catch(e){}
  document.querySelectorAll('[data-top]').forEach(b=>b.setAttribute('aria-selected',b.dataset.top===(mp?'map':'deals')));
  if(mp){render();if(ST)sRender();drawMap();return}
  if(st&&ST){$('refreshed').textContent='Storage refreshed '+new Date(ST.generated_at).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}else{$('refreshed').textContent='Last refreshed '+gen.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'})}
  if(st)sRender()}
 $('view').addEventListener('change',e=>setView(e.target.value));
 document.addEventListener('click',e=>{const b=e.target.closest('[data-top],[data-dk]');if(b){setView(b.dataset.top||b.dataset.dk);setTimeout(aiChips)}});
-function hashView(h){h=h.toLowerCase();if(h==='map')return 'map';if(/^(deals\/)?(storage|self-storage|st)$/.test(h))return 'storage';if(/^(deals\/)?(land|powered-land)$/.test(h))return 'land';if(h==='deals')return 'deals';return null}
+function hashView(h){if(/^plan(\/|$)/i.test(h))return 'plan'+h.slice(4);h=h.toLowerCase();if(h==='map')return 'map';if(/^(deals\/)?(storage|self-storage|st)$/.test(h))return 'storage';if(/^(deals\/)?(land|powered-land)$/.test(h))return 'land';if(h==='deals')return 'deals';return null}
 window.addEventListener('hashchange',()=>{const v=hashView(location.hash.slice(1));if(v)setView(v)});
 const fitOK=v=>v==='yes';const fitM=v=>['CUP','maybe','small','add?','?'].includes(v);
 function fitChips(r,all){return Object.keys(FMT).map(k=>{const f=(r.formats||{})[k]||['—',''];const v=f[0];if(!all&&!(fitOK(v)||fitM(v)))return '';return `<span class="fit ${fitOK(v)?'y':fitM(v)?'m':'n'}" title="${esc(f[1])}">${FMT[k]}${fitM(v)?' ('+esc(v)+')':''}</span>`}).join('')}
@@ -1130,7 +1289,7 @@ if(ST){const cm_=ST.comps||[];$('sComps').innerHTML=cm_.length?`<details><summar
 
 if(BK){
 // ---- signed-in account, live updates and user management (Firebase)
-window.edksApply=(ev,deals,users)=>{if(ev)PS.events=ev;if(deals)PS.deals=deals;if(users)USERS=users;document.body.classList.toggle('ro',RO());$('setBtn').hidden=!BK.isAdmin();if(window.addUIr)addUIr();pRefresh();if($('setDlg').open)drawUsers()};
+window.edksApply=(ev,deals,users)=>{if(ev)PS.events=ev;if(deals)PS.deals=deals;if(users)USERS=users;document.body.classList.toggle('ro',RO());$('setBtn').hidden=!BK.isAdmin();if(window.addUIr)addUIr();spUI();colApply('tbl');if(/^#plan(\/|$)/.test(location.hash)&&isAdm()&&$('viewPlan').hidden)setView(location.hash.slice(1));pRefresh();if($('setDlg').open)drawUsers()};
 window.edksStatus=syncUI;
 const dlgRe=()=>{const b=$('dealBox');if(dlg.open&&b){const v=b.dataset.view,id=b.dataset.id;drawHead(v,id);drawAct(v,id);drawHist(v,id)}};
 window.edksWeights=w=>{LW=w;LC.clear();pRefresh();const b=$('dealBox');if(dlg.open&&b){const y=dlg.scrollTop;b.dataset.view==='land'?openSite(b.dataset.id):openStorage(b.dataset.id);dlg.scrollTop=y}};
@@ -1162,16 +1321,16 @@ if(USERS.length){$('whoWrap').hidden=false;$('me').innerHTML=USERS.map(u=>`<opti
 $('sync').onclick=()=>{PS.err='';sync()};syncUI();sync();setInterval(sync,60000);addEventListener('online',sync);document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});
 }
 // ---- column picker (per table, saved in this browser). Defaults follow the Figma list: a short single-line table.
-const COLDEF={tbl:['stage','name','county','score','acres','tx','dom'],sTbl:['stage','score','name','acres','price','dom']};
+const COLDEF={tbl:['stage','name','county','score','acres','tx','dom','plan'],sTbl:['stage','score','name','acres','price','dom']};
 function colKeys(t){return [...document.querySelectorAll('#'+t+' thead th')].map(th=>th.dataset.c||th.dataset.k||th.dataset.sk||th.textContent.trim())}
 function colGet(t){try{const v=JSON.parse(localStorage.getItem('edks_cols_'+t));if(Array.isArray(v))return v}catch(e){}return COLDEF[t]}
-function colApply(t){const on=new Set(colGet(t)),K=colKeys(t);let css='';K.forEach((k,i)=>{if(!on.has(k)&&k!=='sel')css+=`#${t} tr>*:nth-child(${i+1}){display:none}`});let st=document.getElementById('cs_'+t);if(!st){st=document.createElement('style');st.id='cs_'+t;document.head.appendChild(st)}st.textContent=css}
+function colApply(t){const on=new Set(colGet(t)),K=colKeys(t);let css='';K.forEach((k,i)=>{if((!on.has(k)||(k==='plan'&&!isAdm()))&&k!=='sel')css+=`#${t} tr>*:nth-child(${i+1}){display:none}`});let st=document.getElementById('cs_'+t);if(!st){st=document.createElement('style');st.id='cs_'+t;document.head.appendChild(st)}st.textContent=css}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cols]');const open=document.querySelector('.colpick');if(open&&!e.target.closest('.colpick')){open.remove();if(!b)return}
  if(!b)return;const t=b.dataset.cols,K=colKeys(t),on=new Set(colGet(t)),L=[...document.querySelectorAll('#'+t+' thead th')].map(th=>th.textContent.trim());
  const m=document.createElement('div');m.className='colpick';m.innerHTML=K.map((k,i)=>k==='sel'?'':`<label><input type="checkbox" data-ck="${esc(k)}"${on.has(k)?' checked':''}>${esc(L[i])}</label>`).join('');
  const r=b.getBoundingClientRect();m.style.left=(r.left+scrollX)+'px';m.style.top=(r.bottom+scrollY+4)+'px';document.body.appendChild(m);
  m.addEventListener('change',()=>{const v=[...m.querySelectorAll('[data-ck]:checked')].map(x=>x.dataset.ck);localStorage.setItem('edks_cols_'+t,JSON.stringify(v));colApply(t)})});
-colApply('tbl');colApply('sTbl');
+colApply('tbl');colApply('sTbl');spUI();
 
 // ---- redesign 2: inline quick-filter chips (proxy the Filters drawer inputs), All stage button, map pin card
 function qcSync(){document.querySelectorAll('.qc[data-q]').forEach(b=>{const el=$(b.dataset.q);if(!el){b.hidden=true;return}const on=el.type==='checkbox'?el.checked:String(el.value)===b.dataset.qval;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})}
