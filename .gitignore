@@ -17,3 +17,8 @@ node_modules/
 !pipeline/everstow_score.json
 !pipeline/everstow_permits.json
 !sunflower/layers/bgpop.json
+# OSI memory: confidential model, local state and the drop folder never leave the box
+osi/private/
+osi/state/
+osi/inbox/
+!osi/sources/standards.json

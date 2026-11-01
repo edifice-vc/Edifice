@@ -178,6 +178,20 @@ jobs:
           FIREBASE_PROJECT: ${{ fromJSON(vars.FIREBASE_WEB_CONFIG || '{"projectId":""}').projectId }}
         run: python3 -W ignore pipeline/edks.py learn
 
+      # OSI memory (osi/*.yaml, Apache Ossie 0.1.1): public facts -> Firestore osi_facts/osi_ledger (admin-read only).
+      # Mondays (and manual runs): outcome-based weight proposals -> osi_proposals for the weekly scoring report.
+      # Proposals only; nothing here changes scores. The private model is never in the repo or Firestore.
+      - name: OSI memory sync
+        if: ${{ env.FIREBASE_WEB_CONFIG != '' }}
+        continue-on-error: true
+        env:
+          FIREBASE_PROJECT: ${{ fromJSON(vars.FIREBASE_WEB_CONFIG || '{"projectId":""}').projectId }}
+        run: |
+          python3 -W ignore pipeline/osi_memory.py sync
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event.schedule }}" = "0 11 * * 1" ]; then
+            python3 -W ignore pipeline/osi_memory.py weekly --push
+          fi
+
       # The app lives at /sunflower (renamed from /sites). SITES_MODE=firebase: sunflower/index.html is the Google
       # sign-in app (no site data; render.py fails the build if any data, contact or email address appears in it).
       # /sites/, /sites/app/ and /sunflower/app/ are static redirects to /sunflower/ that keep ?query and #hash.

@@ -1,0 +1,427 @@
+version: 0.1.1
+semantic_model:
+- name: everstow
+  description: Everstow (self-storage) semantic model for SunflowerOS.
+  ai_context:
+    instructions: Everstow = Sahil's self-storage business (internal view key 'storage'). Demand layers are Everstow-only.
+    synonyms:
+    - self storage
+    - storage
+  datasets:
+  - name: storage_sites
+    source: firestore:dms-edvc/sites (view==storage)
+    primary_key:
+    - site_id
+    fields:
+    - name: site_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: site_id
+      description: Firestore document id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "__name__", "namespace": "edifice_sunflower"}'
+    - name: name
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: name
+      ai_context:
+        synonyms:
+        - deal
+        - site
+        - property
+        - listing
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "j.name", "namespace": "edifice_sunflower"}'
+    - name: view
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: view
+      description: land|storage internal key; label Terrafice|Everstow
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "view", "namespace": "edifice_sunflower"}'
+    - name: lat
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: lat
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Float", "firestore_path": "j.lat", "namespace": "edifice_sunflower"}'
+    - name: lon
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: lon
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Float", "firestore_path": "j.lon", "namespace": "edifice_sunflower"}'
+    - name: city
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: city
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "j.city", "namespace": "edifice_sunflower"}'
+    - name: county
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: county
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "j.county", "namespace": "edifice_sunflower"}'
+    - name: acres
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: acres
+      ai_context:
+        synonyms:
+        - acreage
+        - size
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "j.acres", "namespace": "edifice_sunflower"}'
+    - name: stage
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: stage
+      description: Latest pipeline stage
+      ai_context:
+        synonyms:
+        - status
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "stage", "namespace": "edifice_sunflower"}'
+    - name: score
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: score
+      description: Overall 0-100 score
+      ai_context:
+        synonyms:
+        - rating
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "j.score", "namespace": "edifice_sunflower"}'
+    - name: updated
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: updated
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "DateTimeTz", "firestore_path": "updated", "namespace": "edifice_sunflower"}'
+    - name: price
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: price
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "j.price", "namespace": "edifice_sunflower"}'
+    - name: price_per_acre
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: price_per_acre
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "j.price_per_acre", "namespace": "edifice_sunflower"}'
+    - name: pop3
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: pop3
+      ai_context:
+        synonyms:
+        - 3 mile population
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "j.demand.pop3", "namespace": "edifice_sunflower"}'
+    - name: pop5
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: pop5
+      ai_context:
+        synonyms:
+        - 5 mile population
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "j.demand.pop5", "namespace": "edifice_sunflower"}'
+    - name: hh5
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: hh5
+      ai_context:
+        synonyms:
+        - households
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "j.demand.hh5", "namespace": "edifice_sunflower"}'
+    - name: income3
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: income3
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "j.demand.income", "namespace": "edifice_sunflower"}'
+    - name: renter_pct
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: renter_pct
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "j.demand.renter_pct", "namespace": "edifice_sunflower"}'
+    - name: growth_pct
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: growth_pct
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "j.demand.growth_pct", "namespace": "edifice_sunflower"}'
+    - name: aadt
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: aadt
+      ai_context:
+        synonyms:
+        - traffic count
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "j.traffic.aadt", "namespace": "edifice_sunflower"}'
+    - name: visibility
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: visibility
+      description: 0-100 visibility score
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "j.traffic.visibility", "namespace": "edifice_sunflower"}'
+    - name: zoning_status
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: zoning_status
+      description: P/S/I/C/X/?
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "j.zoning.status", "namespace": "edifice_sunflower"}'
+    - name: nrsf_supply_5mi
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: nrsf_supply_5mi
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "j.competition.nrsf5", "namespace": "edifice_sunflower"}'
+  - name: stage_events
+    source: firestore:dms-edvc/sites/{id}/events
+    primary_key:
+    - event_id
+    description: Every stage move with Sahil's reasons — primary outcome/training signal.
+    fields:
+    - name: event_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: event_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "event_id", "namespace": "edifice_sunflower"}'
+    - name: site_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: site_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "site_id", "namespace": "edifice_sunflower"}'
+    - name: to_stage
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: to_stage
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "to_stage", "namespace": "edifice_sunflower"}'
+    - name: from_stage
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: from_stage
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "from_stage", "namespace": "edifice_sunflower"}'
+    - name: reasons
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: reasons
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "reasons", "namespace": "edifice_sunflower"}'
+    - name: ts
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: ts
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "DateTimeTz", "firestore_path": "timestamp", "namespace": "edifice_sunflower"}'
+  - name: competitors
+    source: OSM via everstow_layers.py
+    primary_key:
+    - facility_id
+    fields:
+    - name: facility_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: facility_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "id", "namespace": "edifice_sunflower"}'
+    - name: name
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: name
+      ai_context:
+        synonyms:
+        - competitor
+        - storage facility
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "name", "namespace": "edifice_sunflower"}'
+    - name: brand
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: brand
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "brand", "namespace": "edifice_sunflower"}'
+    - name: nrsf_est
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: nrsf_est
+      description: Estimated rentable SF
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "nrsf", "namespace": "edifice_sunflower"}'
+  - name: storage_permits
+    source: repo:pipeline/everstow_permits.json
+    primary_key:
+    - permit_id
+    fields:
+    - name: permit_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: permit_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "id", "namespace": "edifice_sunflower"}'
+    - name: city
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: city
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "city", "namespace": "edifice_sunflower"}'
+    - name: status
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: status
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "status", "namespace": "edifice_sunflower"}'
+    - name: date
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: date
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Date", "firestore_path": "date", "namespace": "edifice_sunflower"}'
+  relationships:
+  - name: events_to_site
+    from: stage_events
+    to: storage_sites
+    from_columns:
+    - site_id
+    to_columns:
+    - site_id
+  custom_extensions:
+  - vendor_name: COMMON
+    data: '{"facts": [{"confidence": 1.0, "id": "es.focus", "kind": "preference", "learned_at": "2026-10-25", "source": "memory:profile", "statement":
+      "Self-storage in the six most populous Kansas cities: 5-10 ac parcels to develop and existing facilities to acquire.", "status": "accepted"},
+      {"confidence": 1.0, "id": "es.formats", "kind": "preference", "learned_at": "2026-10-25", "source": "memory:profile", "statement": "Formats:
+      drive-up, indoor, multi-story indoor, boat storage, contractor garages.", "status": "accepted"}, {"confidence": 1.0, "id": "es.factors",
+      "kind": "preference", "learned_at": "2026-10-25", "source": "memory:profile", "statement": "Evaluates demand drivers, zoning, traffic visibility,
+      nearby competition.", "status": "accepted"}, {"confidence": 1.0, "id": "es.weights", "kind": "metric_definition", "learned_at": "2026-11-01",
+      "source": "pipeline/everstow_score.json", "statement": "Everstow score weights: demand 30, competition 25, zoning 20, visibility 15, price
+      10.", "status": "accepted"}, {"confidence": 1.0, "id": "es.map_layers", "kind": "decision", "learned_at": "2026-11-01", "source": "Sahil
+      t167u-t170u,t174u", "statement": "Everstow-only overlays: competitors sized by NRSF, permits distinct colour, 5-mi pop & households, traffic
+      (thicker line = more AADT), visibility.", "status": "accepted"}, {"confidence": 1.0, "id": "es.colors", "kind": "preference", "learned_at":
+      "2026-11-01", "source": "Sahil t175u", "statement": "Everstow colours must be clearly distinct.", "status": "accepted"}, {"confidence":
+      0.6, "id": "es.rent_band", "kind": "observation", "learned_at": "2026-11-01", "source": "Self Storage Sites t83-85", "statement": "Storage
+      rents of $1-3/SF carry land well; e.g. ~$24K/ac land pencils; risk is zoning/visibility.", "status": "accepted"}, {"confidence": 1.0, "id":
+      "es.osm_gap", "kind": "caveat", "learned_at": "2026-11-01", "source": "Coding Agent t173 Everstow ship", "statement": "Competitor data from
+      OpenStreetMap: no Missouri, brands mostly missing, 19 facilities without size.", "status": "accepted"}, {"confidence": 1.0, "id": "es.us54_class",
+      "kind": "caveat", "learned_at": "2026-11-01", "source": "Coding Agent", "statement": "Some US highways (Kellogg/US-54) scored as city streets;
+      visibility understated.", "status": "accepted"}], "namespace": "edifice_sunflower", "score_config": {"_doc": "Everstow (self-storage) score
+      weights. Edit here; storage.py reads this file on every run. Top-level weights sum to 100. Demand sub-weights sum to the demand weight;
+      visibility parts are shares of the visibility weight. Factor set follows the demand drivers a broker CIM uses (1/3/5-mi population and households,
+      household income, renter share, growth, SF per capita supply, traffic/visibility).", "demand": {"growth_pct": {"hi": 8, "label": "City population
+      growth 2020-24 (Census PEP)", "lo": -2, "w": 5}, "hh5": {"hi": 100000, "label": "5-mi households (ACS block groups)", "lo": 15000, "w":
+      3}, "income": {"hi": 100000, "label": "3-mi median household income", "lo": 45000, "w": 5}, "lake": {"label": "Lake within 15 mi (RV/boat
+      demand)", "w": 1}, "permits_per_1k": {"hi": 8, "label": "Housing permits per 1k residents (Census BPS)", "lo": 0, "w": 1}, "pop3": {"hi":
+      90000, "label": "3-mi population (ACS tracts)", "lo": 15000, "w": 8}, "pop5": {"hi": 250000, "label": "5-mi population (ACS block groups)",
+      "lo": 40000, "w": 4}, "renter_pct": {"hi": 50, "label": "3-mi renter share of households", "lo": 25, "w": 3}}, "visibility": {"aadt": {"hi":
+      30000, "label": "Nearest counted road AADT (log scale)", "lo": 2000, "share": 0.65}, "class": {"I": 1.0, "K": 0.7, "U": 0.85, "label": "Road
+      class (Interstate / US / K- route / city)", "other": 0.4, "share": 0.15}, "dist": {"best_m": 30, "label": "Distance from site to that road",
+      "share": 0.2, "zero_m": 400}}, "weights": {"competition": 25, "demand": 30, "price": 10, "visibility": 15, "zoning": 20}}}'
+  metrics:
+  - name: sf_per_capita_5mi
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: SUM(storage_sites.nrsf_supply_5mi) / SUM(storage_sites.pop5)
+    description: Storage SF per capita within 5 mi (supply saturation)
+    ai_context:
+      synonyms:
+      - NRSF per capita
+    custom_extensions:
+    - vendor_name: COMMON
+      data: '{"datatype": "Decimal", "namespace": "edifice_sunflower"}'
+  - name: pursue_count
+    expression:
+      dialects:
+      - dialect: ANSI_SQL
+        expression: COUNT(CASE WHEN stage_events.to_stage IN ('Reviewing','Contacted','In Diligence','LOI Submitted','Under Contract','Closed')
+          THEN stage_events.event_id END)
+    description: Decisions to pursue
+    custom_extensions:
+    - vendor_name: COMMON
+      data: '{"datatype": "Integer", "namespace": "edifice_sunflower"}'
