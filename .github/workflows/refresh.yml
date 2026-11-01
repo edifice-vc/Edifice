@@ -3,6 +3,7 @@ name: Refresh Kansas sites
 on:
   schedule:
     - cron: "0 10 * * *"   # 06:00 EDT (05:00 EST in winter)
+    - cron: "0 11 * * 1"   # Mondays 06:00 EST / 07:00 EDT: weekly DC Tracker layer refresh
   workflow_dispatch:
 
 permissions:
@@ -158,6 +159,15 @@ jobs:
           FIREBASE_PROJECT: ${{ fromJSON(vars.FIREBASE_WEB_CONFIG || '{"projectId":""}').projectId }}
         run: python3 pipeline/edks.py verify --min-admins 3 --rules firebase/firestore.rules
 
+      # Public map layer: More Than Just Parks Data Center Tracker (KS + KC MO metro), weekly (Monday cron)
+      # or on manual dispatch. Public data only -> sunflower/layers/dc_tracker.geojson + change log.
+      # If the tracker is unreachable the previous layer is kept. Failure never blocks the daily refresh.
+      - name: DC Tracker layer (weekly)
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '0 11 * * 1' }}
+        continue-on-error: true
+        timeout-minutes: 15
+        run: python3 pipeline/dc_tracker.py
+
       - name: Unit tests (synthetic data only)
         run: python3 -m unittest discover -s pipeline/tests
 
@@ -202,6 +212,7 @@ jobs:
           if [ -f sunflower/app/index.html ]; then git add sunflower/app/index.html; fi
           if [ -f pipeline/storage_state.enc ]; then git add pipeline/storage_state.enc; fi
           if [ -f pipeline/tracker_state.enc ]; then git add pipeline/tracker_state.enc; fi
+          git add -f sunflower/layers/dc_tracker.geojson pipeline/dc_tracker_changes.json 2>/dev/null || true
           git reset -q -- 'gha-creds-*.json' 2>/dev/null || true
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "Refresh Kansas sites $(date -u +%Y-%m-%dT%H:%MZ)"

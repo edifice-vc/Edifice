@@ -1,0 +1,128 @@
+[
+ {
+  "date": "2026-11-01",
+  "count": 48,
+  "new": [],
+  "removed": [],
+  "changed": [
+   {
+    "name": "Evergy Kansas City KS DC",
+    "changes": {
+     "acres": [
+      null,
+      545
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "date": "2026-11-01",
+  "count": 48,
+  "new": [],
+  "removed": [],
+  "changed": [
+   {
+    "name": "Flint Hills Digital Campus",
+    "changes": {
+     "acres": [
+      null,
+      1065
+     ]
+    }
+   },
+   {
+    "name": "Google Project Mica (Clay County)",
+    "changes": {
+     "acres": [
+      null,
+      498.2
+     ]
+    }
+   },
+   {
+    "name": "Astra North (Digital Realty, Astra Enterprise Park)",
+    "changes": {
+     "acres": [
+      null,
+      281.1
+     ]
+    }
+   },
+   {
+    "name": "Beale De Soto Data Center Campus",
+    "changes": {
+     "acres": [
+      null,
+      288.46
+     ]
+    }
+   },
+   {
+    "name": "Project Kestrel (KCI-29 Logistics Park)",
+    "changes": {
+     "acres": [
+      null,
+      430
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "date": "2026-11-01",
+  "count": 48,
+  "new": [
+   "Flint Hills Digital Campus",
+   "Nebius Independence Data Center",
+   "Google Project Mica (Clay County)",
+   "Astra North (Digital Realty, Astra Enterprise Park)",
+   "Evergy Kansas City KS DC",
+   "Project Bluestem",
+   "Alcove Osawatomie Project Catalyst",
+   "Project Yardbird (Quindaro Power Station Data Center)",
+   "Metrobloks Liberty Campus",
+   "Patmos AI Campus Kansas City (former Kansas City Star press building)",
+   "Crypto Colo Center McLouth Data Center",
+   "Edged Energy Kansas City (MCI01-1)",
+   "HyperDataGrid Parsons Micro-Data Center (Tolen Creek Industrial Park)",
+   "Patmos Data Center (Little Blue Parkway, Independence)",
+   "Cormor Data Shelter (CDS) Wellington Data Center",
+   "DataBank MCI3 South Lake Campus",
+   "Wildcat Data Infrastructure Data Center (Pittsburg)",
+   "Netrality KC2 Shawnee",
+   "Shawnee County / City of Topeka Data Center Moratorium",
+   "Kansas Internet Exchange Point (Wichita State University IXP)",
+   "Evergy Overland Park Data Campus",
+   "Gardner Data Center (Beale Infrastructure)",
+   "Edgerton Data Center (DAMAC Digital)",
+   "NextEra Data Center (Garden Plain)",
+   "QTS Lenexa KS",
+   "Beltline Data Center (Emmett)",
+   "Proximity Park Data Center (Lightfield Energy)",
+   "Harvey County Data Center Moratorium",
+   "Spring Hill Data Center (Colossus/Bullock Capital)",
+   "Compass Datacenters Shawnee County Project",
+   "QTS Overland Park KS",
+   "Google Barber County Data Center (Project Helium Sharon)",
+   "Forbes Field Data Center",
+   "Beale De Soto Data Center Campus",
+   "Monarch Energies Colwich-Andale Data Center",
+   "Sedgwick County Data Center Moratorium",
+   "QTS New Century Commerce Center",
+   "Project Blitz (Lambda Northland AI Data Center)",
+   "Independence Data Center Moratorium",
+   "Meta Data Center",
+   "Meta Kansas City Data Center",
+   "St. Joseph Data Center Moratorium",
+   "Meta Kansas City",
+   "Downtown Kansas City Data Center (Western Newspaper Union Building)",
+   "Pickett Road Data Center",
+   "Project Kestrel (KCI-29 Logistics Park)",
+   "AWS Local Zone Kansas City",
+   "Diode Ventures Peculiar (Harper Road Technology Park)"
+  ],
+  "removed": [],
+  "changed": []
+ }
+]

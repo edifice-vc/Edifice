@@ -1,0 +1,51 @@
+{
+ "_doc": "Terrafice 'Market & power competition' component (0-100, 50 = neutral). Mirrored in template.html (MC_CFG). Overall = overall_base + round(max_adj*(market-50)/50), so a neutral market changes nothing; floodplain cap kept.",
+ "active_status": [
+  "proposed",
+  "approved",
+  "under_construction",
+  "operational"
+ ],
+ "stopped_status": [
+  "withdrawn",
+  "cancelled",
+  "defeated"
+ ],
+ "unknown_mw": 100,
+ "power": {
+  "radius_mi": 30,
+  "near_mi": 5,
+  "mid_mi": 15,
+  "w_near": 1.0,
+  "w_mid": 0.5,
+  "w_far": 0.2,
+  "same_sub_mult": 2.0,
+  "mw_per_point": 40,
+  "max_pts": 35
+ },
+ "precedent": {
+  "same_county_pts": 10,
+  "within_mi": 15,
+  "near_pts": 5,
+  "statuses": [
+   "approved",
+   "under_construction",
+   "operational"
+  ]
+ },
+ "opposition": {
+  "moratorium_county_pts": -25,
+  "stopped_mi": 25,
+  "stopped_pts": -8,
+  "stopped_max": -16,
+  "lawsuit_mi": 25,
+  "lawsuit_pts": -6
+ },
+ "land": {
+  "hyperscalers": "Google|Meta|Amazon|AWS|Microsoft|QTS|Digital Realty|Oracle|Nebius|Compass|Beale|Lambda",
+  "acres_min": 250,
+  "radius_mi": 10,
+  "pts": -5
+ },
+ "max_adj": 10
+}
