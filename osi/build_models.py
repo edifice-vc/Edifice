@@ -140,9 +140,18 @@ comp={"name":"competitors","source":"OSM via everstow_layers.py","primary_key":[
       "fields":[F("facility_id","id","String"),F("name","name","String",syn=["competitor","storage facility"]),F("brand","brand","String"),F("nrsf_est","nrsf","Decimal","Estimated rentable SF")]}
 perm={"name":"storage_permits","source":"repo:pipeline/everstow_permits.json","primary_key":["permit_id"],
       "fields":[F("permit_id","id","String"),F("city","city","String"),F("status","status","String"),F("date","date","Date")]}
+sp={"name":"site_plans","source":"firestore:dms-edvc/site_plans","primary_key":["plan_id"],
+    "description":"Reference site plans (entitled precedents and internal concepts) for Everstow Site Planning; one doc per plan, embeddings float16 base64 (not indexed). Built by pipeline/site_plans.py; records private.",
+    "ai_context":{"instructions":"Use as precedent specs for new storage/flex sites. Null = not stated in source; cites holds per-field source page.","synonyms":["reference plans","precedents","site plan library"]},
+    "fields":[F("plan_id","__name__","String"),F("project","project","String"),F("location","location","String"),F("type","type","String"),
+      F("acreage","acreage","Decimal"),F("building_sf","building_sf","Integer",syn=["GSF","building area"]),F("buildings","buildings","Integer"),
+      F("unit_count_est","unit_count_est","Integer"),F("bay_unit_sizes","bay_unit_sizes","String",syn=["unit mix","bay size"]),F("doors","doors","String"),
+      F("height_ft","height_ft","Decimal"),F("zoning","zoning","String"),F("parking","parking","String"),F("setbacks","setbacks","String"),
+      F("coverage","coverage","String"),F("source_url","source_url","String"),F("drive_links","drive_links","String"),F("summary","summary","String"),
+      F("cites","cites","String","per-field source file/page"),F("emb_model","emb_model","String"),F("emb_dim","emb_dim","Integer"),F("hash","hash","String")]}
 es={"version":V,"name":"everstow","description":"Everstow (self-storage) semantic model for SunflowerOS.",
     "ai_context":{"instructions":"Everstow = Sahil's self-storage business (internal view key 'storage'). Demand layers are Everstow-only.","synonyms":["self storage","storage"]},
-    "datasets":[st,ev|{"name":"stage_events"},comp,perm],
+    "datasets":[st,ev|{"name":"stage_events"},comp,perm,sp],
     "relationships":[{"name":"events_to_site","from":"stage_events","to":"storage_sites","from_columns":["site_id"],"to_columns":["site_id"]}],
     "custom_extensions":X(score_config=es_cfg)}
 sh={"version":V,"name":"edifice_shared","description":"Shared SunflowerOS vocabulary: businesses, pipeline stages, governance rules, memory ledger.",

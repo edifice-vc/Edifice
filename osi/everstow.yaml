@@ -364,6 +364,204 @@ semantic_model:
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "Date", "firestore_path": "date", "namespace": "edifice_sunflower"}'
+  - name: site_plans
+    source: firestore:dms-edvc/site_plans
+    primary_key:
+    - plan_id
+    description: Reference site plans (entitled precedents and internal concepts) for Everstow Site Planning; one doc per plan, embeddings float16
+      base64 (not indexed). Built by pipeline/site_plans.py; records private.
+    ai_context:
+      instructions: Use as precedent specs for new storage/flex sites. Null = not stated in source; cites holds per-field source page.
+      synonyms:
+      - reference plans
+      - precedents
+      - site plan library
+    fields:
+    - name: plan_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: plan_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "__name__", "namespace": "edifice_sunflower"}'
+    - name: project
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: project
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "project", "namespace": "edifice_sunflower"}'
+    - name: location
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: location
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "location", "namespace": "edifice_sunflower"}'
+    - name: type
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: type
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "type", "namespace": "edifice_sunflower"}'
+    - name: acreage
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: acreage
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "acreage", "namespace": "edifice_sunflower"}'
+    - name: building_sf
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: building_sf
+      ai_context:
+        synonyms:
+        - GSF
+        - building area
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "building_sf", "namespace": "edifice_sunflower"}'
+    - name: buildings
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: buildings
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "buildings", "namespace": "edifice_sunflower"}'
+    - name: unit_count_est
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: unit_count_est
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "unit_count_est", "namespace": "edifice_sunflower"}'
+    - name: bay_unit_sizes
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: bay_unit_sizes
+      ai_context:
+        synonyms:
+        - unit mix
+        - bay size
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "bay_unit_sizes", "namespace": "edifice_sunflower"}'
+    - name: doors
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: doors
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "doors", "namespace": "edifice_sunflower"}'
+    - name: height_ft
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: height_ft
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Decimal", "firestore_path": "height_ft", "namespace": "edifice_sunflower"}'
+    - name: zoning
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: zoning
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "zoning", "namespace": "edifice_sunflower"}'
+    - name: parking
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: parking
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "parking", "namespace": "edifice_sunflower"}'
+    - name: setbacks
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: setbacks
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "setbacks", "namespace": "edifice_sunflower"}'
+    - name: coverage
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: coverage
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "coverage", "namespace": "edifice_sunflower"}'
+    - name: source_url
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: source_url
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "source_url", "namespace": "edifice_sunflower"}'
+    - name: drive_links
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: drive_links
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "drive_links", "namespace": "edifice_sunflower"}'
+    - name: summary
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: summary
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "summary", "namespace": "edifice_sunflower"}'
+    - name: cites
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: cites
+      description: per-field source file/page
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "cites", "namespace": "edifice_sunflower"}'
+    - name: emb_model
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: emb_model
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "emb_model", "namespace": "edifice_sunflower"}'
+    - name: emb_dim
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: emb_dim
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Integer", "firestore_path": "emb_dim", "namespace": "edifice_sunflower"}'
+    - name: hash
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: hash
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "hash", "namespace": "edifice_sunflower"}'
   relationships:
   - name: events_to_site
     from: stage_events
