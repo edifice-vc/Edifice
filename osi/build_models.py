@@ -118,13 +118,25 @@ lines={"name":"transmission_lines","source":"HIFLD via map_layers.py","primary_k
 plans={"name":"site_plans","source":"browser localStorage (V1); proposed firestore:sitePlans","primary_key":["plan_id"],
        "fields":[F("plan_id","id","String"),F("site_id","site_id","String"),F("it_mw","it_mw","Decimal"),F("total_mw","total_mw","Decimal"),
                  F("limited_by","limited_by","String"),F("capex","cost","Decimal"),F("w_per_sf","w_per_sf","Decimal"),F("pue","pue","Decimal"),F("created","ts","DateTimeTz")]}
+saved={"name":"site_plans_saved","source":"firestore:dms-edvc/site_plans_saved","primary_key":["scheme_id"],
+       "description":"Saved Site Planning test-fit schemes (land data-center and storage), one compact doc per explicit Save in the plan view. Admins write; members read schemes for non-restricted deals. p/g/k are JSON or maps, exempt from indexing.",
+       "ai_context":{"instructions":"KPIs live in k (it, fac, halls, nrsf, units, cov, capex, earth_cy, earth_usd, zone_ok, circ_ok). bind = binding capacity constraint, zbind = binding zoning rule. Estimates only, not engineering.","synonyms":["saved schemes","test fits","site plan options"]},
+       "fields":[F("scheme_id","__name__","String"),F("site_id","site_id","String"),F("product","co","String",syn=["co","land or storage"]),F("name","name","String"),
+                 F("kpis","k","String",desc="map of KPI values"),F("binding_constraint","bind","String"),F("binding_zoning_rule","zbind","String"),
+                 F("jurisdiction","jur","String"),F("restricted","restricted","Boolean"),F("saved_by","by","String"),F("saved_at","ts","DateTimeTz",time=True)]}
+zoning={"name":"zoning_profiles","source":"firestore:dms-edvc/zoning","primary_key":["site_id"],
+       "description":"Per-site zoning from Zoneomics (licensed; ADMIN-ONLY; never redistributed or bulk-exported). j = JSON of district, permitted use and dimensional limits with a source label per value; fixture=true marks MOCK data.",
+       "ai_context":{"instructions":"Do not quote or export outside admin views. Ignore records where fixture is true.","synonyms":["zoneomics","zoning"]},
+       "fields":[F("site_id","__name__","String"),F("zoning_json","j","String"),F("fixture","fixture","Boolean"),F("source","src","String")]}
 mc=json.load(open(f"{R}/market_score.json"))
 tf={"version":V,"name":"terrafice","description":"Terrafice (powered land / data center sites) semantic model for SunflowerOS.",
     "ai_context":{"instructions":"Terrafice = Sahil's powered-land business (internal view key 'land'). Scores 0-100. Power-capacity figures are estimates unless sourced.","synonyms":["powered land","data center land","land"]},
-    "datasets":[land,ev,proj,subs,lines,plans,juris,std],
+    "datasets":[land,ev,proj,subs,lines,plans,saved,zoning,juris,std],
     "relationships":[
       {"name":"events_to_site","from":"stage_events","to":"land_sites","from_columns":["site_id"],"to_columns":["site_id"]},
       {"name":"plans_to_site","from":"site_plans","to":"land_sites","from_columns":["site_id"],"to_columns":["site_id"]},
+      {"name":"saved_schemes_to_site","from":"site_plans_saved","to":"land_sites","from_columns":["site_id"],"to_columns":["site_id"]},
+      {"name":"zoning_to_site","from":"zoning_profiles","to":"land_sites","from_columns":["site_id"],"to_columns":["site_id"]},
       {"name":"standards_to_jurisdiction","from":"local_standards","to":"jurisdictions","from_columns":["jurisdiction"],"to_columns":["jurisdiction"]}],
     "metrics":[M("mw_per_acre","SUM(site_plans.it_mw) / SUM(land_sites.acres)","Planned IT MW per acre",syn=["density"])],
     "custom_extensions":X(market_score_config=mc,provenance="pipeline/market_score.json; Sahil messages; memory")}

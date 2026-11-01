@@ -494,6 +494,159 @@ semantic_model:
       custom_extensions:
       - vendor_name: COMMON
         data: '{"datatype": "DateTimeTz", "firestore_path": "ts", "namespace": "edifice_sunflower"}'
+  - name: site_plans_saved
+    source: firestore:dms-edvc/site_plans_saved
+    primary_key:
+    - scheme_id
+    description: Saved Site Planning test-fit schemes (land data-center and storage), one compact doc per explicit Save in the plan view. Admins
+      write; members read schemes for non-restricted deals. p/g/k are JSON or maps, exempt from indexing.
+    ai_context:
+      instructions: KPIs live in k (it, fac, halls, nrsf, units, cov, capex, earth_cy, earth_usd, zone_ok, circ_ok). bind = binding capacity constraint,
+        zbind = binding zoning rule. Estimates only, not engineering.
+      synonyms:
+      - saved schemes
+      - test fits
+      - site plan options
+    fields:
+    - name: scheme_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: scheme_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "__name__", "namespace": "edifice_sunflower"}'
+    - name: site_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: site_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "site_id", "namespace": "edifice_sunflower"}'
+    - name: product
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: product
+      ai_context:
+        synonyms:
+        - co
+        - land or storage
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "co", "namespace": "edifice_sunflower"}'
+    - name: name
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: name
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "name", "namespace": "edifice_sunflower"}'
+    - name: kpis
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: kpis
+      description: map of KPI values
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "k", "namespace": "edifice_sunflower"}'
+    - name: binding_constraint
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: binding_constraint
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "bind", "namespace": "edifice_sunflower"}'
+    - name: binding_zoning_rule
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: binding_zoning_rule
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "zbind", "namespace": "edifice_sunflower"}'
+    - name: jurisdiction
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: jurisdiction
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "jur", "namespace": "edifice_sunflower"}'
+    - name: restricted
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: restricted
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Boolean", "firestore_path": "restricted", "namespace": "edifice_sunflower"}'
+    - name: saved_by
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: saved_by
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "by", "namespace": "edifice_sunflower"}'
+    - name: saved_at
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: saved_at
+      dimension:
+        is_time: true
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "DateTimeTz", "firestore_path": "ts", "namespace": "edifice_sunflower"}'
+  - name: zoning_profiles
+    source: firestore:dms-edvc/zoning
+    primary_key:
+    - site_id
+    description: Per-site zoning from Zoneomics (licensed; ADMIN-ONLY; never redistributed or bulk-exported). j = JSON of district, permitted
+      use and dimensional limits with a source label per value; fixture=true marks MOCK data.
+    ai_context:
+      instructions: Do not quote or export outside admin views. Ignore records where fixture is true.
+      synonyms:
+      - zoneomics
+      - zoning
+    fields:
+    - name: site_id
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: site_id
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "__name__", "namespace": "edifice_sunflower"}'
+    - name: zoning_json
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: zoning_json
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "j", "namespace": "edifice_sunflower"}'
+    - name: fixture
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: fixture
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "Boolean", "firestore_path": "fixture", "namespace": "edifice_sunflower"}'
+    - name: source
+      expression:
+        dialects:
+        - dialect: ANSI_SQL
+          expression: source
+      custom_extensions:
+      - vendor_name: COMMON
+        data: '{"datatype": "String", "firestore_path": "src", "namespace": "edifice_sunflower"}'
   - name: jurisdictions
     source: repo:dc-references/standards/standards.json
     primary_key:
@@ -584,6 +737,20 @@ semantic_model:
     - site_id
   - name: plans_to_site
     from: site_plans
+    to: land_sites
+    from_columns:
+    - site_id
+    to_columns:
+    - site_id
+  - name: saved_schemes_to_site
+    from: site_plans_saved
+    to: land_sites
+    from_columns:
+    - site_id
+    to_columns:
+    - site_id
+  - name: zoning_to_site
+    from: zoning_profiles
     to: land_sites
     from_columns:
     - site_id
