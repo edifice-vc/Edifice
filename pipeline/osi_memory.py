@@ -375,6 +375,7 @@ def cmd_export(a):
     if bad: sys.exit(1)
 
 def slug(s): return re.sub(r"[^a-z0-9]+", "-", str(s).lower()).strip("-")[:80] or "_"
+MAX_DOC = 900_000   # bytes; Firestore hard limit is 1 MiB per document
 def sync_docs():
     """Firestore layout (all OSI-mapped, document counts kept low):
        osi_facts/{model}__{entity}  {model, entity, binds_to:[...], facts:[memory_facts rows]}   one doc per group
@@ -387,6 +388,13 @@ def sync_docs():
                             {"model": f["model"], "entity": f.get("entity") or f["model"], "binds_to": [], "facts": []})
         g["facts"].append(f); g["binds_to"] = sorted(set(g["binds_to"]) | {f.get("binds_to") or f["model"]})
     for g in docs.values(): g["facts"].sort(key=lambda x: x["id"])
+    for k in [k for k in docs if len(json.dumps(docs[k], default=str)) > MAX_DOC]:
+        g = docs.pop(k); part, n = [], 1
+        for f in g["facts"]:
+            if part and len(json.dumps(part + [f], default=str)) > MAX_DOC - 20000:
+                docs[f"{k}__p{n}"] = dict(g, facts=part, part=n); part, n = [], n + 1
+            part.append(f)
+        docs[f"{k}__p{n}"] = dict(g, facts=part, part=n)
     if os.path.exists(PROP):
         docs["osi_proposals/pending"] = {"items": sorted([p for p in rj(PROP) if p["status"] == "pending" and p["model"] != "private"], key=lambda x: x["id"])}
     if os.path.exists(LEDGER):
@@ -414,6 +422,7 @@ def cmd_sync(a):
         print(f"[osi] dry run: {len(docs)} doc(s), {len(changed)} changed, {len(gone)} stale -> would cost 1 read + "
               f"{len(changed) + len(gone) + bool(changed or gone)} write(s)")
         os.makedirs(os.path.dirname(SYNCC), exist_ok=True); json.dump(new, open(SYNCC, "w")); return
+    os.makedirs(os.path.dirname(SYNCC), exist_ok=True); json.dump(new, open(SYNCC, "w"))   # keep dry-run cache in step with Firestore
     if not changed and not gone: print("[osi] no changes: 1 read, 0 writes"); return
     b = c.batch(); n = 0
     for k in changed:

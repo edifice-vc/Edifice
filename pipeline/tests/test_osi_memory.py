@@ -98,5 +98,15 @@ class OsiMemory(unittest.TestCase):
         self.assertIn("0 changed", self.run_("sync", "--dry-run"))
         docs = self.m.sync_docs(); self.assertLess(len(docs), 40)
 
+    def test_large_fact_group_splits_under_doc_limit(self):
+        import json
+        old = self.m.MAX_DOC; self.m.MAX_DOC = 3000
+        try:
+            docs = self.m.sync_docs()
+            facts = [k for k in docs if k.startswith("osi_facts/")]
+            self.assertTrue(any("__p" in k for k in facts))
+            self.assertTrue(all(len(json.dumps(docs[k], default=str)) <= 3000 or len(docs[k]["facts"]) == 1 for k in facts))
+        finally: self.m.MAX_DOC = old
+
 if __name__ == "__main__":
     unittest.main()
