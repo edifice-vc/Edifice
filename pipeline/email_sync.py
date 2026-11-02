@@ -249,12 +249,13 @@ def read_dir(d):
         elif kind == "raw" and j.get("raw"):
             head = j["raw"].split("\r\n\r\n", 1)[0].split("\n\n", 1)[0]
             h = HeaderParser().parsestr(head + "\r\n\r\n")
-            raws[(acct, j["id"])] = {"rfc_id": (h.get("Message-ID") or h.get("Message-Id") or "").strip(),
+            fn = [f.strip().strip('"') for f in re.findall(r'filename\*?=(?:utf-8\'\')?("[^"]+"|[^;\s]+)', j["raw"], re.I)]
+            raws[(acct, j["id"])] = {"files": fn, "rfc_id": (h.get("Message-ID") or h.get("Message-Id") or "").strip(),
                                     "cc": h.get("Cc") or "", "from_h": h.get("From") or "", "to_h": h.get("To") or "",
                                     "subject_h": h.get("Subject") or "", "threadId": j.get("threadId")}
     for (acct, mid), r in raws.items():
         m = msgs[acct].setdefault(mid, {"id": mid, "threadId": r["threadId"]})
-        m["rfc_id"] = r["rfc_id"]; m["cc"] = m.get("cc") or r["cc"]
+        m["rfc_id"] = r["rfc_id"]; m["files"] = r["files"]; m["cc"] = m.get("cc") or r["cc"]
         m.setdefault("from", r["from_h"]); m.setdefault("to", r["to_h"]); m.setdefault("subject", r["subject_h"])
     return msgs
 
@@ -287,15 +288,20 @@ def match(idx, mine, msgs):
                 fromname = parseaddr(m.get("from") or "")[0].lower().strip('"\' ')
                 if fromname and fromname in x["names"]: sig["name"] = 2
                 if any(h in subj for h in x["subjects"]): sig["subject"] = 4
-                if any(p in subj for p in x["phrases"]): sig["address"] = 2
+                if any(p in subj for p in x["phrases"]):
+                    sig["address"] = 2
+                    # Sahil's own mail naming the deal (name/address) in the subject next to deal vocabulary
+                    # ("LOI - Industrial Plaza East Lot") is a strong signal even to a broker not yet on file.
+                    if parseaddr(m.get("from") or "")[1].lower() in mine and DC_RE.search(subj):
+                        sig["sent_subject"] = 1
                 elif any(p in text for p in x["phrases"]): sig.setdefault("address", 1)
                 if x["city"] and re.search(r"\b" + re.escape(x["city"]) + r"\b", subj): sig["city"] = 1
             score = sum(sig.values())
-            weak = not (set(sig) - {"city", "address", "contact_generic"})
+            weak = not (set(sig) - {"city", "address", "contact_generic", "sent_subject"})
             if weak and not (sig.get("address") == 2 and any(DC_RE.search((m.get("subject") or "")) for m in ms)):
                 continue
             if score >= 3:
-                best[sid] = (score, set(k.split("_")[0] if k != "address" else k for k in sig))
+                best[sid] = (score, set(k.split("_")[0] if k not in ("address", "sent_subject") else k for k in sig))
         if not best:
             continue
         ranked = sorted(best.items(), key=lambda kv: (-idx[kv[0]]["active"], -kv[1][0]))
@@ -392,6 +398,8 @@ def cmd_ingest(a):
                 learnings.recompute(client, quiet=True)
             except Exception as ex:
                 print(f"[email_sync] WARNING: weights not refit ({type(ex).__name__})")
+    if not a.no_stages:
+        run_stage_moves(client, idx, mine, msgs, m, a.dry_run)
     tot = {k: sum(v[k] for v in per.values()) for k in ("new", "seen", "no_rfc")}
     print(f"[email_sync] {'DRY RUN ' if a.dry_run else ''}threads={len(m)} ambiguous_skipped={amb} "
           f"new={tot['new']} already={tot['seen']} missing_message_id={tot['no_rfc']}")
@@ -399,6 +407,147 @@ def cmd_ingest(a):
         print(f"[email_sync]   {sid}\tnew={per[sid]['new']}\talready={per[sid]['seen']}")
     if not a.dry_run:
         print("[email_sync] cursor " + ", ".join(f"{k}={v['last_date']}" for k, v in sorted(cur.items())))
+
+# ------------------------------------------------------------------ automatic stage moves from Sahil's sent mail
+# Evidence = a message FROM one of the sender accounts (config/senders) to someone else, in a thread the matcher
+# tied to the deal. Forward-only: New / Under Consideration / Reviewing -> Contacted, or -> LOI Submitted when the
+# message carries an LOI (attachment name) or says one is attached/enclosed/submitted. Never past LOI Submitted,
+# never Passed/On Hold, never backwards, and never over a stage event dated after the evidence email.
+AUTO_FROM = ("New", "Under Consideration", "Reviewing", "", None)
+AUTO_SOURCE = "email-auto"
+LOI_WORD = r"(?:\bLOI\b|\bletter of intent\b)"
+LOI_FILE_RE = re.compile(r"\bLOI\b|letter[ _-]?of[ _-]?intent", re.I)
+LOI_SAYS_RE = re.compile(r"(?:attached|attaching|enclosed|please find|here is|submitted|submitting|sending)[^.?!]{0,80}?" + LOI_WORD
+                         + r"|" + LOI_WORD + r"[^.?!]{0,40}?\b(?:is |are )?(?:attached|enclosed|submitted)", re.I)
+LOI_NOT_RE = re.compile(r"coming shortly|will (?:send|submit)|draft|recall|counter", re.I)
+
+def loi_evidence(m):
+    """'attachment' / 'text' when this sent message carries or announces an LOI, else ''."""
+    if any(LOI_FILE_RE.search(f or "") for f in m.get("files") or []):
+        return "attachment"
+    text = re.sub(r"&#39;", "'", (m.get("subject") or "") + ". " + (m.get("snippet") or ""))
+    body = re.split(r"\bOn (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,", m.get("snippet") or "")[0]   # drop quoted reply
+    said = LOI_SAYS_RE.search(re.sub(r"&#39;", "'", body))
+    if said and not LOI_NOT_RE.search(said.group(0)):
+        return "text"
+    return ""
+
+def stage_candidates(idx, mine, msgs, matched):
+    """{sid: best move} from matched threads; one move per deal (the furthest target, earliest email reaching it)."""
+    best = {}
+    for (acct, tid), (sid, why) in matched.items():
+        for mm in msgs[acct].values():
+            if (mm.get("threadId") or mm["id"]) != tid:
+                continue
+            frm = parseaddr(mm.get("from") or "")[1].lower()
+            if frm not in mine:
+                continue                                     # inbound mail alone never moves a deal
+            if not (_addrs(mm.get("to"), mm.get("cc")) - set(mine)):
+                continue                                     # note-to-self
+            try:
+                when = utc(mm.get("date"))
+            except Exception:
+                continue
+            ev = loi_evidence(mm)
+            to = "LOI Submitted" if ev else "Contacted"
+            c = {"site_id": sid, "to_stage": to, "date": when, "account": acct, "gmail_id": mm["id"], "thread_id": tid,
+                 "subject": (mm.get("subject") or "")[:200], "evidence": ev or "sent", "matched_by": why}
+            o = best.get(sid)
+            if o is None or edks.STAGES.index(to) > edks.STAGES.index(o["to_stage"]) or \
+               (to == o["to_stage"] and when < o["date"]):
+                best[sid] = c
+    return best
+
+def plan_stage_moves(client, idx, cands):
+    """Check each candidate against the live deal doc and its latest stage event (reads: 1 + stage events per
+    candidate deal, batched). Returns (moves, skips)."""
+    moves, skips = [], []
+    refs = {sid: client.collection("rdeals" if idx[sid]["restricted"] else "deals").document(sid) for sid in cands}
+    snaps = {}
+    lst = list(refs.values())
+    for k in range(0, len(lst), 100):
+        for s in client.get_all(lst[k:k + 100]):
+            snaps[s.reference.parent.id + "/" + s.id] = s
+    for sid, c in sorted(cands.items()):
+        x = idx[sid]; ref = refs[sid]; ecol = "revents" if x["restricted"] else "events"
+        snap = snaps.get(ref.parent.id + "/" + sid)
+        cur = ((snap.to_dict() or {}).get("stage") if snap is not None and snap.exists else None) or "New"
+        row = dict(c, name=x["name"], view=x["view"], restricted=x["restricted"], from_stage=cur)
+        if cur not in AUTO_FROM and edks.STAGES.index(cur) >= edks.STAGES.index(c["to_stage"]):
+            skips.append(dict(row, why=f"already at {cur}")); continue
+        evs = [e.to_dict() or {} for e in ref.collection(ecol).where("type", "==", "stage").stream()]
+        if any(e.get("event_id") == "ea" + c["gmail_id"] or e.get("gmail_id") == c["gmail_id"] for e in evs):
+            skips.append(dict(row, why="already recorded")); continue
+        later = [e for e in evs if str(e.get("ts") or "") > c["date"].isoformat()]
+        if later:
+            skips.append(dict(row, why=f"stage set later by {later[-1].get('by') or '?'} ({str(later[-1].get('ts'))[:10]})")); continue
+        moves.append(row)
+    return moves, skips
+
+def apply_stage_moves(client, moves):
+    """One batch: deal doc stage + stage event (same shape as an app move) + reviewQueue item already answered."""
+    now = dt.datetime.now(dt.timezone.utc)
+    b = client.batch(); n = 0
+    for mv in moves:
+        r = mv["restricted"]; dref = client.collection("rdeals" if r else "deals").document(mv["site_id"])
+        eid = "ea" + mv["gmail_id"]; ts = mv["date"].isoformat().replace("+00:00", "Z")
+        text = (f"Auto from email ({mv['date'].date().isoformat()}): “{mv['subject'][:120]}”"
+                + (" · LOI " + mv["evidence"] if mv["to_stage"] == "LOI Submitted" else ""))
+        e = {"event_id": eid, "site_id": mv["site_id"], "view": mv["view"], "name": mv["name"], "type": "stage", "ts": ts,
+             "from_stage": mv["from_stage"], "to_stage": mv["to_stage"], "reasons": [], "text": text, "by": AUTO_SOURCE,
+             "source": AUTO_SOURCE, "gmail_id": mv["gmail_id"], "thread_id": mv["thread_id"], "account": mv["account"],
+             "email_date": ts, "evidence": mv["evidence"]}
+        b.set(dref, {"site_id": mv["site_id"], "view": mv["view"], "name": mv["name"], "stage": mv["to_stage"],
+                     "updated": now, "updated_by": AUTO_SOURCE}, merge=True)
+        b.set(dref.collection("revents" if r else "events").document(eid), e)
+        b.set(client.collection("reviewQueue").document(eid), {
+            "event_id": eid, "site_id": mv["site_id"], "view": mv["view"], "name": mv["name"],
+            "track": edks.track_of(mv["view"]), "from_stage": mv["from_stage"], "to_stage": mv["to_stage"], "who": AUTO_SOURCE,
+            "reasons": [], "text": text, "ts": ts, "status": "answered", "answer": "email evidence", "answer_reasons": [],
+            "answered_by": AUTO_SOURCE, "source": AUTO_SOURCE, "gmail_id": mv["gmail_id"], "restricted": bool(r),
+            "created": now, "answered_at": now})
+        n += 3
+        if n >= 450:
+            b.commit(); b = client.batch(); n = 0
+    if n:
+        b.commit()
+
+def report_stage_moves(moves, skips, dry):
+    tag = "DRY RUN " if dry else ""
+    for mv in moves:
+        print(f"[email_sync] {tag}stage {mv['site_id']}\t{mv['name']}\t{mv['from_stage']} -> {mv['to_stage']}\t"
+              f"{mv['date'].date().isoformat()}\t{mv['evidence']}\t“{mv['subject'][:90]}”{' (admin-only)' if mv['restricted'] else ''}")
+    for s in skips:
+        print(f"[email_sync] {tag}skip  {s['site_id']}\t{s['name']}\t{s['from_stage']} -/-> {s['to_stage']}\t{s['date'].date().isoformat()}\t{s['why']}\t“{s['subject'][:90]}”")
+    print(f"[email_sync] {tag}stage moves={len(moves)} skipped={len(skips)}")
+
+def run_stage_moves(client, idx, mine, msgs, matched, dry):
+    moves, skips = plan_stage_moves(client, idx, stage_candidates(idx, mine, msgs, matched))
+    if not dry and moves:
+        apply_stage_moves(client, moves)
+        if any(not mv["restricted"] for mv in moves):
+            try:
+                import learnings
+                learnings.recompute(client, quiet=True)
+            except Exception as ex:
+                print(f"[email_sync] WARNING: weights not refit ({type(ex).__name__})")
+    report_stage_moves(moves, skips, dry)
+    return moves, skips
+
+def cmd_stages(a):
+    """Backfill: scan every private run dir (or --dir ones) and apply the same stage rules. Dry run unless --apply."""
+    client = edks.db(); mine = senders(client)
+    dirs = a.dir or sorted(glob.glob(os.path.join(a.root, "*/")))
+    idx = deal_index(client)       # one fresh index; older run dirs' caches may predate merges
+    msgs = defaultdict(dict)
+    for d in dirs:
+        for acct, ms in read_dir(d).items():
+            for mid, m in ms.items():
+                o = msgs[acct].get(mid) or {}
+                msgs[acct][mid] = dict(o, **{k: v for k, v in m.items() if v})
+    matched, amb = match(idx, mine, msgs)
+    print(f"[email_sync] scanned {len(dirs)} run dir(s), threads matched={len(matched)} ambiguous_skipped={amb}")
+    run_stage_moves(client, idx, mine, msgs, matched, not a.apply)
 
 def summarize(client, sid, now=None):
     now = now or dt.datetime.now(dt.timezone.utc)
@@ -431,6 +580,10 @@ def main():
     q = sp.add_parser("queries"); q.add_argument("--backfill-days", type=int, default=0); q.add_argument("--dir", help="run dir: caches the deal index for plan/ingest")
     pl = sp.add_parser("plan"); pl.add_argument("--dir", required=True)
     i = sp.add_parser("ingest"); i.add_argument("--dir", required=True); i.add_argument("--dry-run", action="store_true")
+    i.add_argument("--no-stages", action="store_true", help="skip the automatic stage moves from sent mail")
+    st = sp.add_parser("stages", help="backfill stage moves from saved run dirs (dry run unless --apply)")
+    st.add_argument("--dir", action="append", help="run dir (repeatable); default: every dir under --root")
+    st.add_argument("--root", default="/workspace/edifice-sites/private/email_sync"); st.add_argument("--apply", action="store_true")
     s = sp.add_parser("summarize"); s.add_argument("site_ids", nargs="*")
     a = p.parse_args()
     if a.cmd == "summarize":
@@ -438,7 +591,7 @@ def main():
         for sid in a.site_ids or [d.id for d in c.collection("dealEmails").stream()]:
             summarize(c, sid)
         print("[email_sync] summaries refreshed"); return
-    {"queries": cmd_queries, "plan": cmd_plan, "ingest": cmd_ingest}[a.cmd](a)
+    {"queries": cmd_queries, "plan": cmd_plan, "ingest": cmd_ingest, "stages": cmd_stages}[a.cmd](a)
 
 if __name__ == "__main__":
     main()
