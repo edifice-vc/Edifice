@@ -86,6 +86,19 @@ service cloud.firestore {
         && d.k is map && d.k.size() <= 20 && str(d.p, 8000) && str(d.g, 24000) && d.restricted is bool
         && d.by == email() && d.ts == request.time;
     }
+    // Site Planning no-build constraints per site (easement centerlines + widths/setbacks, exclusions, site power caps,
+    // site-data record for deals outside meta/sitedata). Can carry restricted-deal geometry, so ADMIN-ONLY read and write.
+    // Written by pipeline/site_constraints.py (admin SDK) or an admin's explicit Save in Site Planning.
+    match /site_constraints/{id} {
+      allow read: if admin();
+      allow create, update: if admin() && constraintsOk();
+      allow delete: if admin();
+    }
+    function constraintsOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['j', 'h', 'restricted', 'by', 'ts']) && d.keys().hasAll(['j', 'restricted', 'by', 'ts'])
+        && str(d.j, 200000) && d.restricted is bool && d.by == email() && d.ts == request.time;
+    }
     // Zoneomics zoning per site: licensed data, ADMIN-ONLY, never redistributed. Written only by pipeline/zoneomics.py (admin SDK).
     match /zoning/{id} { allow read: if admin(); allow write: if false; }
     // Public Mapbox map token (URL-restricted pk.): readable by any signed-in member, never client-written.

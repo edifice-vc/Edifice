@@ -311,6 +311,13 @@ async function boot(user, email, me0) {
       const id = d.site_id + '__' + Date.now().toString(36);
       return setDoc(doc(db, 'site_plans_saved', id), Object.assign({}, d, { by: email, ts: serverTimestamp() })).then(() => id);
     },
+    // Site Planning no-build constraints (easements, exclusions, power caps): ADMIN-ONLY, one doc read per opened site.
+    siteConstraints: siteId => role !== 'admin' ? Promise.resolve(null)
+      : getDoc(doc(db, 'site_constraints', siteId)).then(d => d.exists() ? JSON.parse(d.data().j) : null).catch(() => null),
+    saveConstraints(siteId, obj, restricted) {
+      if (role !== 'admin') return Promise.reject(new Error('admins only'));
+      return setDoc(doc(db, 'site_constraints', siteId), { j: JSON.stringify(obj), restricted: !!restricted, by: email, ts: serverTimestamp() });
+    },
     // Zoneomics zoning (licensed, ADMIN-ONLY, never redistributed): one doc read per opened site, never bulk-fetched.
     zoning: siteId => role !== 'admin' ? Promise.resolve(null)
       : getDoc(doc(db, 'zoning', siteId)).then(d => d.exists() ? JSON.parse(d.data().j) : null).catch(() => null),

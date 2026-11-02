@@ -179,7 +179,10 @@ def gj(g, tol=4.0):
     import shapely
     g = g.simplify(tol)
     if g.is_empty or g.area < 400: return None
-    return mapping(shapely.set_precision(ll(g), 1e-5))
+    try: return mapping(shapely.set_precision(ll(g), 1e-5))
+    except shapely.errors.GEOSException:  # snapping can collapse thin holes; repair then retry, else keep full precision
+        try: return mapping(shapely.set_precision(ll(g).buffer(0), 1e-5))
+        except shapely.errors.GEOSException: return mapping(ll(g).buffer(0))
 
 def one(rec):
     out = {"id": rec["id"], "name": rec.get("name"), "view": rec.get("view"), "score": rec.get("score"), "stage": rec.get("stage"),
