@@ -115,6 +115,19 @@ details.pt{border:1px solid var(--line);padding:10px 12px;margin:0 0 8px}details
 .aichip .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .aiclr{background:none;border:0;color:var(--mut);cursor:pointer;padding:4px 6px;text-decoration:underline}.aiclr:hover{color:var(--fg)}
 @media(max-width:600px){.ais label{display:none}.ais kbd{display:none}}
+.kmask{position:absolute;z-index:6;top:12px;left:50%;transform:translateX(-50%);width:min(560px,calc(100% - 560px));min-width:300px;pointer-events:auto;font-family:'Jost',sans-serif}
+.kmask .ais{margin:0;background:rgba(10,10,10,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}.kmask .ais input{padding:10px 0;font-size:15px}
+.kmar{background:rgba(10,10,10,.94);border:1px solid var(--line);border-top:0;max-height:min(46vh,420px);overflow:auto}.kmar[hidden]{display:none}
+.kmar .kmah{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--line);color:var(--mut)}
+.kmar .kmaf{padding:6px 12px 0;font-size:12px;color:#ccc}
+.kmar .kmrow{display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.06)}.kmar .kmrow:last-child{border-bottom:0}
+.kmar .kmgo{flex:1;min-width:0;text-align:left;background:none;border:0;color:var(--fg);cursor:pointer;padding:8px 12px;font:14px 'Jost',sans-serif}.kmar .kmgo:hover,.kmar .kmgo:focus-visible{background:#161616;outline:none}
+.kmar .kmgo small{display:block;font:10px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kmar .kmop{background:none;border:1px solid var(--line);color:var(--fg);cursor:pointer;margin-right:10px;padding:4px 8px;border-radius:0}.kmar .kmop:hover{border-color:var(--acc)}
+.kmar .kmnote{padding:8px 12px;font-size:12px;color:var(--mut)}
+body.mapfull .kmask{top:64px}
+@media(max-width:1100px){.kmask{left:auto;right:56px;transform:none;width:min(440px,calc(100% - 340px))}}
+@media(max-width:760px){.kmask,body.mapfull .kmask{top:56px;left:8px;right:8px;width:auto;min-width:0}.kmar{max-height:32vh}body.mapfull .kp-lyr{top:104px!important}body.mapfull #kmMap .maplibregl-ctrl-top-right,body.mapfull #kmMap .mapboxgl-ctrl-top-right{top:144px!important}}
 .tools{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:12px 0 10px}
 .tbtn{background:#000;color:#fff;border:1px solid var(--line);padding:10px 14px;font:500 12px 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border-radius:0}
 .tbtn:hover,.tbtn.on{border-color:var(--acc)}.tbtn b{color:var(--acc);font-weight:500}
@@ -368,7 +381,7 @@ body.mapfull .logo{align-items:center}body.mapfull .logo svg{width:14px;height:2
 body.mapfull .hdr-r{flex-direction:row;align-items:center;gap:12px;white-space:nowrap}body.mapfull #refreshed{display:none}
 body.mapfull .viewbar{position:fixed;top:0;left:136px;height:52px;margin:0;z-index:21;align-items:center}
 body.mapfull .topnav{border:0!important;width:auto}body.mapfull .topnav button{padding:17px 14px 15px!important}body.mapfull .topnav button:first-child{padding-left:14px!important}
-body.mapfull .ais,body.mapfull .aichips,body.mapfull .dealseg{display:none!important}
+body.mapfull .ais:not(.kmais),body.mapfull .aichips,body.mapfull .dealseg{display:none!important}
 body.mapfull .kp-main{top:64px;max-height:calc(100% - 300px)!important}
 body.mapfull #kmMap .maplibregl-ctrl-top-right,body.mapfull #kmMap .mapboxgl-ctrl-top-right{top:56px}
 body.mapfull #kmMap [class*=ctrl-bottom-left]{left:252px}body.mapfull #kmMap [class*=ctrl-attrib]{font-size:10px;max-width:60vw}
@@ -440,7 +453,7 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
 <div class="viewbar"><nav class="topnav" role="tablist" aria-label="Modules"><button type="button" role="tab" data-top="deals">Deals</button><button type="button" role="tab" data-top="map">Map</button><button type="button" role="tab" data-top="plan" id="planTab" hidden>Site Planning</button></nav><select id="view" aria-label="Choose table" hidden><option value="land">Terrafice</option><option value="storage">Everstow</option></select></div>
 <div class="ais" role="search"><label class="lbl mono" for="aiQ">AI search</label><input id="aiQ" type="search" autocomplete="off" spellcheck="false" aria-describedby="aiChips" placeholder="Ask in plain English"><kbd title="Press / to search">/</kbd></div><div class="aichips" id="aiChips" aria-live="polite"></div>
 <div class="dealseg" id="dealSeg" role="tablist" aria-label="Deal type"><button type="button" role="tab" data-dk="land">Terrafice<span class="n" id="dkL"></span></button><button type="button" role="tab" data-dk="storage">Everstow<span class="n" id="dkS"></span></button></div>
-<div id="viewMap" class="mapmod" hidden aria-label="Kansas map"><div class="mapside" id="kmSide"></div><div id="kmMap"></div></div>
+<div id="viewMap" class="mapmod" hidden aria-label="Kansas map"><div class="kmask" id="kmAsk"><div class="ais kmais" role="search"><label class="lbl mono" for="kmQ">AI search</label><input id="kmQ" type="search" autocomplete="off" spellcheck="false" aria-controls="kmAR" placeholder="Ask: storage deals near Wichita at LOI"><kbd title="Press / to search">/</kbd></div><div class="kmar" id="kmAR" hidden aria-live="polite"></div></div><div class="mapside" id="kmSide"></div><div id="kmMap"></div></div>
 <div id="viewPlan" class="spmod" hidden aria-label="Site planning"></div>
 <div id="viewLand">
 <div class="eyebrow mono">Kansas · Data-center land</div>
@@ -565,17 +578,21 @@ function aiNotes(){if(aiNL===PS.events.length&&aiNI)return aiNI;aiNI={};PS.event
 function aiHay(v,o){return [o.name,o.city,o.county,o.address,o.city_label,o.description,o.subtype,(o.zoning||{}).district,(aiNotes()[v+'|'+o.id]||'')].join(' ').toLowerCase()}
 function aiOK(v,o){const A=AI[v],x=A.x;
  if(x.acMin!=null&&!((o.acres||0)>=x.acMin))return false;if(x.acMax!=null&&!(o.acres!=null&&o.acres<=x.acMax))return false;
- if(v==='land'){if(x.gas&&!o.gasline)return false;if(x.tot!=null&&!(pr(o).total!=null&&pr(o).total<=x.tot))return false}
+ if(x.near&&!(typeof o.lat==='number'&&hvm(x.near.lat,x.near.lon,o.lat,o.lon)<=x.near.mi))return false;
+ if(v==='land'){if(x.gas&&!o.gasline)return false;if(x.mwMin!=null||x.mwMax!=null){const w=aiMW(o);if(w==null)return false;if(x.mwMin!=null&&w<x.mwMin)return false;if(x.mwMax!=null&&w>x.mwMax)return false}if(x.noFlood){const f=aiFlood(o);if(f!=null&&f>=5)return false}if(x.flood){const f=aiFlood(o);if(!(f!=null&&f>=5))return false}if(x.tot!=null&&!(pr(o).total!=null&&pr(o).total<=x.tot))return false}
  else{if(x.aadt!=null&&!(((o.traffic||{}).aadt||0)>=x.aadt))return false;if(x.ppa!=null&&!(o.price_per_acre!=null&&o.price_per_acre<=x.ppa))return false;if(x.city&&/county/i.test((o.zoning||{}).code||''))return false}
  if(A.terms.length){const h=aiHay(v,o);if(!A.terms.every(t=>h.includes(t)))return false}return true}
+// MW: stated deal MW, else the grid estimate from public lines/substations (never the admin-only site caps). Flood: % in FEMA 100-yr from data already in memory.
+function aiMW(o){const m=o.mw!=null?o.mw:(o.edits||{}).mw;if(m!=null&&isFinite(+m))return +m;try{const g=spGridEst0(o);return g&&isFinite(g.mw)?g.mw:null}catch(e){return null}}
+function aiFlood(o){const f=(o.floodplain||{}).pct;if(f!=null)return +f;const sd=(typeof SP!=='undefined'&&SP.sd)||(D&&D.sitedata);const d=sd&&sd.sites&&sd.sites[o.id];const p=d&&d.flood&&d.flood.sfha_pct;return p!=null?+p:null}
 function aiNum(s){if(s==null)return null;s=String(s).toLowerCase().replace(/[$,\s]/g,'');const m=s.match(/^(\d*\.?\d+)(k|m|mm|million|thousand)?$/);if(!m)return null;let n=parseFloat(m[1]);const u=m[2];if(u==='k'||u==='thousand')n*=1e3;else if(u)n*=1e6;return n}
 function aiUndo(v){const A=AI[v];A.chips.slice().reverse().forEach(c=>aiDrop(v,c,true));A.chips=[];A.terms=[];A.x={}}
 function aiDrop(v,c,quiet){const A=AI[v];if(c.el){const el=$(c.el);if(el.type==='checkbox')el.checked=c.prev;else el.value=c.prev}if(c.stf){STF[v].clear();c.prev.forEach(s=>STF[v].add(s));stfSave()}if(c.x)c.x.forEach(k=>delete A.x[k]);if(c.term)A.terms=A.terms.filter(t=>t!==c.term);if(!quiet)A.chips=A.chips.filter(z=>z!==c)}
-function aiParse(raw){
+function aiParse(raw,force,keep){
  let q=' '+String(raw||'').toLowerCase().replace(/[“”"]/g,' ').replace(/–|—/g,'-').replace(/\s+/g,' ')+' ';
  const cur=$('viewStorage').hidden?'land':'storage';let v=cur;
  if(/\b(self[- ]?storage|storage|facilit(y|ies)|mini[- ]?storage|units?)\b/.test(q))v='storage';else if(/\b(data[- ]?cent(er|re)s?|dc|powered land|hyperscale|kv|substation|transmission)\b/.test(q))v='land';
- aiUndo('land');aiUndo('storage');
+ if(force)v=force;if(!keep){aiUndo('land');aiUndo('storage')}else aiUndo(v);
  if(v!==cur&&!mapOn())setView(v);AI_LAST=v;
  const A=AI[v],L=v==='land',ch=[];
  const eat=re=>{let m=null;q=q.replace(re,(...a)=>{m=m||a;return ' '});return m};
@@ -603,6 +620,11 @@ function aiParse(raw){
  if(m=eat(/\b(?:score|overall|rated|rating)\s?(?:of |over |above |at least |>=?)?(\d{1,3})\s?\+?|\b(\d{1,3})\s?\+?\s?(?:score|overall|rating)\b/)){const n=+(m[1]||m[2]);if(n<=100)set(L?'fScore':'sScore',n,'score ≥ '+n)}
  else if(m=eat(/\b(top|best|high(?:est)?[- ]scor(?:e|ing)|strong(?:est)?)\b/))set(L?'fSort':'sSort','score','sort: score');
  if(L){
+  // MW (stated, else grid estimate) and FEMA floodplain
+  if(m=eat(/\b(?:under|below|less than|at most|max(?:imum)?|<=?)\s?(\d+\.?\d*)\s?mw\b/))ext({mwMax:+m[1]},'≤ '+m[1]+' MW');
+  if(m=eat(/\b(?:over|above|more than|at least|min(?:imum)?|>=?)?\s?(\d+\.?\d*)\s?\+?\s?mw(?: or more| plus)?\b/))ext({mwMin:+m[1]},'≥ '+m[1]+' MW');
+  if(eat(/\b(?:with )?(?:no |not in (?:a |the )?|outside (?:of )?(?:a |the )?|without (?:a |the )?|out of (?:the )?)(?:100[- ]?yr |100[- ]?year )?flood(?:plain| zone|ing| risk)?s?\b|\bflood[- ]?free\b|\bdry\b/))ext({noFlood:true},'floodplain < 5% or not checked');
+  else if(eat(/\b(?:in (?:a |the )?)?(?:100[- ]?yr |100[- ]?year )?flood(?:plain| zone|ing| risk)?s?\b/))ext({flood:true},'in floodplain ≥ 5%');
   // power
   let kv=null;if(m=eat(/\b(\d{2,3})\s?kv\b/))kv=+m[1];else if(eat(/\b(extra[- ]high voltage|ehv|high[- ]voltage)\b/))kv=230;
   if(kv){const o=[345,230,138,115,69].find(k=>k<=kv)||69;set('fKv',o,o===69?'line 69+ kV':'line ≥ '+o+' kV')}
@@ -627,7 +649,7 @@ function aiParse(raw){
   const cs=[...$('sCity').options].map(o=>o.value).filter(Boolean).sort((a,b)=>b.length-a.length);for(const c of cs){const re=new RegExp('\\b'+c.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b');if(re.test(q)){q=q.replace(re,' ');set('sCity',c,c);break}}
  }
  // leftovers become free-text terms (name, city, county, address, notes you can see)
- const STOP=new Set('a an the and or of for in on at to with without near by from me show find list give all any some sites site parcels parcel deals deal properties property options lots that which are is has have having good great nice self storage data center centers centre dc powered land kansas ks ac acres acre mi miles mile within over under above below less more than plus only just around about where whats what i want need looking like ideal fit fits fitting score city limits limit county co per'.split(' '));
+ const STOP=new Set('a an the and or of for in on at to with without near by from me show find list give all any some sites site parcels parcel deals deal properties property options lots that which are is has have having good great nice self storage data center centers centre dc powered land kansas ks ac acres acre mi miles mile within over under above below less more than plus only just around about where whats what i want need looking like ideal fit fits fitting score city limits limit county co per mw located'.split(' '));
  q.replace(/[^a-z0-9'.& -]/g,' ').split(/\s+/).map(w=>w.replace(/^[.'-]+|[.'-]+$/g,'')).filter(w=>w.length>1&&!STOP.has(w)&&!/^\d+$/.test(w)).forEach(w=>{if(!A.terms.includes(w)){A.terms.push(w);ch.push({term:w,label:'“'+w+'”'})}});
  A.chips=ch;return v}
 let AI_LAST='land';function aiChips(){const v=mapOn()?AI_LAST:$('viewStorage').hidden?'land':'storage';const A=AI[v];
@@ -640,7 +662,7 @@ $('aiQ').addEventListener('input',()=>{clearTimeout(aiT);aiT=setTimeout(aiRun,25
 $('aiQ').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(aiT);aiRun()}else if(e.key==='Escape'){const v=mapOn()?AI_LAST:$('viewStorage').hidden?'land':'storage';aiClear(v);v==='land'?render():sRender();aiChips();e.target.blur()}});
 $('aiChips').addEventListener('click',e=>{const b=e.target.closest('[data-ai]');if(!b)return;const v=mapOn()?AI_LAST:$('viewStorage').hidden?'land':'storage';if(b.dataset.ai==='all'){aiClear(v)}else{const c=AI[v].chips[+b.dataset.ai];if(c)aiDrop(v,c);$('aiQ').value=''}v==='land'?render():sRender();aiChips();$('aiQ').focus()});
 $('view').addEventListener('change',()=>setTimeout(aiChips));
-document.addEventListener('keydown',e=>{if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;if(document.querySelector('dialog[open]'))return;e.preventDefault();$('aiQ').focus();$('aiQ').select()});
+document.addEventListener('keydown',e=>{if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey)return;const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))return;if(document.querySelector('dialog[open]'))return;e.preventDefault();const qi=mapOn()&&$('kmQ')?$('kmQ'):$('aiQ');qi.focus();qi.select()});
 const pr=s=>s.price||{};
 const money=n=>n==null?'—':n>=1e6?'$'+(n/1e6).toLocaleString(undefined,{maximumFractionDigits:2})+'M':'$'+Math.round(n).toLocaleString();
 function ppaTxt(s){const p=pr(s);if(p.per_acre==null)return p.label?esc(p.label):'—';const r=p.per_acre_high&&p.per_acre_low!=null&&p.per_acre_high!==p.per_acre_low?'$'+fmt(p.per_acre_low,0)+'–'+fmt(p.per_acre_high,0):'$'+fmt(p.per_acre,0);return r+'/ac'+(p.flagged?' <span class="badge warn">check</span>':'')}
@@ -959,10 +981,14 @@ const KM_STC={'New':'#F5F3EF','Under Consideration':'#B5B3AE','Reviewing':'#C9B9
 const KM_PAL=['#8FA8B8','#C9B98A','#8FB89A','#A58FB8','#B5B3AE','#8B93B8','#B88F9E','#7A6A52','#6A6A6A'];
 const KM_SCB=[[80,'80+','#F5F3EF'],[70,'70–79','#C9C6BF'],[60,'60–69','#9A9A9A'],[50,'50–59','#6A6A6A'],[0,'Under 50','#3A3A3A']];
 const KM_TYC={'Powered land':'#F5F3EF','Storage land':'#8FA8B8','Storage facility':'#C9B98A'};
-const KM_LYR=[['lines','Transmission lines','HIFLD · public domain'],['subs','Substations','© OpenStreetMap contributors · ODbL'],['gas','Gas pipelines','EIA · public domain'],['aadt','Traffic counts (AADT)','KDOT AADT flow map · line width = AADT','s'],['dc_tracker','DC projects','More Than Just Parks Data Center Tracker · weekly · dot size = MW','l'],
+const KM_LYR=[['lines','Transmission lines','HIFLD · public domain'],['subs','Substations','© OpenStreetMap contributors · ODbL'],['gas','Gas pipelines','EIA · public domain'],['aadt','Traffic counts (AADT)','KDOT AADT flow map · line width = AADT','s'],['dc_tracker','DC projects','More Than Just Parks Data Center Tracker · weekly · dot size = MW','l'],['spp_subs','Planned substations','SPP Quarterly Project Tracking + ITP report · solid = OSM-matched site, hollow = approximate location','l'],
  ['sscomp','Competitors','© OpenStreetMap contributors · ODbL · dot size = est. rentable SF from mapped footprint','s'],['sspermit','Storage permits','City/county agendas, permits, news · per-record link','s'],
  ['bgpop','Population','US Census ACS 5-yr · block groups','s'],['bgrent','Renter share','US Census ACS 5-yr · block groups','s'],['bginc','Median HH income','US Census ACS 5-yr · block groups','s']];
-const KM_LYRV=()=>KM_LYR.filter(x=>!x[3]||(x[3]==='l'?KM.show!=='storage':(KM.show!=='land'&&ST)));
+// planned / NTC / under-construction substations (pipeline/spp_subs.py -> gated meta/spp_subs); the layer hides when there is no data
+let SPPD=null,SPPP=null;function sppLoad(){return SPPP||(SPPP=(window.EDKS_SPP?Promise.resolve(window.EDKS_SPP):window.EDKS_BK&&EDKS_BK.sppSubs?EDKS_BK.sppSubs():Promise.resolve(null)).catch(()=>null).then(d=>{SPPD=d&&Array.isArray(d.subs)&&d.subs.length?d:null;if(SPPD&&mapOn())drawMap();return SPPD}))}
+const SPP_SC={planned:'#7FD1AE',ntc_issued:'#4FB3D9',under_construction:'#F5C542'},SPP_SL={planned:'Planned (ITP / identified, no NTC yet)',ntc_issued:'NTC issued',under_construction:'Under construction'},SPP_LL={osm:'Exact: matched by name to an OpenStreetMap substation',mid:'Approximate: midpoint between the two named end substations',town:'Approximate: town centroid',county:'Approximate: county centroid',none:'Unlocated'};
+function sppGeo(){const d=SPPD||{subs:[]};return {type:'FeatureCollection',features:d.subs.map((r,i)=>r.lat==null?null:{type:'Feature',geometry:{type:'Point',coordinates:[r.lon,r.lat]},properties:{i,s:r.s,kv:(r.kv||[])[0]||0,x:r.loc==='osm'?1:0}}).filter(Boolean)}}
+const KM_LYRV=()=>KM_LYR.filter(x=>(x[0]!=='spp_subs'||SPPD)&&(!x[3]||(x[3]==='l'?KM.show!=='storage':(KM.show!=='land'&&ST))));
 const KM_LCOL={'345':'#F14B21','220-287':'#E8C547','100-161':'#4FB3D9'};
 const mapOn=()=>!$('viewMap').hidden;
 function kmViews(){return [['stage','Stage'],['score','Score'],['type','Type']].concat(KM.show==='land'?[['util','Utility']]:[])}
@@ -997,6 +1023,7 @@ const KM_GL_DC={dc_tracker:{type:'circle',paint:{'circle-radius':['interpolate',
 const KM_GL={lines:{type:'line',paint:{'line-color':['match',['get','c'],'345','#B5B3AE','220-287','#7A7A7A','#4A4A4A'],'line-width':['interpolate',['linear'],['zoom'],6,['match',['get','c'],'345',1,'220-287',.7,.5],12,['match',['get','c'],'345',2.2,'220-287',1.6,1.1]]}},
  gas:{type:'line',paint:{'line-color':'#6F9E7D','line-width':['interpolate',['linear'],['zoom'],6,.6,12,1.4],'line-opacity':.8,'line-dasharray':[4,3]}},
  subs:{type:'circle',paint:{'circle-radius':['interpolate',['linear'],['zoom'],6,['step',['coalesce',['get','kv'],0],1,1,1.2,69,1.4,115,1.8,138,2.2,161,2.6,230,3.6,345,5],12,['step',['coalesce',['get','kv'],0],2.4,1,3,69,3.4,115,4.4,138,5.2,161,6.2,230,8,345,10]],'circle-color':['step',['coalesce',['get','kv'],0],'#4A4A4A',1,'#5E4A42',69,'#5E4A42',115,'#7A4D3B',138,'#9A5034',161,'#B9502B',230,'#DD5124',345,'#FF5A26'],'circle-opacity':['step',['coalesce',['get','kv'],0],0.55,1,0.6,69,0.6,115,0.7,138,0.8,161,0.9,230,1,345,1],'circle-stroke-color':'#0A0A0A','circle-stroke-width':.6},layout:{'circle-sort-key':['coalesce',['get','kv'],0]}},
+ spp_subs:{type:'circle',paint:{'circle-radius':['interpolate',['linear'],['zoom'],5,['step',['get','kv'],3,115,3.5,230,4.5,345,5.5,765,7],12,['step',['get','kv'],6,115,7,230,8.5,345,10,765,13]],'circle-color':['match',['get','s'],'planned','#7FD1AE','under_construction','#F5C542','#4FB3D9'],'circle-opacity':['case',['==',['get','x'],1],.95,0],'circle-stroke-color':['case',['==',['get','x'],1],'#0A0A0A',['match',['get','s'],'planned','#7FD1AE','under_construction','#F5C542','#4FB3D9']],'circle-stroke-width':['case',['==',['get','x'],1],1,2]},layout:{'circle-sort-key':['get','kv']}},
  aadt:{type:'line',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#FFC21A','line-opacity':.9,'line-width':['interpolate',['linear'],['zoom'],6,['interpolate',['linear'],['coalesce',['get','v'],0],0,.3,5000,.7,15000,1.3,40000,2.4,80000,3.4],10,['interpolate',['linear'],['coalesce',['get','v'],0],0,.8,5000,1.6,15000,3,40000,5.5,80000,7.5],14,['interpolate',['linear'],['coalesce',['get','v'],0],0,1.5,5000,3,15000,6,40000,11,80000,15]]}},...KM_GL_DC,...KM_GL_S};
 // recolour the basemap (Mapbox dark-v11 or OpenFreeMap dark) to Edifice tokens: ground, muted roads/labels, paper for places
 function kmTone(map){const P=(id,k,v)=>{try{map.setPaintProperty(id,k,v)}catch(e){}};
@@ -1009,12 +1036,18 @@ function kmTone(map){const P=(id,k,v)=>{try{map.setPaintProperty(id,k,v)}catch(e
    if((!place&&!/road|highway|transportation/.test(sl))||/country|continent/.test(sl)){map.setLayoutProperty(id,'visibility','none');return}
    P(id,'text-color',place?(/state/.test(sl)?'#6A6A6A':'#B5B3AE'):'#4A4A4A');P(id,'text-halo-color','#0A0A0A');P(id,'text-halo-width',1.2);P(id,'icon-opacity',0)}
   else if(t==='symbol'||t==='circle')map.setLayoutProperty(id,'visibility','none')})}
-function lyrPop(k,p){const r=(a,b)=>`<div class="mpr"><span>${a}</span><b>${esc(b==null||b===''||b==='null'?'—':String(b))}</b></div>`,ln=(u,t)=>u?`<div class="kpf"><a href="${esc(u)}" target="_blank" rel="noopener">${t}</a></div>`:'';if(k==='dc_tracker'){const n=x=>x==null||x==='null'||x===''?null:x;return `<div class="mpr"><span>Project</span><b>${esc(p.name)}</b></div>`+r('Developer / operator',n(p.company))+r('End user',n(p.end_user))+r('Status',String(p.status||'').replace(/_/g,' '))+r('Capacity',+p.mw>0?fmt(+p.mw,0)+' MW':'Not disclosed')+r('Acres',+p.acres>0?fmt(+p.acres,0):null)+r('Investment',n(p.investment)||n(p.invest))+r('Utility',n(p.utility))+r('Nearest 115+ kV sub (OSM)',n(p.sub)?p.sub+' · '+p.sub_mi+' mi':null)+r('Approvals',n(p.approvals))+r('Lawsuit',n(p.lawsuit))+r('Opposition',n(p.opposition)||n(p.moratorium))+r('Where',[p.town,p.county&&p.county+' Co.',p.state].filter(n).join(', '))+r('Filed',n(p.filed))+r('Last seen',n(p.last_seen))+`<div class="mpr"><span>Links</span><b>${n(p.src)?`<a href="${esc(p.src)}" target="_blank" rel="noopener">Source</a> · `:''}<a href="${esc(p.url)}" target="_blank" rel="noopener">Tracker</a></b></div>`}
+function lyrPop(k,p){const r=(a,b)=>`<div class="mpr"><span>${a}</span><b>${esc(b==null||b===''||b==='null'?'—':String(b))}</b></div>`,ln=(u,t)=>u?`<div class="kpf"><a href="${esc(u)}" target="_blank" rel="noopener">${t}</a></div>`:'';if(k==='spp_subs')return sppPop((SPPD||{subs:[]}).subs[+p.i]);if(k==='dc_tracker'){const n=x=>x==null||x==='null'||x===''?null:x;return `<div class="mpr"><span>Project</span><b>${esc(p.name)}</b></div>`+r('Developer / operator',n(p.company))+r('End user',n(p.end_user))+r('Status',String(p.status||'').replace(/_/g,' '))+r('Capacity',+p.mw>0?fmt(+p.mw,0)+' MW':'Not disclosed')+r('Acres',+p.acres>0?fmt(+p.acres,0):null)+r('Investment',n(p.investment)||n(p.invest))+r('Utility',n(p.utility))+r('Nearest 115+ kV sub (OSM)',n(p.sub)?p.sub+' · '+p.sub_mi+' mi':null)+r('Approvals',n(p.approvals))+r('Lawsuit',n(p.lawsuit))+r('Opposition',n(p.opposition)||n(p.moratorium))+r('Where',[p.town,p.county&&p.county+' Co.',p.state].filter(n).join(', '))+r('Filed',n(p.filed))+r('Last seen',n(p.last_seen))+`<div class="mpr"><span>Links</span><b>${n(p.src)?`<a href="${esc(p.src)}" target="_blank" rel="noopener">Source</a> · `:''}<a href="${esc(p.url)}" target="_blank" rel="noopener">Tracker</a></b></div>`}
  if(k==='sscomp')return `<div class="kph">${esc(p.n)}</div>`+r('Operator',p.o&&p.o!=='null'?p.o:'Not tagged')+r('Est. rentable SF',+p.sf>0?'~'+fmt(+p.sf,0):'Unknown')+r('Size basis',p.b)+r('5-mi population',p.p5>0?fmt(+p.p5,0):null)+ln(p.u,'OpenStreetMap record');
  if(k==='sspermit')return `<div class="kph">${esc(p.n)}</div>`+r('Where',[p.a,p.c].filter(Boolean).join(', '))+r('Type',p.t)+r('Status',p.st)+r('Date',p.d)+r('Size',+p.sf>0?fmt(+p.sf,0)+' SF':'Not stated')+r('Location',p.loc)+ln(p.u,'Source');
  if(/^bg/.test(k))return r('Block group population',fmt(+p.pop,0))+r('Households',fmt(+p.hh,0))+r('Renter share',p.rent!=null&&p.rent!=='null'?p.rent+'%':null)+r('Median HH income',+p.inc>0?'$'+fmt(+p.inc,0):null);
  return k==='lines'?r('Line',(p.kv>0?p.kv+' kV':p.c+' kV class'))+r('Owner',p.o)+r('From',p.a)+r('To',p.b):k==='gas'?r('Pipeline',p.t)+r('Operator',p.o):k==='subs'?r('Substation',p.n)+r('Operator',p.o)+r('Max voltage',p.kv?p.kv+' kV':'Not tagged in OSM'):r('AADT',p.v!=null?fmt(+p.v,0):null)+r('Year',p.y)+r('Route',p.r)}
-function lyrLegend(k){const g=(a)=>a.map(([c,t])=>[c,t]);if(k==='sscomp')return [['#F4F4F4','~150k est. rentable SF',8.5],['#F4F4F4','~50k SF',5],['#F4F4F4','~10k SF',3],['#BDBDBD','Size unknown (points only in OSM)',2.5]];if(k==='sspermit')return [['#00E5FF','Permit / approval, 2024–26']];
+function sppPop(x){if(!x)return '';const r=(a,b)=>`<div class="mpr"><span>${a}</span><b>${esc(b==null||b===''?'—':String(b))}</b></div>`,usd=v=>v?'$'+(v>=1e6?fmt(v/1e6,1)+'M':fmt(v,0)):null;
+ return `<div class="kph">${esc(x.n)}${x.st?' · '+esc(x.st):''}</div>`+r('Status',SPP_SL[x.s]||x.s)+r('Type',x.kind==='new'?'New substation':'Expansion of existing substation')+r('Utility / owner',x.o)+r('Voltage',(x.kv||[]).length?x.kv.join(' / ')+' kV':null)+r('In-service',x.isd?(x.isd0&&x.isd0!==x.isd?x.isd0+' to '+x.isd:x.isd)+' (owner-indicated)':null)+r('Cost estimate',usd(x.cost)?usd(x.cost)+(x.npj>1?' · sum of '+x.npj+' upgrades':''):null)
+ +`<div class="mpr"><span>Location</span><b>${esc(SPP_LL[x.loc]||x.loc)}</b></div>`+(x.loc!=='osm'?`<small class="muted">${esc(x.note||'')}</small>`:'')+(x.osm?`<div class="kpf"><a href="${esc(x.osm)}" target="_blank" rel="noopener">OpenStreetMap feature</a></div>`:'')
+ +`<div class="sub" style="margin-top:6px"><b>Projects</b>${(x.pj||[]).slice(0,6).map(p=>`<div><small>${esc(p.u||p.p)}${p.ntc?' · NTC '+esc(p.ntc):''}${p.pid?' · PID '+esc(p.pid):''}${p.uid?' · UID '+esc(p.uid):''}${p.study?' · '+esc(p.study):''}${p.isd?' · ISD '+esc(p.isd):''}${p.cost?' · '+usd(p.cost):''}${p.qs?' · '+esc(p.qs):''}</small></div>`).join('')}${x.npj>6?`<small class="muted">+${x.npj-6} more</small>`:''}</div>`
+ +((x.ln||[]).length?`<div class="sub"><b>Linked line projects</b>${x.ln.slice(0,6).map(l=>`<div><small>${esc(l)}</small></div>`).join('')}</div>`:'')
+ +(x.src||[]).map(s=>`<div class="kpf"><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t)}</a>${s.p?' <small>· '+(typeof s.p==='number'?'p. '+s.p:esc(s.p))+'</small>':''}</div>`).join('')}
+function lyrLegend(k){if(k==='spp_subs'){const d=SPPD||{subs:[]},un=d.subs.filter(x=>x.lat==null);return [['#F5C542','Under construction',8],['#4FB3D9','NTC issued',8],['#7FD1AE','Planned (no NTC yet)',8],['transparent;box-sizing:border-box;border:2px solid #B5B3AE','Hollow = approximate location (see popup)',8],['#9A9A9A',d.subs.length+' substations · '+un.length+' unlocated (listed below, not plotted)',4]]}const g=(a)=>a.map(([c,t])=>[c,t]);if(k==='sscomp')return [['#F4F4F4','~150k est. rentable SF',8.5],['#F4F4F4','~50k SF',5],['#F4F4F4','~10k SF',3],['#BDBDBD','Size unknown (points only in OSM)',2.5]];if(k==='sspermit')return [['#00E5FF','Permit / approval, 2024–26']];
  if(k==='bgpop')return g([['#F0D4FF','4,000+ people'],['#C994E6','2,500–4,000'],['#A673D9','1,500–2,500'],['#7E4FB8','1,000–1,500'],['#5A3A8A','Under 1,000']]);if(k==='bgrent')return g([['#FFC4B8','65%+ renters'],['#F57F6E','50–65%'],['#D9473A','35–50%'],['#A83030','20–35%'],['#7A2020','Under 20%']]);
  if(k==='bginc')return g([['#CFE6FF','$125k+'],['#7DB8F5','$90–125k'],['#3C8CE0','$65–90k'],['#2E6CC0','$45–65k'],['#1D4A8A','Under $45k']]);
  if(k==='dc_tracker')return [['#8B93B8','Operational'],['#C7B8F0','Under construction'],['#7E6FA8','Proposed'],['#B88F9E','Moratorium'],['#4A4A4A','Withdrawn / cancelled / defeated'],['#9A9A9A','Dot size = MW (small = undisclosed)']];return k==='lines'?[['#B5B3AE','345 kV'],['#7A7A7A','230–287 kV'],['#4A4A4A','100–161 kV']]:k==='gas'?[['#6F9E7D','Interstate / intrastate']]:k==='subs'?[['#FF5A26','345 kV · max voltage (OSM)',10],['#DD5124','230 kV',8],['#B9502B','161 kV',6.5],['#9A5034','138 kV',5.5],['#7A4D3B','115 kV',4.5],['#5E4A42','69 kV',3.5],['#4A4A4A','Voltage unknown',3]]:[['#FFC21A','80k+ AADT',0,7],['#FFC21A','40k',0,5.5],['#FFC21A','15k',0,3],['#FFC21A','5k',0,1.6],['#FFC21A','Under 2k',0,.8]]}
@@ -1049,7 +1082,7 @@ function kmBuild(){const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessT
   map.on('click','deals',e=>{const p=e.features[0].properties;pop.remove();kmCard(p.v,p.id);map.setFilter('deals-halo',['==',['get','id'],p.id])});
   KM_M.ready=true;KM_MLY.forEach(k=>toggleLayer(k,true));drawMap()})}
 async function toggleLayer(k,on){const lg=$('ml-'+k);if(lg)lg.hidden=!on;const M=KM_M;if(!M||!M.ready)return;const map=M.map;
- if(on&&!M.added.has(k)){M.added.add(k);let data=KM_LBASE+k+'.geojson';if(/^bg/.test(k))data=await bgGeo();if(map.getSource('ly-'+k))return;map.addSource('ly-'+k,{type:'geojson',data});map.addLayer(Object.assign({id:'ly-'+k,source:'ly-'+k,layout:{visibility:'none'}},KM_GL[k],{layout:Object.assign({visibility:'none'},KM_GL[k].layout||{})}),map.getLayer('ks-mask')?'ks-mask':'deals');
+ if(on&&!M.added.has(k)){M.added.add(k);let data=KM_LBASE+k+'.geojson';if(/^bg/.test(k))data=await bgGeo();if(k==='spp_subs'){await sppLoad();data=sppGeo()}if(map.getSource('ly-'+k))return;map.addSource('ly-'+k,{type:'geojson',data});map.addLayer(Object.assign({id:'ly-'+k,source:'ly-'+k,layout:{visibility:'none'}},KM_GL[k],{layout:Object.assign({visibility:'none'},KM_GL[k].layout||{})}),map.getLayer('ks-mask')?'ks-mask':'deals');
   map.on('click','ly-'+k,async e=>{if(map.queryRenderedFeatures(e.point,{layers:['deals','deals-cl']}).length)return;const f=e.features[0],p=Object.assign({},f.properties);if(k==='sscomp'){const q=ring5(await bgLoad(),f.geometry.coordinates[1],f.geometry.coordinates[0]);if(q)p.p5=q.pop5}M.info.setLngLat(e.lngLat).setHTML(lyrPop(k,p)).addTo(map)});
   map.on('mouseenter','ly-'+k,()=>map.getCanvas().style.cursor='pointer');map.on('mouseleave','ly-'+k,()=>map.getCanvas().style.cursor='');
   map.on('error',e=>{if(e.sourceId==='ly-'+k&&lg&&!lg.querySelector('.err'))lg.insertAdjacentHTML('beforeend','<small class="err">Layer could not load.</small>')})}
@@ -1058,8 +1091,9 @@ function kmSide(){const seg=(attr,opts,cur)=>`<div class="seg mseg">${opts.map((
  return `<button type="button" class="tbtn kmhide" id="kmShow" aria-controls="kmSide">Filters &amp; deals</button><div class="kpan kp-main"><div class="msec"><button type="button" class="kpcol" id="kmHide" aria-label="Hide panel">Hide</button><div class="lbl mono">Deals</div>${seg('data-kshow',[['land','Terrafice'],['storage','Everstow'],['both','Both']],KM.show)}</div>
  <details class="msec kmfd" id="kmFd"${innerWidth>760?' open':''}><summary class="lbl mono">Filters <span id="kmFn"></span></summary><div id="kmF">${kmFiltHtml()}</div></details>
  <div class="msec"><span class="lbl mono" id="kmCount"></span></div></div><div class="kpan kp-leg"><div class="msec"><div class="lbl mono">Colour by</div>${seg('data-kby',kmViews(),KM.by)}<div class="mleg" id="kmLeg"></div><div class="mleg"><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #000"></i>Terrafice site</span><span><i class="dot" style="background:#9A9A9A;border:1.5px solid #fff"></i>Everstow</span><span><i class="dot" style="background:#151515;border:1.5px solid #B5B3AE"></i>Cluster · click to expand</span></div><div class="lbl" style="margin-top:6px">Pin number = score rank (1 = highest) among shown deals</div></div>
- </div><div class="kp-lyr"><div class="lbl mono kp-lyrh">Layers</div><div class="kp-chips">${KM_LYRV().map(([k,l,src])=>`<label class="chk mly kchip"><input type="checkbox" data-mly value="${k}"${KM_MLY.has(k)?' checked':''}><span class="lbl mono">${l.replace(/ \(AADT\)/,'')}</span></label>`).join('')}</div><div class="kp-lsub">${KM_LYRV().map(([k,l,src])=>`<div class="mleg sub" id="ml-${k}"${KM_MLY.has(k)?'':' hidden'}>${lyrLegend(k).map(([c,t,z,w])=>`<span><i style="background:${c}${w?`;width:22px;height:${Math.max(1,w)}px;border-radius:${w}px;align-self:center`:''}${z?`;width:${z}px;height:${z}px;border-radius:50%;margin:0 ${(10-z)/2}px`:''}"></i>${t}</span>`).join('')}<small>${src}</small></div>`).join('')}</div>
+ </div><div class="kp-lyr"><div class="lbl mono kp-lyrh">Layers</div><div class="kp-chips">${KM_LYRV().map(([k,l,src])=>`<label class="chk mly kchip"><input type="checkbox" data-mly value="${k}"${KM_MLY.has(k)?' checked':''}><span class="lbl mono">${l.replace(/ \(AADT\)/,'')}</span></label>`).join('')}</div><div class="kp-lsub">${KM_LYRV().map(([k,l,src])=>`<div class="mleg sub" id="ml-${k}"${KM_MLY.has(k)?'':' hidden'}>${lyrLegend(k).map(([c,t,z,w])=>`<span><i style="background:${c}${w?`;width:22px;height:${Math.max(1,w)}px;border-radius:${w}px;align-self:center`:''}${z?`;width:${z}px;height:${z}px;border-radius:50%;margin:0 ${(10-z)/2}px`:''}"></i>${t}</span>`).join('')}<small>${src}</small>${k==='spp_subs'&&SPPD?sppUnl():''}</div>`).join('')}</div>
  </div><div class="kpan kp-card" id="kmCard" hidden></div>`}
+function sppUnl(){const u=SPPD.subs.filter(x=>x.lat==null);return u.length?`<details><summary class="lbl mono">Unlocated (${u.length})</summary>${u.map(x=>`<div><small>${esc(x.n)}${x.st?' ('+esc(x.st)+')':''} · ${esc((x.kv||[]).join('/'))} kV · ${esc(SPP_SL[x.s]||x.s)}${x.isd?' · ISD '+esc(x.isd):''}${x.o?' · '+esc(x.o):''}</small></div>`).join('')}</details>`:''}
 // map filter panel: proxies for the same list filters (Filters dialogs, stage bar, AI search stay in sync) plus a map-only storage traffic floor
 let KM_AADT=0;
 function kmFiltHtml(){const L=KM.show!=='storage',S=KM.show!=='land'&&ST;const num=(id,l,step,ph)=>`<label><span class="lbl mono">${l}</span><input class="inp" data-kf="${id}" type="number" inputmode="decimal" min="0" step="${step}" placeholder="${ph||'any'}"></label>`;
@@ -1078,7 +1112,7 @@ addEventListener('resize',kmSize);addEventListener('orientationchange',()=>setTi
 document.addEventListener('click',e=>{const t=e.target.closest('#kmHide,#kmShow');if(!t)return;document.body.classList.toggle('kmcol',t.id==='kmHide');try{localStorage.setItem('edks_kmcol',t.id==='kmHide'?'1':'')}catch(_){}kmSize()});
 try{if(localStorage.getItem('edks_kmcol'))document.body.classList.add('kmcol')}catch(_){}
 let KM_T=0;function kmQueue(){if(!mapOn())return;cancelAnimationFrame(KM_T);KM_T=requestAnimationFrame(drawMap)}
-let KM_SK='';async function drawMap(){if(!mapOn())return;const sk=KM.show+'|'+KM.by+'|'+!!ST;if(KM_SK!==sk){const op=$('kmFd')?$('kmFd').open:null;$('kmSide').innerHTML=kmSide();if(op!=null)$('kmFd').open=op;KM_SK=sk}kmSync();const fn=(KM.show!=='storage'?fCount('land'):0)+(KM.show!=='land'&&ST?fCount('storage'):0)+(KM_AADT&&KM.show!=='land'?1:0);$('kmFn').textContent=fn?'· '+fn:'';kmSize();
+let KM_SK='';async function drawMap(){if(!mapOn())return;sppLoad();const sk=KM.show+'|'+KM.by+'|'+!!ST+'|'+!!SPPD;if(KM_SK!==sk){const op=$('kmFd')?$('kmFd').open:null;$('kmSide').innerHTML=kmSide();if(op!=null)$('kmFd').open=op;KM_SK=sk}kmSync();const fn=(KM.show!=='storage'?fCount('land'):0)+(KM.show!=='land'&&ST?fCount('storage'):0)+(KM_AADT&&KM.show!=='land'?1:0);$('kmFn').textContent=fn?'· '+fn:'';kmSize();
  try{await loadGL()}catch(e){$('kmMap').innerHTML='<p class="desc" style="padding:16px">The map library could not load. Check the connection and try again.</p>';return}
  if(!KM_M)kmBuild();kmSize();const M=KM_M;
  const P=[].concat(KM.show!=='storage'?KM_R.land.map(o=>['land',o]):[],KM.show!=='land'?KM_R.storage.filter(o=>!KM_AADT||((o.traffic||{}).aadt||0)>=KM_AADT).map(o=>['storage',o]):[]);const C=mColors(P),n={},FS=[];let pl=0;
@@ -1092,6 +1126,79 @@ let KM_SK='';async function drawMap(){if(!mapOn())return;const sk=KM.show+'|'+KM
 function kmSave(){try{localStorage.setItem('edks_km',JSON.stringify(KM))}catch(x){}}
 document.addEventListener('click',e=>{const s=e.target.closest('[data-kshow]'),b=e.target.closest('[data-kby]');if(!s&&!b)return;if(s){KM.show=s.dataset.kshow;if(KM.show!=='land'&&KM.by==='util')KM.by='stage'}else KM.by=b.dataset.kby;kmSave();drawMap();KM_LYR.forEach(x=>x[3]&&toggleLayer(x[0],KM_MLY.has(x[0])));if(KM.show==='land')ringSet(null)});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!('mly' in t.dataset))return;t.checked?KM_MLY.add(t.value):KM_MLY.delete(t.value);try{localStorage.setItem('edks_mly',JSON.stringify([...KM_MLY]))}catch(x){}toggleLayer(t.value,t.checked)});
+// ---- map AI search: plain-English query -> the same in-browser parser as the list bar (aiParse) plus map intents
+// (near a place, planned SPP substations, layers). Filters run in memory over deals already loaded: zero Firestore reads,
+// no LLM call. Places resolve from loaded deal cities/counties first, then the Mapbox geocoder (public pk token, Kansas bbox).
+const KMA={show:null,spp:false,geo:new Map(),seq:0};
+const KMA_ST={ks:'KS',kansas:'KS',oklahoma:'OK',ok:'OK',texas:'TX',tx:'TX',nebraska:'NE',ne:'NE',missouri:'MO',mo:'MO',arkansas:'AR',ar:'AR','new mexico':'NM',nm:'NM',louisiana:'LA',iowa:'IA',ia:'IA','south dakota':'SD','north dakota':'ND',wyoming:'WY',montana:'MT',minnesota:'MN'};
+function kmaNorm(s){return String(s||'').toLowerCase().replace(/[“”"]/g,' ').replace(/[–—]/g,'-').replace(/\s+/g,' ').trim()}
+// "near X" / "within N mi of X" / "around X" -> {place, mi, rest}; skips power words ("near 345 kV", "near a substation")
+function kmaNear(q){q=' '+kmaNorm(q)+' ';const NOT=/^(?:a |an |the )?(?:\d|power|lines?|transmission|substations?|gas|pipelines?|highways?|interstates?|i-\d|roads?|water|fiber|rail)/;
+ let m=q.match(/\bwithin (\d+\.?\d*) ?(?:mi|miles?) (?:of|from) ([a-z][a-z0-9 .'-]*?)(?=,| (?:at|with|over|under|above|below|and|stage|score|that|which|for|in [a-z]+ stage)\b| \d| $)/);let mi=null;
+ if(m&&!NOT.test(m[2])){mi=+m[1]}else{m=q.match(/\b(?:near|around|close to|outside of|by) ([a-z][a-z0-9 .'-]*?)(?=,| (?:at|with|over|under|above|below|and|stage|score|that|which|for)\b| \d| $)/);if(m&&NOT.test(m[1]))m=null;if(m)m=[m[0],null,m[1]]}
+ if(!m)return {rest:q.trim()};const place=m[2].replace(/\b(ks|kansas)$/,'').trim();if(!place||place.length<3)return {rest:q.trim()};
+ return {place,mi:mi||25,rest:q.replace(m[0],' ').replace(/\s+/g,' ').trim()}}
+// place -> [lon,lat]: deal cities / counties in memory first (free), then Mapbox forward geocode limited to Kansas
+async function kmaGeo(place){const k=kmaNorm(place).replace(/ (?:county|co\.?)$/,'');if(!k)return null;if(KMA.geo.has(k))return KMA.geo.get(k);
+ const isCo=/ (?:county|co\.?)$/.test(kmaNorm(place));const pts=[];
+ [...S.map(o=>['land',o]),...SR.map(o=>['storage',o])].forEach(([v,o])=>{if(typeof o.lat!=='number')return;const c=kmaNorm(v==='land'?o.city:(o.city||o.city_label)),cn=kmaNorm(o.county).replace(/ county$/,'');if((!isCo&&c===k)||(isCo||!pts.length)&&cn===k&&isCo)pts.push([o.lon,o.lat])});
+ let r=pts.length?{c:[pts.reduce((a,p)=>a+p[0],0)/pts.length,pts.reduce((a,p)=>a+p[1],0)/pts.length],label:place.replace(/\b\w/g,x=>x.toUpperCase()),src:'deals'}:null;
+ if(!r&&KM_MB&&KM_TOK){try{const u='https://api.mapbox.com/search/geocode/v6/forward?limit=1&country=us&bbox=-102.1,36.9,-94.5,40.1&q='+encodeURIComponent(place)+'&access_token='+encodeURIComponent(KM_TOK);
+  const j=await fetch(u).then(x=>x.ok?x.json():null);const f=j&&j.features&&j.features[0];if(f)r={c:f.geometry.coordinates,label:(f.properties&&(f.properties.full_address||f.properties.name))||place,src:'mapbox'}}catch(e){r=null}}
+ KMA.geo.set(k,r);return r}
+// plain fuzzy fallback: every word must prefix-match (or be 1 edit from) a word in the name / city / county
+function kmaLev1(a,b){if(Math.abs(a.length-b.length)>1)return false;let i=0,j=0,d=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;continue}if(++d>1)return false;if(a.length>b.length)i++;else if(b.length>a.length)j++;else{i++;j++}}return d+(a.length-i)+(b.length-j)<=1}
+function kmaFuzzy(q,P){const ws=kmaNorm(q).split(/[^a-z0-9]+/).filter(w=>w.length>1&&!['the','and','of','in','at','deal','deals','site','sites','near'].includes(w));if(!ws.length)return [];
+ return P.map(([v,o])=>{const h=kmaNorm([o.name,o.city,o.city_label,o.county,o.address].join(' ')).split(/[^a-z0-9]+/).filter(Boolean);let sc=0;for(const w of ws){if(h.some(x=>x===w))sc+=3;else if(h.some(x=>x.startsWith(w)))sc+=2;else if(w.length>=4&&h.some(x=>kmaLev1(w,x)))sc+=1;else return null}return [v,o,sc]}).filter(Boolean).sort((a,b)=>b[2]-a[2]||(LS(b[0],b[1])||0)-(LS(a[0],a[1])||0)).map(x=>[x[0],x[1]])}
+function kmaVis(){return [].concat(KM.show!=='storage'?KM_R.land.map(o=>['land',o]):[],KM.show!=='land'&&ST?KM_R.storage.filter(o=>!KM_AADT||((o.traffic||{}).aadt||0)>=KM_AADT).map(o=>['storage',o]):[])}
+function kmaAll(){return [].concat(KM.show!=='storage'?S.map(o=>['land',o]):[],KM.show!=='land'&&ST?SR.map(o=>['storage',o]):[])}
+function kmaBiz(q){return /\b(self[- ]?storage|storage|everstow|units?|facilit(?:y|ies)|mini[- ]?storage)\b/.test(q)?'storage':/\b(data[- ]?cent(?:er|re)s?|dc|terrafice|powered land|hyperscale|kv|mw|megawatts?|transmission|gas)\b/.test(q)?'land':null}
+// SPP planned / NTC / under-construction substations, or the OSM substations layer
+async function kmaSubs(q){const sts=[];if(/under[- ]?construction|being built|building/.test(q))sts.push('under_construction');if(/\bntc\b|notice to construct/.test(q))sts.push('ntc_issued');if(/\b(planned|proposed|future|upcoming|new)\b/.test(q))sts.push('planned');
+ const st=Object.keys(KMA_ST).sort((a,b)=>b.length-a.length).find(k=>new RegExp('\\b'+k+'\\b').test(q.replace(/\bkv\b/g,'')));const S2=st?KMA_ST[st]:null;
+ if(sts.length||/\bspp\b/.test(q)){await sppLoad();if(SPPD){const want=sts.length?sts:['planned','ntc_issued','under_construction'];const R=SPPD.subs.map((x,i)=>[x,i]).filter(([x])=>want.includes(x.s)&&(!S2||x.st===S2));
+   KM_MLY.add('spp_subs');const cb=document.querySelector('[data-mly][value="spp_subs"]');if(cb)cb.checked=true;await toggleLayer('spp_subs',true);KMA.spp=true;
+   if(KM_M&&KM_M.ready&&KM_M.map.getLayer('ly-spp_subs'))KM_M.map.setFilter('ly-spp_subs',['in',['get','i'],['literal',R.map(r=>r[1])]]);
+   const loc=R.filter(([x])=>x.lat!=null);kmaFit(loc.map(([x])=>[x.lon,x.lat]));
+   return {head:`${R.length} SPP substation${R.length===1?'':'s'} · ${want.map(s=>SPP_SL[s]||s).join(' / ').replace(/ \(ITP[^)]*\)/,'')}${S2?' · '+S2:''}`,rows:loc.slice(0,40).map(([x,i])=>({k:'spp|'+i,t:x.n,m:[SPP_SL[x.s]||x.s,x.st,(x.kv||[]).join('/')+((x.kv||[]).length?' kV':''),x.loc==='osm'?'exact':'approx.'].filter(Boolean).join(' · ')})),note:loc.length<R.length?(R.length-loc.length)+' without a location are listed under Layers → Unlocated.':''}}
+  if(sts.length)return {head:'Planned SPP substations',rows:[],note:'The planned SPP substations layer has not been published yet. Showing mapped (existing) substations instead.',subs:1}}
+ return null}
+function kmaFit(pts){const M=KM_M;if(!M||!M.ready||!pts.length)return;if(pts.length===1){M.map.flyTo({center:pts[0],zoom:Math.max(M.map.getZoom(),11),duration:900});return}
+ let w=180,s=90,e=-180,n=-90;pts.forEach(([x,y])=>{w=Math.min(w,x);e=Math.max(e,x);s=Math.min(s,y);n=Math.max(n,y)});
+ const ph=innerWidth<=760,col=document.body.classList.contains('kmcol');M.map.fitBounds([[w,s],[e,n]],{padding:ph?{top:160,left:24,right:24,bottom:col?40:Math.round(M.map.getContainer().clientHeight*.38)}:{top:150,bottom:70,right:70,left:col||innerWidth<1100?40:290},maxZoom:11.5,duration:900})}
+function kmaRing(near){const M=KM_M;if(!M||!M.ready)return;const map=M.map;const fc={type:'FeatureCollection',features:[]};
+ if(near){const N=64,c=[],R=near.mi/69.0;for(let i=0;i<=N;i++){const a=2*Math.PI*i/N;c.push([near.lon+R*Math.cos(a)/Math.cos(near.lat*Math.PI/180),near.lat+R*Math.sin(a)])}fc.features.push({type:'Feature',geometry:{type:'LineString',coordinates:c},properties:{}},{type:'Feature',geometry:{type:'Point',coordinates:[near.lon,near.lat]},properties:{}})}
+ if(!map.getSource('kma')){map.addSource('kma',{type:'geojson',data:fc});map.addLayer({id:'kma-l',type:'line',source:'kma',filter:['==',['geometry-type'],'LineString'],paint:{'line-color':'#F14B21','line-width':1.2,'line-dasharray':[3,2]}});map.addLayer({id:'kma-p',type:'circle',source:'kma',filter:['==',['geometry-type'],'Point'],paint:{'circle-radius':4,'circle-color':'#F14B21','circle-stroke-color':'#0A0A0A','circle-stroke-width':1}})}else map.getSource('kma').setData(fc)}
+function kmaChips(){const v=[KM.show!=='storage'&&'land',KM.show!=='land'&&ST&&'storage'].filter(Boolean);const L=[];v.forEach(x=>AI[x].chips.forEach(c=>{if(!L.includes(c.label))L.push(c.label)}));return L}
+function kmaShow(r){const el=$('kmAR');if(!r){el.hidden=true;el.innerHTML='';return}
+ el.innerHTML=`<div class="kmah"><span class="lbl mono">${esc(r.head)}</span><button type="button" class="aiclr lbl mono" data-kmax>Clear</button></div>${r.chips&&r.chips.length?`<div class="kmaf">${r.chips.map(c=>`<span class="aichip mono" style="cursor:default;margin:0 4px 4px 0">${esc(c)}</span>`).join('')}</div>`:''}${r.rows.map(x=>`<div class="kmrow"><button type="button" class="kmgo" data-kmar="${esc(x.k)}">${esc(x.t||'—')}<small>${esc(x.m||'')}</small></button>${x.open?`<button type="button" class="kmop lbl mono" data-kmop="${esc(x.k)}">Open</button>`:''}</div>`).join('')}${r.note?`<div class="kmnote">${esc(r.note)}</div>`:''}`;el.hidden=false}
+function kmaRow(v,o){return {k:v+'|'+o.id,t:o.name||o.id,m:[stL(stageOf(v,o.id)),v==='land'?'Terrafice':'Everstow',[o.city||o.city_label,o.county?o.county+' Co':''].filter(Boolean).join(', '),'score '+(LS(v,o)??'—')].join(' · '),open:1}}
+function kmaReset(){aiUndo('land');aiUndo('storage');if(KMA.show){KM.show=KMA.show;KMA.show=null;kmSave()}if(KMA.spp&&KM_M&&KM_M.ready&&KM_M.map.getLayer('ly-spp_subs'))KM_M.map.setFilter('ly-spp_subs',null);KMA.spp=false;kmaRing(null)}
+function kmaClear(){kmaReset();$('kmQ').value='';$('aiQ').value='';render();if(ST)sRender();aiChips();kmaShow(null);if(KM_M)ksMinZoom(KM_M.map,true)}
+async function kmAsk(raw){const seq=++KMA.seq;raw=String(raw||'').trim();if(!raw){kmaClear();return}kmaReset();let q=kmaNorm(raw);
+ if(/\bsubstations?\b/.test(q)){const r=await kmaSubs(q);if(seq!==KMA.seq)return;if(r){if(r.subs){KM_MLY.add('subs');const cb=document.querySelector('[data-mly][value="subs"]');if(cb)cb.checked=true;toggleLayer('subs',true)}render();if(ST)sRender();kmaShow(r);return}
+  if(!/\b(deals?|sites?|near|within)\b/.test(q)){KM_MLY.add('subs');const cb=document.querySelector('[data-mly][value="subs"]');if(cb)cb.checked=true;toggleLayer('subs',true);kmaShow({head:'Substations layer on',rows:[],note:'Mapped substations (OpenStreetMap), coloured by max voltage. Try "substations under construction" for SPP planned projects.'});return}}
+ const N=kmaNear(q);let near=null;if(N.place){const g=await kmaGeo(N.place);if(seq!==KMA.seq)return;if(g){near={lon:g.c[0],lat:g.c[1],mi:N.mi,label:g.label};q=N.rest}}
+ const biz=kmaBiz(q);if(biz&&KM.show!==biz){KMA.show=KM.show;KM.show=biz;kmSave()}
+ const views=biz?[biz]:['land',ST?'storage':null].filter(Boolean);views.forEach((v,i)=>aiParse(q,v,i>0));
+ if(near)views.forEach(v=>{AI[v].x.near=near;AI[v].chips.push({x:['near'],label:'within '+near.mi+' mi of '+near.label})});
+ $('aiQ').value=raw;render();if(ST)sRender();aiChips();let P=kmaVis().filter(([,o])=>typeof o.lat==='number'),how='';
+ // nothing matched on leftover words: try the whole query as a place, then plain fuzzy name search
+ const terms=views.some(v=>AI[v].terms.length);
+ if(!P.length&&terms){const left=views.map(v=>AI[v].terms.join(' ')).find(Boolean)||'';const dropT=()=>views.forEach(v=>AI[v].chips.filter(c=>c.term).forEach(c=>aiDrop(v,c)));
+  const g=!near&&await kmaGeo(left.length>=3?left:raw);if(seq!==KMA.seq)return;
+  if(g){dropT();render();if(ST)sRender();kmaRing(null);KM_M&&KM_M.ready&&KM_M.map.flyTo({center:g.c,zoom:11,duration:900});kmaShow({head:'Place · '+g.label,rows:[],chips:kmaChips(),note:g.src==='mapbox'?'Located with the Mapbox geocoder.':'Centre of deals in '+g.label+'.'});return}
+  dropT();render();if(ST)sRender();const F=kmaFuzzy(left||raw,kmaVis().filter(([,o])=>typeof o.lat==='number'));if(F.length){P=F;how='Closest name matches'}}
+ kmaRing(near);kmaFit(P.map(([,o])=>[o.lon,o.lat]));
+ P=P.slice().sort((a,b)=>(LS(b[0],b[1])||0)-(LS(a[0],a[1])||0));if(how)P=kmaFuzzy(left0(views)||raw,P);
+ kmaShow({head:(how?how+' · ':'')+P.length+' deal'+(P.length===1?'':'s')+(near?' within '+near.mi+' mi of '+near.label:''),chips:kmaChips(),rows:P.slice(0,30).map(([v,o])=>kmaRow(v,o)),note:P.length>30?'Showing the top 30 by score; all '+P.length+' are on the map.':P.length?'':'No deals match. Remove a filter or try a broader phrase.'});
+ if(P.length===1)kmaPick(P[0][0],P[0][1].id)}
+function left0(views){return views.map(v=>AI[v].terms.join(' ')).find(Boolean)||''}
+function kmaPick(v,id){const o=objOf(v,id);if(!o)return;kmCard(v,id);const M=KM_M;if(M&&M.ready){if(typeof o.lat==='number')M.map.flyTo({center:[o.lon,o.lat],zoom:Math.max(M.map.getZoom(),11),duration:800});M.map.setFilter('deals-halo',['==',['get','id'],id])}}
+let KMA_T=0;$('kmQ').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(KMA_T);kmAsk(e.target.value)}else if(e.key==='Escape'){kmaClear();e.target.blur()}});
+$('kmQ').addEventListener('input',e=>{clearTimeout(KMA_T);if(!e.target.value.trim()){kmaClear();return}KMA_T=setTimeout(()=>kmAsk(e.target.value),450)});
+$('kmAR').addEventListener('click',e=>{if(e.target.closest('[data-kmax]')){kmaClear();$('kmQ').focus();return}const o=e.target.closest('[data-kmop]');if(o){const [v,id]=o.dataset.kmop.split('|');v==='land'?openSite(id):openStorage(id);return}
+ const b=e.target.closest('[data-kmar]');if(!b)return;const [v,id]=b.dataset.kmar.split('|');if(v==='spp'){const x=(SPPD||{subs:[]}).subs[+id];if(x&&x.lat!=null&&KM_M&&KM_M.ready){KM_M.map.flyTo({center:[x.lon,x.lat],zoom:11,duration:800});KM_M.info.setLngLat([x.lon,x.lat]).setHTML(sppPop(x)).addTo(KM_M.map)}return}kmaPick(v,id)});
 // ---- learning loop: what the stage decisions say about what gets pursued or passed
 const med=a=>{a=a.filter(x=>x!=null&&!isNaN(x)).sort((x,y)=>x-y);if(!a.length)return null;const m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2};
 function learn(v){const ev=PS.events.filter(e=>e.view===v&&e.type==='stage');
@@ -2177,6 +2284,7 @@ async function boot(user, email, me0) {
     removeUser: em => deleteDoc(doc(db, 'users', em.toLowerCase())),
     // Site data phase 1 (flood/slope/buildable): one chunked meta blob, read lazily when Site Planning opens (1-2 reads/session).
     siteData: () => blob('sitedata').catch(() => null),
+    sppSubs: () => blob('spp_subs').catch(() => null),  // gated: meta/spp_subs exists only after Sahil approves spp_subs.py push --apply
     // Site Planning test-fit. Saved schemes: one compact doc per explicit Save in site_plans_saved; read with ONE
     // query per deal when the plan opens (no listeners). Members only see non-restricted deals' schemes (rules mirror deals/rdeals).
     savedPlans: siteId => getDocs(role === 'admin' ? query(collection(db, 'site_plans_saved'), where('site_id', '==', siteId))
