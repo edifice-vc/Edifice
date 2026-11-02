@@ -300,6 +300,7 @@ async function boot(user, email, me0) {
     removeUser: em => deleteDoc(doc(db, 'users', em.toLowerCase())),
     // Site data phase 1 (flood/slope/buildable): one chunked meta blob, read lazily when Site Planning opens (1-2 reads/session).
     siteData: () => blob('sitedata').catch(() => null),
+    sppSubs: () => blob('spp_subs').catch(() => null),  // gated: meta/spp_subs exists only after Sahil approves spp_subs.py push --apply
     // Site Planning test-fit. Saved schemes: one compact doc per explicit Save in site_plans_saved; read with ONE
     // query per deal when the plan opens (no listeners). Members only see non-restricted deals' schemes (rules mirror deals/rdeals).
     savedPlans: siteId => getDocs(role === 'admin' ? query(collection(db, 'site_plans_saved'), where('site_id', '==', siteId))
