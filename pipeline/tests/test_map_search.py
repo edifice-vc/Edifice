@@ -97,3 +97,31 @@ class MapCamera(unittest.TestCase):
         self.assertIn('ksMinZoom(M.map,true)', z)
         self.assertNotIn('kmQ', z)
         self.assertNotIn('kmaClear', z)
+
+
+@unittest.skipUnless(shutil.which('node'), 'node missing')
+class LLMCanon(unittest.TestCase):
+    def run_js(self, body):
+        src = const('KMA_ST') + fn('kmaCanon') + fn('kmaNorm') + fn('kmaNear') + 'console.log(JSON.stringify((()=>{' + body + '})()))'
+        return json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+
+    def test_canon_phrases(self):
+        c = self.run_js('return kmaCanon({business:"storage",place:"Wichita",radius_mi:25,stages:["LOI Submitted"],min_score:60,mw_min:50,flood:"exclude",sort:"score",name_terms:["Oak<b>"]})')
+        self.assertEqual(c, 'within 25 mi of Wichita, storage loi submitted score 60 over 50 mw no flood top Oakb')
+        self.assertEqual(self.run_js('return kmaCanon({substations:true,substation_status:["under_construction"],state:"KS"})'), 'substations under construction in kansas')
+        c = self.run_js('return kmaCanon({business:"land",min_kv:345,line_within_mi:2,city_limits:"out",max_price_per_acre:20000,max_price:500000,gas:true})')
+        self.assertEqual(c, 'data center 345 kv line within 2 mi gas unincorporated under 20000 per acre under $500000')
+        self.assertEqual(self.run_js('return kmaCanon({})'), '')
+
+    def test_place_stripped_before_rule_parser(self):
+        r = self.run_js('const c=kmaCanon({place:"Salina",radius_mi:10,min_kv:345,line_within_mi:2});return kmaNear(kmaNorm(c))')
+        self.assertEqual(r['place'].lower(), 'salina'); self.assertEqual(r['mi'], 10)
+        self.assertIn('line within 2 mi', r['rest'])
+
+    def test_wiring(self):
+        self.assertIn("if(e.key==='Enter'){clearTimeout(KMA_T);kmAskSmart(e.target.value)}", TPL)
+        f = re.search(r'^async function kmaLLM\(.*?(?=^async function )', TPL, re.S | re.M).group(0)
+        self.assertIn('ms||3500', f); self.assertIn("Authorization:'Bearer '+tok", f); self.assertIn('JSON.stringify({q:raw})', f)
+        self.assertIn('if(!c)return kmAsk(raw)', re.search(r'^async function kmAskSmart\(.*?(?=^function )', TPL, re.S | re.M).group(0))
+        shell = (ROOT / 'pipeline' / 'firebase_shell.html').read_text()
+        self.assertIn('idToken: () => auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null)', shell)
