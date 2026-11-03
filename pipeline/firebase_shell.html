@@ -307,6 +307,7 @@ async function boot(user, email, me0) {
         : query(collection(db, 'site_plans_saved'), where('site_id', '==', siteId), where('restricted', '==', false)))
       .then(q => q.docs.map(d => { const x = d.data(); return Object.assign({ id: d.id }, x, { ts: x.ts && x.ts.toDate ? x.ts.toDate().toISOString() : '' }); })
         .sort((a, b) => String(b.ts).localeCompare(String(a.ts)))),
+    idToken: () => auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null),
     savePlan(d) {
       if (role !== 'admin') return Promise.reject(new Error('admins only'));
       const id = d.site_id + '__' + Date.now().toString(36);

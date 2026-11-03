@@ -60,7 +60,7 @@ def _mapbox(tpl):
 
 def build_html(data, engine=EMAIL_STUB):
     data = dict(data, cert_list_url=CERT_LIST_URL)
-    tpl = _mapbox(open(os.path.join(HERE, "template.html"), encoding="utf-8").read())
+    tpl = _testfit(_mapbox(open(os.path.join(HERE, "template.html"), encoding="utf-8").read()))
     tpl = tpl.replace("/*__EMAIL__*/", engine.replace("</script", "<\\/script"))
     js = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/").replace("<!--", "<\\!--")
     return tpl.replace("/*__DATA__*/", js)
@@ -81,10 +81,17 @@ def firebase_config(env_name, emulator):
         sys.exit(f"[render] {env_name} must hold the Firebase web config JSON (apiKey, authDomain, projectId, appId)")
     return {k: cfg[k] for k in FB_KEYS if cfg.get(k)}
 
+def _testfit(tpl):
+    """Inline the Site Plan configurator (planEditSchema.js, testfit.js, testfit_ui.js) at the template marker."""
+    js = "\n".join(open(os.path.join(HERE, f), encoding="utf-8").read() for f in ("planEditSchema.js", "testfit.js", "testfit_ui.js"))
+    if tpl.count("/*__TESTFIT__*/") != 1:
+        sys.exit("[render] template layout changed: cannot find the /*__TESTFIT__*/ marker")
+    return tpl.replace("/*__TESTFIT__*/", js)
+
 def build_firebase_html(cfg, emulator=False):
     """The sign-in shell: the app code (already public in this repo as template.html) with no data and no
     draft engine. Both are read from Firestore after an allowed Google account signs in."""
-    tpl = _mapbox(open(os.path.join(HERE, "template.html"), encoding="utf-8").read())
+    tpl = _testfit(_mapbox(open(os.path.join(HERE, "template.html"), encoding="utf-8").read()))
     head = '<script id="data" type="application/json">/*__DATA__*/</script>\n<script>\n'
     if tpl.count(head) != 1:
         sys.exit("[render] template layout changed: cannot find the data/app script pair")
