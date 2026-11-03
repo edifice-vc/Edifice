@@ -440,6 +440,7 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
 .sptbl{width:100%;margin-top:6px}.sptbl tr.on td{color:var(--t1);box-shadow:inset 2px 0 0 #F14B21}.spfoot{margin-top:10px;color:var(--t3)}
 @media(max-width:1100px){.spgrid{grid-template-columns:1fr}.spin,.spout{border:0;border-bottom:1px solid var(--line);max-height:none}.spmapw{min-height:420px}.spin{order:2}.spout{order:3}}
 #kmMap .kmzall button{width:29px;height:29px;background:#121212;color:#e8e6e1;font:600 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.04em}#kmMap .kmzall button:hover{background:#22252b}
+.kmai{font-size:10px;letter-spacing:.06em;color:#9a978f;padding:6px 12px 0;text-transform:uppercase}
 </style>
 </head>
 <body class="gated">
@@ -1197,9 +1198,36 @@ async function kmAsk(raw){const seq=++KMA.seq;raw=String(raw||'').trim();if(!raw
  P=P.slice().sort((a,b)=>(LS(b[0],b[1])||0)-(LS(a[0],a[1])||0));if(how)P=kmaFuzzy(left0(views)||raw,P);
  kmaShow({head:(how?how+' · ':'')+P.length+' deal'+(P.length===1?'':'s')+(near?' within '+near.mi+' mi of '+near.label:''),chips:kmaChips(),rows:P.slice(0,30).map(([v,o])=>kmaRow(v,o)),note:P.length>30?'Showing the top 30 by score; all '+P.length+' are on the map.':P.length?'':'No deals match. Remove a filter or try a broader phrase.'});
  if(P.length===1)kmaPick(P[0][0],P[0][1].id)}
+// LLM query parser (Cloud Run "kmask"): only the query text + Firebase ID token leave the browser. Its structured
+// filters are turned back into a phrase the rule parser understands; any error/timeout falls back to the rule parser.
+const KM_LLM_URL='https://kmask-312620064853.us-central1.run.app/parse';
+function kmaCanon(f){f=f||{};const o=[],n=x=>Math.round(+x*100)/100;
+ if(f.substations){o.push('substations');(f.substation_status||[]).forEach(s=>o.push({under_construction:'under construction',ntc_issued:'ntc',planned:'planned'}[s]||''));if(f.state){const nm=Object.keys(KMA_ST).find(k=>k.length>2&&KMA_ST[k]===f.state);if(nm)o.push('in '+nm)};return o.filter(Boolean).join(' ')}
+ if(f.place)o.push(f.radius_mi?'within '+n(f.radius_mi)+' mi of '+f.place+',':'near '+f.place+',');
+ if(f.business==='storage')o.push('storage');else if(f.business==='land')o.push('data center');
+ (f.stages||[]).forEach(s=>o.push(String(s).toLowerCase()));
+ if(f.min_score!=null)o.push('score '+n(f.min_score));
+ if(f.min_acres!=null)o.push('over '+n(f.min_acres)+' acres');if(f.max_acres!=null)o.push('under '+n(f.max_acres)+' acres');
+ if(f.min_kv!=null)o.push(n(f.min_kv)+' kv');if(f.line_within_mi!=null)o.push('line within '+n(f.line_within_mi)+' mi');
+ if(f.gas_within_mi!=null)o.push('gas within '+n(f.gas_within_mi)+' mi');else if(f.gas)o.push('gas');
+ if(f.mw_min!=null)o.push('over '+n(f.mw_min)+' mw');if(f.mw_max!=null)o.push('under '+n(f.mw_max)+' mw');
+ if(f.flood==='exclude')o.push('no flood');else if(f.flood==='only')o.push('in floodplain');
+ if(f.city_limits==='in')o.push('in city limits');else if(f.city_limits==='out')o.push('unincorporated');
+ if(f.min_aadt!=null)o.push('traffic over '+n(f.min_aadt));
+ if(f.max_price_per_acre!=null)o.push('under '+n(f.max_price_per_acre)+' per acre');if(f.max_price!=null)o.push('under $'+n(f.max_price));
+ if(f.sort==='score')o.push('top');
+ (f.name_terms||[]).forEach(t=>o.push(String(t).replace(/[^\w .'-]/g,'')));
+ return o.join(' ').replace(/\s+/g,' ').trim()}
+async function kmaLLM(raw,ms){const bk=window.EDKS_BK;if(!bk||!bk.idToken)return null;const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms||3500);
+ try{const tok=await bk.idToken();if(!tok)return null;const r=await fetch(KM_LLM_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({q:raw}),signal:ac.signal});
+  if(!r.ok)return null;const j=await r.json();return j&&j.filters?j.filters:null}catch(e){return null}finally{clearTimeout(t)}}
+async function kmAskSmart(raw){raw=String(raw||'').trim();if(!raw||raw.split(/\s+/).length<2||raw.length>300)return kmAsk(raw);const seq=++KMA.seq;
+ const el=$('kmAR');el.hidden=false;el.innerHTML='<div class="kmanote mono">Thinking…</div>';
+ const f=await kmaLLM(raw,3500);if(seq!==KMA.seq)return;const c=f&&kmaCanon(f);
+ if(!c)return kmAsk(raw);await kmAsk(c);if(!el.hidden&&!el.querySelector('.kmai'))el.insertAdjacentHTML('afterbegin','<div class="kmai mono" title="Parsed by AI">AI · '+esc(c)+'</div>')}
 function left0(views){return views.map(v=>AI[v].terms.join(' ')).find(Boolean)||''}
 function kmaPick(v,id){const o=objOf(v,id);if(!o)return;kmCard(v,id);const M=KM_M;if(M&&M.ready){if(typeof o.lat==='number')M.map.flyTo({center:[o.lon,o.lat],zoom:Math.max(M.map.getZoom(),11),duration:800});M.map.setFilter('deals-halo',['==',['get','id'],id])}}
-let KMA_T=0;$('kmQ').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(KMA_T);kmAsk(e.target.value)}else if(e.key==='Escape'){kmaClear();e.target.blur()}});
+let KMA_T=0;$('kmQ').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(KMA_T);kmAskSmart(e.target.value)}else if(e.key==='Escape'){kmaClear();e.target.blur()}});
 $('kmQ').addEventListener('input',e=>{clearTimeout(KMA_T);if(!e.target.value.trim()){kmaClear();return}KMA_T=setTimeout(()=>kmAsk(e.target.value),450)});
 $('kmAR').addEventListener('click',e=>{if(e.target.closest('[data-kmax]')){kmaClear();$('kmQ').focus();return}const o=e.target.closest('[data-kmop]');if(o){const [v,id]=o.dataset.kmop.split('|');v==='land'?openSite(id):openStorage(id);return}
  const b=e.target.closest('[data-kmar]');if(!b)return;const [v,id]=b.dataset.kmar.split('|');if(v==='spp'){const x=(SPPD||{subs:[]}).subs[+id];if(x&&x.lat!=null&&KM_M&&KM_M.ready){KM_M.map.flyTo({center:[x.lon,x.lat],zoom:11,duration:800});KM_M.info.setLngLat([x.lon,x.lat]).setHTML(sppPop(x)).addTo(KM_M.map)}return}kmaPick(v,id)});
@@ -2295,6 +2323,7 @@ async function boot(user, email, me0) {
         : query(collection(db, 'site_plans_saved'), where('site_id', '==', siteId), where('restricted', '==', false)))
       .then(q => q.docs.map(d => { const x = d.data(); return Object.assign({ id: d.id }, x, { ts: x.ts && x.ts.toDate ? x.ts.toDate().toISOString() : '' }); })
         .sort((a, b) => String(b.ts).localeCompare(String(a.ts)))),
+    idToken: () => auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null),
     savePlan(d) {
       if (role !== 'admin') return Promise.reject(new Error('admins only'));
       const id = d.site_id + '__' + Date.now().toString(36);
