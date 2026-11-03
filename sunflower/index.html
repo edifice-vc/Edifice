@@ -439,6 +439,7 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
 .spbar{height:8px;background:#6F9E7D;margin:6px 0}.spbar i{display:block;height:100%;background:#B5B3AE}.spmr{display:flex;justify-content:space-between;font-size:11px;color:var(--t2)}
 .sptbl{width:100%;margin-top:6px}.sptbl tr.on td{color:var(--t1);box-shadow:inset 2px 0 0 #F14B21}.spfoot{margin-top:10px;color:var(--t3)}
 @media(max-width:1100px){.spgrid{grid-template-columns:1fr}.spin,.spout{border:0;border-bottom:1px solid var(--line);max-height:none}.spmapw{min-height:420px}.spin{order:2}.spout{order:3}}
+#kmMap .kmzall button{width:29px;height:29px;background:#121212;color:#e8e6e1;font:600 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.04em}#kmMap .kmzall button:hover{background:#22252b}
 </style>
 </head>
 <body class="gated">
@@ -1059,7 +1060,7 @@ let KS_W=0;function ksMinZoom(map,force){const w=map.getContainer().clientWidth+
  map.setMinZoom(Math.max(3,z-0.25));map.setMaxBounds([[b.getWest()-dx,b.getSouth()-dy],[b.getEast()+dx,b.getNorth()+dy]])}catch(e){}}
 function kmBuild(){const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessToken=KM_TOK;
  const map=new G.Map({container:'kmMap',style:KM_MB?'mapbox://styles/mapbox/dark-v11':'https://tiles.openfreemap.org/styles/dark',bounds:KS_BB,fitBoundsOptions:{padding:16},minZoom:3,attributionControl:false,dragRotate:false,pitchWithRotate:false,cooperativeGestures:false});
- map.addControl(new G.AttributionControl({compact:true}),'bottom-right');map.addControl(new G.NavigationControl({showCompass:false}),'top-right');map.addControl(new G.ScaleControl({unit:'imperial'}),'bottom-left');
+ map.addControl(new G.AttributionControl({compact:true}),'bottom-right');map.addControl(new G.NavigationControl({showCompass:false}),'top-right');map.addControl(new KmZoomAll(),'top-right');map.addControl(new G.ScaleControl({unit:'imperial'}),'bottom-left');
  const pop=new G.Popup({closeButton:false,closeOnClick:false,offset:10,className:'kmpop'}),info=new G.Popup({offset:6,className:'kmpop'});
  KM_M={map,G,ready:false,pop,info,added:new Set()};
  map.on('load',()=>{map.addSource('deals',{type:'geojson',data:{type:'FeatureCollection',features:[]},cluster:true,clusterMaxZoom:11,clusterRadius:40});
@@ -1174,7 +1175,10 @@ function kmaShow(r){const el=$('kmAR');if(!r){el.hidden=true;el.innerHTML='';ret
  el.innerHTML=`<div class="kmah"><span class="lbl mono">${esc(r.head)}</span><button type="button" class="aiclr lbl mono" data-kmax>Clear</button></div>${r.chips&&r.chips.length?`<div class="kmaf">${r.chips.map(c=>`<span class="aichip mono" style="cursor:default;margin:0 4px 4px 0">${esc(c)}</span>`).join('')}</div>`:''}${r.rows.map(x=>`<div class="kmrow"><button type="button" class="kmgo" data-kmar="${esc(x.k)}">${esc(x.t||'—')}<small>${esc(x.m||'')}</small></button>${x.open?`<button type="button" class="kmop lbl mono" data-kmop="${esc(x.k)}">Open</button>`:''}</div>`).join('')}${r.note?`<div class="kmnote">${esc(r.note)}</div>`:''}`;el.hidden=false}
 function kmaRow(v,o){return {k:v+'|'+o.id,t:o.name||o.id,m:[stL(stageOf(v,o.id)),v==='land'?'Terrafice':'Everstow',[o.city||o.city_label,o.county?o.county+' Co':''].filter(Boolean).join(', '),'score '+(LS(v,o)??'—')].join(' · '),open:1}}
 function kmaReset(){aiUndo('land');aiUndo('storage');if(KMA.show){KM.show=KMA.show;KMA.show=null;kmSave()}if(KMA.spp&&KM_M&&KM_M.ready&&KM_M.map.getLayer('ly-spp_subs'))KM_M.map.setFilter('ly-spp_subs',null);KMA.spp=false;kmaRing(null)}
-function kmaClear(){kmaReset();$('kmQ').value='';$('aiQ').value='';render();if(ST)sRender();aiChips();kmaShow(null);if(KM_M)ksMinZoom(KM_M.map,true)}
+function kmaClear(){kmaReset();$('kmQ').value='';$('aiQ').value='';render();if(ST)sRender();aiChips();kmaShow(null)}
+// zoom-all control (under +/-): fit every visible deal for the active toggle; Kansas extent if none. Never touches the search.
+function kmaZoomAll(){const M=KM_M;if(!M||!M.ready)return;const pts=kmaVis().filter(([,o])=>o.lat!=null&&o.lon!=null).map(([,o])=>[o.lon,o.lat]);if(pts.length>1)kmaFit(pts);else if(pts.length===1)M.map.flyTo({center:pts[0],zoom:11,duration:900});else ksMinZoom(M.map,true)}
+class KmZoomAll{onAdd(){const d=document.createElement('div');d.className='mapboxgl-ctrl maplibregl-ctrl mapboxgl-ctrl-group maplibregl-ctrl-group kmzall';d.innerHTML='<button type="button" id="kmZAll" title="Zoom out to all" aria-label="Zoom out to all">ALL</button>';d.firstChild.addEventListener('click',kmaZoomAll);this._d=d;return d}onRemove(){this._d.remove()}}
 async function kmAsk(raw){const seq=++KMA.seq;raw=String(raw||'').trim();if(!raw){kmaClear();return}kmaReset();let q=kmaNorm(raw);
  if(/\bsubstations?\b/.test(q)){const r=await kmaSubs(q);if(seq!==KMA.seq)return;if(r){if(r.subs){KM_MLY.add('subs');const cb=document.querySelector('[data-mly][value="subs"]');if(cb)cb.checked=true;toggleLayer('subs',true)}render();if(ST)sRender();kmaShow(r);return}
   if(!/\b(deals?|sites?|near|within)\b/.test(q)){KM_MLY.add('subs');const cb=document.querySelector('[data-mly][value="subs"]');if(cb)cb.checked=true;toggleLayer('subs',true);kmaShow({head:'Substations layer on',rows:[],note:'Mapped substations (OpenStreetMap), coloured by max voltage. Try "substations under construction" for SPP planned projects.'});return}}
