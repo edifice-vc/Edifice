@@ -440,6 +440,13 @@ body:not(.selL) #tbl .selc,body:not(.selS) #sTbl .selc,body:not(.selL) #cards .s
 .sptbl{width:100%;margin-top:6px}.sptbl tr.on td{color:var(--t1);box-shadow:inset 2px 0 0 #F14B21}.spfoot{margin-top:10px;color:var(--t3)}
 @media(max-width:1100px){.spgrid{grid-template-columns:1fr}.spin,.spout{border:0;border-bottom:1px solid var(--line);max-height:none}.spmapw{min-height:420px}.spin{order:2}.spout{order:3}}
 #kmMap .kmzall button{width:29px;height:29px;background:#121212;color:#e8e6e1;font:600 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.04em}#kmMap .kmzall button:hover{background:#22252b}
+.tf{border:1px solid var(--line);padding:14px;margin:16px 0;background:var(--card)}.tf h3{margin:0 0 8px;font:500 18px 'Jost',sans-serif}.tfhd{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.tfadd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.tfadd .inp{min-width:240px}.tfbadges{margin:8px 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center}.tfwarn{border-color:#c9a227!important;color:#c9a227!important}
+.tfgrid{display:grid;grid-template-columns:260px 1fr 300px;gap:14px}.tfsl{display:grid;grid-template-columns:1fr 70px;gap:4px;font-size:12px;margin:6px 0}.tfsl span{grid-column:1/3;color:var(--mut)}.tfsl input[type=range]{accent-color:#F14B21;width:100%}
+.tfkpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-bottom:8px}.tfk{border:1px solid var(--line);padding:8px}.tfk b{font-size:18px}.tfplan{border:1px solid var(--line);margin-bottom:8px}.tfbad{color:#c9a227}
+.tfchat{min-width:0;display:flex;flex-direction:column;border-left:1px solid var(--line);padding-left:12px}.tflog{overflow-wrap:anywhere;flex:1;min-height:200px;max-height:420px;overflow:auto;font-size:13px}.tfmsg{margin:6px 0}.tfmsg.u{color:#fff}.tfmsg.p{color:var(--mut)}.tfdiff{font-size:11px;color:#F14B21;margin-top:2px}
+#tfF{display:flex;gap:6px;margin-top:6px}#tfF .inp{flex:1}.tftab{width:100%;font-size:12px;margin-top:8px}.tfcmp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+@media(max-width:1100px){.tfgrid{grid-template-columns:1fr}.tfchat{border-left:0;padding-left:0}}
 .kmai{font-size:10px;letter-spacing:.06em;color:#9a978f;padding:6px 12px 0;text-transform:uppercase}
 </style>
 </head>
@@ -1446,9 +1453,9 @@ function spShow(id,co){if(!isAdm()){location.hash='#deals';return}spShell();co=c
  $('spFoot').textContent=co==='storage'?'Proposed estimates only: every default (widths, aisles, coverage, costs, rents, occupancy) is an editable assumption, not a verified figure. Demand uses Census ACS 5-mi population/households and mapped competitor supply where available. Confirm zoning, stormwater and pricing locally. Working inputs autosave in this browser; Save scheme writes to Firestore (site_plans_saved, admins).':'Estimates only. Grid MW from voltage and distance; gas MW from pipeline type and distance. Confirm with the utility and pipeline. Working inputs autosave in this browser; Save scheme writes to Firestore (site_plans_saved, admins).';
  const L=spSites(co);if(!A.find(x=>x.id===id))id=(co==='land'&&L.find(s=>/Dodge City Business/.test(s.name))||L[0]||{}).id;
  const opt=(s,x)=>`<option value="${esc(s.id)}">${esc(s.name)} · ${co==='storage'?esc(s.city||''):esc(s.county)+' Co'} · ${fmt(s.acres,co==='storage'?1:0)} ac${x||''}</option>`,cur=A.find(x=>x.id===id),out=cur&&!L.includes(cur);
- $('spPick').innerHTML=(out?opt(cur,' · '+stL(stageOf(co,cur.id))):'')+L.map(s=>opt(s)).join('');const nt=$('spNote');nt.hidden=!out;if(out)nt.textContent=`Opened directly: this deal is at "${stL(stageOf(co,cur.id))}", outside the picker list (Contacted or later, excluding Passed).`;
+ $('spPick').innerHTML=(out?opt(cur,' · '+stL(stageOf(co,cur.id))):'')+L.map(s=>opt(s)).join('');const nt=$('spNote');nt.hidden=!out;if(out)nt.textContent=`Opened directly: this deal is not in Site Plan. Use "Add to Site Plan" below to plan it.`;
  ['spIn','spOut'].forEach(k=>{if(!id)$(k).innerHTML=''});
- if(!id){nt.hidden=false;nt.textContent=`No ${V} deals at Contacted or later yet.`;if(SP.map)spLyrVis();return}
+ if(!id){nt.hidden=false;nt.textContent=`No ${V} deals in Site Plan yet. Add one below.`;tfMount(null);if(SP.map)spLyrVis();return}
  SP.last[co]=id;const hh='#plan/'+co+'/'+id;if(location.hash!==hh)history.replaceState(null,'',location.pathname+hh);
  if(SP.id!==id){SP.id=id;const s=spSite(),p=spLoad(id);SP.inp=spInputs(s);SP.poly=p&&p.poly?p.poly:spSquare(s,s.acres||(co==='storage'?3:100));SP.polySrc=p&&p.poly?'drawn':'square';SP.G=null;SP.stL=null;$('spMsg').textContent=p?'Saved plan loaded':''}
  $('spPick').value=id;spForm();spMapInit().then(()=>spCxLoad(spSite())).then(()=>{spLyrVis();spRun()})}
@@ -1698,8 +1705,272 @@ function spxWire(){const el=$('spX');if(!el||el.dataset.w)return;el.dataset.w=1;
  el.addEventListener('click',e=>{if(e.target.id==='spxSave'){spxSave();return}const a=e.target.closest('[data-spxa]'),l=e.target.closest('[data-spxl]');if(a)spxApply(+a.dataset.spxa);if(l)spxLoadScheme(l.dataset.spxl)})}
 // hook into the existing run loop: after every engine run, refresh checks; regenerate options when the site or inputs change
 const spRun0=spRun;spRun=function(){spRun0();const s=spSite();if(!s||!SP.res)return;spxWire();const key=SP.co+s.id+JSON.stringify(SP.poly)+JSON.stringify(Object.assign({},SP.inp,{hallW:0,hallL:0,gap:0,stories:0,duW:0,aisle:0,mAisle:0,_mode:0}));
- Promise.all([spxLoad(s),spxZn(s)]).then(()=>{if(spSite()!==s)return;if(SPX.key!==key){SPX.key=key;SPX.opts=[];spxRender(s);spxGen(s)}else spxRender(s)})};
-function spDealSec(s){const p=spSum(s.id);if(!isAdm())return '';return `<div class="sec spdeal"><h4>Site plan</h4>${p?kv([['Max IT load',`<b class="mono">${spN(p.it,1)} MW</b> · ${spN(p.fac,1)} MW facility`],['Binding',`<span class="spbadge">${esc(p.bind)}</span>`],['Mix',`Grid ${spN(p.grid)} MW · gas ${spN(p.gas)} MW · ${p.halls} halls`],['Saved',esc(new Date(p.ts).toLocaleString())+' · this browser']]):'<p class="desc muted">No plan saved in this browser.</p>'}<div class="btns"><a class="btn" href="#plan/${esc(s.id)}" onclick="dlg.close()">${p?'Open plan':'Plan this site'}</a></div></div>`}
+ Promise.all([spxLoad(s),spxZn(s)]).then(()=>{if(spSite()!==s)return;if(SPX.key!==key){SPX.key=key;SPX.opts=[]}spxRender(s)})};
+// ---- Site Plan chat-edit contract (single source of truth; render.py inlines this file into the app).
+// Matches kmask POST /plan_edit (llm_search/main.py). URL: TF_EDIT_SCHEMA.url, overridable via window.EDKS_PLAN_EDIT_URL
+// or localStorage edks_plan_edit_url ('off' disables the LLM and uses the rule parser only).
+// Client -> server: headers Authorization: Bearer <Firebase ID token>, Content-Type: application/json
+//   body: {message:"<user text, <=500 chars>", schema:tfEditSchemaFor(co), params:{...current params}}
+//   schema: {<key>:{type:"number"|"integer"|"string", min?, max?, enum?, desc}} built from keys[co] below (<=40 keys).
+// Server -> client: {changes:{<key>:<new value>}, reply:"<one short sentence>", model}
+//   The client drops unknown keys and clamps to [min,max] again (tfApplyOps).
+// Goals ("maximize NRSF"), undo and "regenerate" are handled locally by the rule parser (tfParse) before any call.
+// Errors: non-200, timeout (4 s) or malformed JSON -> rule parser fallback.
+const TF_EDIT_SCHEMA={v:1,
+ keys:{
+  land:{halls:['Data halls (count)',0,40,1],hallW:['Hall width ft',80,400,10],hallL:['Hall length ft',150,1500,25],stories:['Hall stories',1,4,1],
+   hallMW:['IT MW per hall',1,120,0.5],pue:['Design PUE',1.05,2,0.01],subAc:['Substation acres',0,30,0.5],genAc:['Generator yard acres per hall',0,10,0.25],
+   cool:['Cooling: air|liquid|hybrid'],setF:['Front setback ft',0,500,5],setS:['Side setback ft',0,500,5],setR:['Rear setback ft',0,500,5],
+   lane:['Fire lane / drive width ft',20,60,1],park:['Parking stalls per hall',0,200,1],phases:['Phases',1,8,1],rot:['Row orientation deg',0,179,1],
+   subPos:['Substation position: auto|N|S|E|W|NE|NW|SE|SW'],maxH:['Max height ft (zoning)',0,400,1],cov:['Max coverage % (zoning)',0,100,1]},
+  storage:{mode:['Product: du|mu|hy'],stories:['Climate-controlled stories',1,6,1],mW:['Multi-storey building depth ft',60,200,5],
+   duW:['Drive-up building depth ft',20,60,1],aisle:['Drive aisle ft',20,40,1],office:['Office sq ft',0,5000,100],rv:['RV/boat stalls',0,300,1],
+   setF:['Front setback ft',0,200,5],setS:['Side setback ft',0,200,5],setR:['Rear setback ft',0,200,5],rot:['Row orientation deg',0,179,1],
+   mix5x5:['Unit mix % 5x5',0,100,1],mix5x10:['Unit mix % 5x10',0,100,1],mix10x10:['Unit mix % 10x10',0,100,1],mix10x15:['Unit mix % 10x15',0,100,1],
+   mix10x20:['Unit mix % 10x20',0,100,1],mix10x30:['Unit mix % 10x30',0,100,1],maxH:['Max height ft (zoning)',0,200,1],cov:['Max coverage % (zoning)',0,100,1]}},
+ goals:{land:['it','score'],storage:['nrsf','units','score']},
+ path:'/plan_edit',url:'https://kmask-312620064853.us-central1.run.app/plan_edit'};
+function tfEditSchemaFor(co){const o={};for(const [k,a] of Object.entries(TF_EDIT_SCHEMA.keys[co])){if(a.length>1)o[k]={type:Number.isInteger(a[3])&&Number.isInteger(a[1])?'integer':'number',min:a[1],max:a[2],desc:a[0]};
+ else{const m=a[0].split(': ');o[k]={type:'string',enum:m[1]?m[1].split('|'):[],desc:a[0]}}}return o}
+
+// ---- TestFit-style configurator (Site Plan). Pure solvers first (tested in pipeline/tests/test_testfit.py), UI after.
+// Units: feet in a local plane (spProj). Rotated frame: rows run along x after rotating the site by -rot.
+const TF_DEF={land:{halls:8,hallW:250,hallL:1000,stories:1,storyFt:42,hallMW:12,pue:1.3,subAc:5,genAc:1.5,cool:'air',setF:100,setS:100,setR:100,lane:30,park:40,phases:2,rot:0,subPos:'auto',maxH:'',cov:'',front:'S'},
+ storage:{mode:'hy',stories:3,storyFt:11,mW:120,duW:30,aisle:28,office:1200,rv:20,setF:25,setS:25,setR:25,rot:0,effDU:.92,effM:.78,mix5x5:10,mix5x10:25,mix10x10:30,mix10x15:15,mix10x20:15,mix10x30:5,maxH:'',cov:'',front:'S'}};
+const TF_UNIT={mix5x5:25,mix5x10:50,mix10x10:100,mix10x15:150,mix10x20:200,mix10x30:300};
+const TF_COOL={air:1,liquid:.85,hybrid:.92};// cooling yard factor on generator/mech yard depth
+// zoning record (zoning/{siteId}, admin-only) -> solver inputs; null fields mean "use the plan default"
+function tfZone(z,co){const v=o=>o&&o.v!=null&&isFinite(+o.v)?+o.v:null,sb=(z&&z.setbacks_ft)||{},tr=(z&&z.treatment)||{};
+ const use=co==='storage'?(tr.self_storage||{}).status||(z&&z.storage_use)||null:(tr.data_center||{}).status||(z&&z.dc_use)||(tr.industrial||{}).status||null;
+ const okU=use==null?null:/^(permitted|allowed|by.?right|yes)/i.test(use)?1:/^(conditional|special|cup|sup)/i.test(use)?0:-1;
+ return {front:v(sb.front),side:v(sb.side),rear:v(sb.rear),maxH:v(z&&z.max_height_ft),cov:v(z&&z.max_lot_coverage_pct),far:v(z&&z.max_far),use,okU,district:z&&(z.district||z.zone_code||z.code)||null,has:!!z}}
+// effective inputs: zoning governs where it is stricter (setbacks larger, height/coverage lower); user values otherwise
+function tfEff(I,Z){const E=Object.assign({},I),mx=(a,b)=>b==null?+a||0:Math.max(+a||0,b),mn=(a,b)=>a===''||a==null?b:b==null?+a:Math.min(+a,b);
+ if(Z){E.setF=mx(I.setF,Z.front);E.setS=mx(I.setS,Z.side);E.setR=mx(I.setR,Z.rear);E.maxH=mn(I.maxH,Z.maxH);E.cov=mn(I.cov,Z.cov);E.far=Z.far}return E}
+const tfRot=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);return [p[0]*c-p[1]*s,p[0]*s+p[1]*c]};
+function tfArea(R){let a=0;for(let i=0,j=R.length-1;i<R.length;j=i++)a+=(R[j][0]+R[i][0])*(R[j][1]-R[i][1]);return Math.abs(a/2)}
+function tfIn(x,y,R){let c=false;for(let i=0,j=R.length-1;i<R.length;j=i++){const [a,b]=R[i],[e,f]=R[j];if((b>y)!==(f>y)&&x<(e-a)*(y-b)/(f-b)+a)c=!c}return c}
+function tfSD(x,y,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;let t=l?((x-a[0])*dx+(y-a[1])*dy)/l:0;t=Math.max(0,Math.min(1,t));return Math.hypot(a[0]+t*dx-x,a[1]+t*dy-y)}
+// site context in the rotated frame. R: local-ft ring; nb: (x,y)->bool no-build test in LOCAL coords
+function tfCtx(R,E,nb){const rot=(+E.rot||0)*Math.PI/180,Q=R.map(p=>tfRot(p,-rot)),A=tfArea(R),cx=R.reduce((a,p)=>a+p[0],0)/R.length,cy=R.reduce((a,p)=>a+p[1],0)/R.length;
+ const dir={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0]}[E.front||'S']||[0,-1],edges=[];
+ for(let i=1;i<R.length;i++){const a=R[i-1],b=R[i];if(a[0]===b[0]&&a[1]===b[1])continue;const mx=(a[0]+b[0])/2-cx,my=(a[1]+b[1])/2-cy,l=Math.hypot(mx,my)||1,d=(mx*dir[0]+my*dir[1])/l;
+  edges.push([tfRot(a,-rot),tfRot(b,-rot),d>.7?+E.setF||0:d<-.7?+E.setR||0:+E.setS||0])}
+ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;Q.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});
+ const ok=(x,y)=>{if(!tfIn(x,y,Q))return false;for(const [a,b,s] of edges)if(s>0&&tfSD(x,y,a,b)<s)return false;if(nb){const p=tfRot([x,y],rot);if(nb(p[0],p[1]))return false}return true};
+ return {rot,Q,A,ok,bb:[x0,y0,x1,y1],un:p=>tfRot(p,rot)}}
+// axis-aligned rect [x,y,w,h] in the rotated frame: valid if sampled points are buildable and it clears placed rects (+gap)
+function tfRectOK(C,r,placed,gap){const [x,y,w,h]=r;for(const q of placed){const g=q[4]!=null?q[4]:gap;if(x<q[0]+q[2]+g&&x+w+g>q[0]&&y<q[1]+q[3]+g&&y+h+g>q[1])return false}
+ const nx=Math.max(1,Math.ceil(w/40)),ny=Math.max(1,Math.ceil(h/40));for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)if(!C.ok(x+w*i/nx,y+h*j/ny))return false;return true}
+// place one w x h block at the valid position nearest target (rotated-frame point), scanning a 20-ft lattice
+function tfPlaceNear(C,w,h,tgt,placed,gap){const [x0,y0,x1,y1]=C.bb,st=Math.max(20,Math.min(w,h)/4);let best=null,bd=1e18;
+ for(let y=y0;y+h<=y1;y+=st)for(let x=x0;x+w<=x1;x+=st){const d=Math.hypot(x+w/2-tgt[0],y+h/2-tgt[1]);if(d>=bd)continue;if(tfRectOK(C,[x,y,w,h],placed,gap)){bd=d;best=[x,y,w,h]}}return best}
+// rows of blocks (w along x, h along y) with pitch gaps; tries lattice offsets and keeps the arrangement with the most blocks
+function tfRows(C,w,h,gx,gy,max,placed,gap){const [x0,y0,x1,y1]=C.bb;let best=[];
+ for(const fy of [0,.25,.5,.75])for(const fx of [0,.33,.66]){const out=[],P=placed.slice();
+  for(let y=y0+fy*(h+gy);y+h<=y1&&out.length<max;y+=h+gy){let x=x0+fx*(w+gx);while(x+w<=x1&&out.length<max){const r=[x,y,w,h];if(tfRectOK(C,r,P,gap)){out.push(r);P.push(r);x+=w+gx}else x+=Math.max(20,w/10)}}
+  if(out.length>best.length)best=out;if(best.length>=max)break}return best}
+const tfCorner=(C,pos)=>{const dir={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0],NE:[1,1],NW:[-1,1],SE:[1,-1],SW:[-1,-1]}[pos];if(!dir)return null;
+ const [x0,y0,x1,y1]=C.bb,c=C.un([(x0+x1)/2,(y0+y1)/2]),r=Math.hypot(x1-x0,y1-y0);return tfRot([c[0]+dir[0]*r,c[1]+dir[1]*r],-C.rot)};
+// ---- data center solve. ctx: {gridMW (site cap, null=unknown), nb, zone(tfZone), linePt (local ft) }
+function tfDC(R,I,ctx){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfCtx(R,E,ctx.nb),site=C.A,warn=[];
+ const st=Math.max(1,Math.round(+E.stories||1)),h=st*(+E.storyFt||42);let stE=st;if(E.maxH!==''&&E.maxH!=null&&h>+E.maxH){stE=Math.max(1,Math.floor(+E.maxH/(+E.storyFt||42)));warn.push({k:'height',t:`Design height ${stE*(+E.storyFt||42)} ft exceeds the ${E.maxH} ft zoning limit${stE*(+E.storyFt||42)>+E.maxH?' · needs a height variance':' · capped at '+stE+' storey'}`})}
+ const placed=[],lane=+E.lane||30,sub=+E.subAc>0?Math.sqrt(+E.subAc*43560):0;let subR=null;
+ if(sub){const tgt=E.subPos&&E.subPos!=='auto'?tfCorner(C,E.subPos):ctx.linePt?tfRot(ctx.linePt,-C.rot):[C.bb[2],C.bb[1]];subR=tfPlaceNear(C,sub,sub,tgt,placed,lane);if(subR){subR.push(lane);placed.push(subR)}else warn.push({k:'sub',t:'No room for the substation'})}
+ const hw=+E.hallW,hl=+E.hallL,gy=(+E.genAc||0)*43560/hl*(TF_COOL[E.cool]||1),bw=hl,bh=hw+gy;
+ const capIT=ctx.gridMW!=null&&ctx.gridMW!==''&&isFinite(ctx.gridMW)?ctx.gridMW/(+E.pue||1.3):null,hallMW=(+E.hallMW||0)*stE/st;
+ let want=Math.max(0,Math.round(+E.halls||0));const needCap=capIT!=null&&hallMW>0?Math.ceil(capIT/hallMW-1e-9):want,tgtN=Math.min(want,needCap);
+ let covN=1e9;if(E.cov!==''&&E.cov!=null)covN=Math.floor(site*(+E.cov)/100/(hw*hl));if(E.far!=null&&E.far!=='')covN=Math.min(covN,Math.floor(site*(+E.far)/(hw*hl*Math.max(1,stE))));
+ const B=stE?tfRows(C,bw,bh,lane,lane,Math.min(tgtN,covN),placed,lane):[];
+ const halls=B.map(([x,y,w,hh])=>({hall:[x,y+gy,w,hw],gen:gy>0?[x,y,w,gy]:null}));halls.forEach(o=>{placed.push(o.hall);if(o.gen)placed.push(o.gen)});
+ const n=halls.length,itRaw=n*hallMW,it=capIT!=null?Math.min(itRaw,capIT):itRaw,fac=it*(+E.pue||1.3);
+ const stalls=Math.round(n*(+E.park||0)),pA=stalls*330;let parkR=null;
+ if(pA>0){const pw=Math.max(60,Math.min(600,Math.sqrt(pA*2))),ph=pA/pw;parkR=tfPlaceNear(C,pw,ph,[(C.bb[0]+C.bb[2])/2,C.bb[1]],placed,lane);if(parkR)placed.push(parkR);else warn.push({k:'park',t:'Parking does not fit'})}
+ const ph=Math.max(1,Math.round(+E.phases||1)),phase=halls.map((_,i)=>Math.floor(i*ph/Math.max(1,n))+1),phMW=Array.from({length:ph},(_,k)=>Math.min(it,phase.filter(p=>p<=k+1).length*hallMW)).map((v,k,a)=>v-(k?a[k-1]:0));
+ const fp=n*hw*hl,cov=site?fp/site:0,far=site?fp*stE/site:0,bind=!stE?'Height':capIT!=null&&itRaw>=capIT-1e-9&&n>=needCap?'Grid cap':n<Math.min(want,needCap)?(n>=covN?'Coverage/FAR':'Land / setbacks / no-build'):'Hall count';
+ const circ=[{id:'lane',ok:lane>=26,t:`Fire lane ${lane} ft (IFC aerial access ≥ 26 ft)`},{id:'hose',ok:hw<=300,t:`Hall depth ${hw} ft (≤ 300 ft keeps every wall within 150 ft hose reach of a lane)`}];
+ if(Z&&Z.okU===-1)warn.push({k:'use',t:`Zoning ${Z.district||''}: data center ${String(Z.use||'not listed').replace(/_/g,' ')}`});else if(Z&&Z.okU===0)warn.push({k:'use',t:`Zoning ${Z.district||''}: data center ${Z.use} (discretionary)`});
+ const score=it-(warn.length*.5)-circ.filter(c=>!c.ok).length;
+ return {co:'land',C,E,halls,sub:subR,park:parkR,stalls,n,want,needCap,capIT,it,itRaw,fac,hallMW,fp,cov,far,height:stE*(+E.storyFt||32),stories:stE,phase,phMW,bind,warn,circ,site,score,
+  k:{it:+it.toFixed(2),fac:+fac.toFixed(2),halls:n,cov:+(cov*100).toFixed(1),far:+far.toFixed(3),stalls}}}
+// ---- self-storage solve
+function tfST(R,I,ctx){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfCtx(R,E,ctx.nb),site=C.A,warn=[],placed=[],aisle=+E.aisle||28;
+ let st=Math.max(1,Math.round(+E.stories||1));const h=st*(+E.storyFt||11)+4;if(E.maxH!==''&&E.maxH!=null&&h>+E.maxH){st=Math.max(1,Math.floor((+E.maxH-4)/(+E.storyFt||11)));warn.push({k:'height',t:`Design height ${h} ft exceeds the ${E.maxH} ft limit · ${st} storeys`})}
+ const covMax=E.cov!==''&&E.cov!=null?site*(+E.cov)/100:1e18;let fpU=0,mu=null,office=null;const du=[],rv=[];
+ if(E.mode==='mu'||E.mode==='hy'){const d=+E.mW||120;for(const L of [480,400,320,260,200,160]){if(L*d>covMax)continue;mu=tfPlaceNear(C,L,d,[(C.bb[0]+C.bb[2])/2,C.bb[1]],placed,aisle);if(mu)break}if(mu){placed.push(mu);fpU+=mu[2]*mu[3]}}
+ if(+E.office>0&&!mu){const ow=40,ol=Math.max(30,+E.office/ow);office=tfPlaceNear(C,ol,ow,[C.bb[0],C.bb[1]],placed,aisle);if(office){placed.push(office);fpU+=ol*ow}}
+ if(E.mode==='du'||E.mode==='hy'){const d=+E.duW||30,[x0,y0,x1,y1]=C.bb;let best=[];
+  for(const fy of [0,.3,.6]){const out=[],P=placed.slice();for(let y=y0+fy*(d+aisle);y+d<=y1;y+=d+aisle){let x=x0;while(x<x1){let L=0;while(x+L+10<=x1&&tfRectOK(C,[x,y,L+10,d],P,aisle))L+=10;if(L>=60){const r=[x,y,L,d];out.push(r);P.push(r);x+=L+aisle}else x+=20}}
+   if(out.reduce((a,r)=>a+r[2]*r[3],0)>best.reduce((a,r)=>a+r[2]*r[3],0))best=out}
+  for(const r of best){const a=r[2]*r[3];if(fpU+a>covMax){const L=Math.floor((covMax-fpU)/r[3]/10)*10;if(L>=60){r[2]=L;du.push(r);fpU+=L*r[3]}break}du.push(r);placed.push(r);fpU+=a}}
+ for(let k=0;k<(+E.rv||0);){const r=tfPlaceNear(C,12*Math.min(10,(+E.rv)-k),40,[C.bb[2],C.bb[3]],placed,aisle);if(!r)break;rv.push(r);placed.push(r);k+=Math.round(r[2]/12)}
+ const rvN=rv.reduce((a,r)=>a+Math.round(r[2]/12),0);if(rvN<(+E.rv||0))warn.push({k:'rv',t:`RV/boat: ${rvN} of ${E.rv} stalls fit`});
+ const duSf=du.reduce((a,r)=>a+r[2]*r[3],0),muSf=mu?mu[2]*mu[3]:0,offSf=+E.office||0,nrsf=Math.max(0,duSf*(+E.effDU||.92)+muSf*st*(+E.effM||.78)-(mu?offSf:0));
+ const mk=Object.keys(TF_UNIT),tot=mk.reduce((a,k)=>a+(+E[k]||0),0)||1,avg=mk.reduce((a,k)=>a+TF_UNIT[k]*(+E[k]||0)/tot,0),units=Math.round(nrsf/avg);
+ const mix=mk.map(k=>[k.slice(3),Math.round(units*(+E[k]||0)/tot)]),cov=site?fpU/site:0;
+ if(Z&&Z.okU===-1)warn.push({k:'use',t:`Zoning ${Z.district||''}: self-storage ${String(Z.use||'not listed').replace(/_/g,' ')}`});else if(Z&&Z.okU===0)warn.push({k:'use',t:`Zoning ${Z.district||''}: self-storage ${Z.use} (discretionary)`});
+ const circ=[{id:'aisle',ok:aisle>=26,t:`Drive aisle ${aisle} ft (fire access ≥ 26 ft; 10x30 trucks need ~28 ft)`}];
+ const bind=fpU>=covMax-1?'Coverage':mu&&st<(+E.stories||1)?'Height':'Setbacks / site shape';
+ return {co:'storage',C,E,mu,du,office,rv,rvN,stories:st,nrsf,units,mix,avg,duSf,muSf,gsf:duSf+muSf*st,cov,site,bind,warn,circ,score:nrsf/1000-warn.length*2,
+  k:{nrsf:Math.round(nrsf),units,cov:+(cov*100).toFixed(1),rv:rvN,gsf:Math.round(duSf+muSf*st)}}}
+function tfSolve(co,R,I,ctx){return co==='storage'?tfST(R,I,ctx):tfDC(R,I,ctx)}
+// option generator: sweep orientation and prototype sizes; rank by the company KPI
+function tfGen(co,R,I,ctx){const O=[],seen=new Set(),rots=[0,15,30,45,60,75,90,105,120,135,150,165];
+ const vs=co==='storage'?[{mode:'hy'},{mode:'du'},{mode:'mu'},{mode:'hy',stories:Math.max(1,(+I.stories||3)-1)}]:[{},{hallW:200,hallL:800},{hallW:300,hallL:1200},{hallW:250,hallL:600}];
+ for(const v of vs)for(const rot of rots){const p=Object.assign({},I,v,{rot});if(co==='land')p.halls=Math.max(+I.halls||0,40);const r=tfSolve(co,R,p,ctx);
+  const key=JSON.stringify(r.k);if(seen.has(key))continue;seen.add(key);if(co==='land')p.halls=r.n;O.push({p,k:r.k,score:co==='storage'?r.k.nrsf-r.warn.length*500:r.it*100-r.n*.1,warn:r.warn.length,bind:r.bind})}
+ return O.sort((a,b)=>b.score-a.score).slice(0,8)}
+// ---- chat-to-modify: rule parser (always available) -> {ops:[{k,v}|{k,d}], goal, reply}; same shape as the LLM endpoint (TF_EDIT_SCHEMA)
+const TF_NUMW={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,single:1,second:2,third:3,fourth:4,a:1,an:1,another:1};
+function tfParse(text,co,I){const t=' '+String(text||'').toLowerCase().replace(/[,;]/g,' ').replace(/\s+/g,' ')+' ',ops=[],say=[];let goal=null;
+ const num=re=>{const m=t.match(re);if(!m)return null;const v=m[1];return v in TF_NUMW?TF_NUMW[v]:parseFloat(v)},N='(\\d+(?:\\.\\d+)?|one|two|three|four|five|six|seven|eight|nine|ten|single|second|third|fourth|a|an|another)';
+ const set=(k,v,w)=>{ops.push({k,v});say.push(w)},dl=(k,d,w)=>{ops.push({k,d});say.push(w)},cnt=(k)=>+I[k]||0;
+ const inc=/\b(increase|raise|bump|widen|grow|more|bigger|larger)\b/.test(t),dec=/\b(decrease|reduce|lower|shrink|less|smaller|fewer|narrow)\b/.test(t);
+ // setbacks
+ let m=t.match(new RegExp('(front|side|rear|back)?\\s*setbacks?\\s*(?:to|=|of|at)?\\s*(\\d+(?:\\.\\d+)?)\\s*(?:ft|feet|\')?'))||t.match(/(front|side|rear|back)?\s*setbacks?.*?(?:to|=|of|at|by)\s*(\d+(?:\.\d+)?)/);
+ if(m){const v=+m[2],w=m[1]==='back'?'rear':m[1],by=/\bby\b/.test(t),K=w?['set'+w[0].toUpperCase()]:['setF','setS','setR'];K.forEach(k=>by?dl(k,inc||!dec?v:-v,''):set(k,v,''));say.splice(-K.length,K.length,`${w||'All'} setbacks ${by?(dec?'-':'+'):'→ '}${v} ft`)}
+ // substation position
+ m=t.match(/\b(?:substation|sub)\b.*?\b(north|south|east|west)?[\s-]*(north|south|east|west|ne|nw|se|sw|n|s|e|w)\b(?:\s*corner)?/);
+ if(co!=='storage'&&m&&/\b(move|put|place|locate|shift)\b/.test(t)){const c=(m[1]&&m[1]!==m[2]?m[1][0]+m[2][0]:m[2].length>2?m[2][0]:m[2]).toUpperCase();set('subPos',c,`Substation → ${c}`)}
+ if(co!=='storage'&&(m=t.match(/(\d+(?:\.\d+)?)\s*(?:ac|acre)s?\s*substation|substation.*?(\d+(?:\.\d+)?)\s*(?:ac|acre)/)))set('subAc',+(m[1]||m[2]),`Substation ${m[1]||m[2]} ac`);
+ if(co!=='storage'){
+  if((m=t.match(new RegExp('\\b(?:add|plus)\\s+(?:a\\s+|an\\s+)?'+N+'?\\s*(?:more\\s+)?(?:data\\s+)?halls?\\b'))))dl('halls',!m[1]||/second|third|fourth|another/.test(m[1])?1:(TF_NUMW[m[1]]||+m[1]),'');
+  else if((m=t.match(new RegExp('\\b(?:remove|drop|delete)\\s+'+N+'?\\s*(?:data\\s+)?halls?'))))dl('halls',-(m[1]?(TF_NUMW[m[1]]||+m[1]):1),'');
+  else if((m=t.match(/(\d+)\s*(?:data\s+)?halls?\b/))&&!/\bmw\b.*hall|per hall/.test(t))set('halls',+m[1],`${m[1]} halls`);
+  if(ops.length&&ops[ops.length-1].k==='halls'&&ops[ops.length-1].d!=null)say[say.length-1]=`Halls ${ops[ops.length-1].d>0?'+':''}${ops[ops.length-1].d}`;
+  if((m=t.match(/(\d+(?:\.\d+)?)\s*mw\s*(?:per|\/|each)\s*hall|hall.*?(\d+(?:\.\d+)?)\s*mw\s*(?:each|per)/)))set('hallMW',+(m[1]||m[2]),`${m[1]||m[2]} MW per hall`);
+  if((m=t.match(/pue\s*(?:to|=|of|at)?\s*(\d(?:\.\d+)?)/)))set('pue',+m[1],`PUE ${m[1]}`);
+  if((m=t.match(/(\d+)\s*(?:ft|feet|')?\s*(?:x|by|×)\s*(\d+)\s*(?:ft|feet|')?\s*halls?|halls?\s*(\d+)\s*(?:x|by|×)\s*(\d+)/))){const a=+(m[1]||m[3]),b=+(m[2]||m[4]);set('hallW',Math.min(a,b),'');set('hallL',Math.max(a,b),'');say.splice(-2,2,`Halls ${Math.min(a,b)}×${Math.max(a,b)} ft`)}
+  if(/\b(liquid|hybrid|air)[\s-]*cool/.test(t)||/cooling.*\b(liquid|hybrid|air)\b/.test(t)){const c=(t.match(/\b(liquid|hybrid|air)\b/)||[])[1];set('cool',c,`Cooling ${c}`)}
+  if((m=t.match(/(?:fire\s*lanes?|drive\s*lanes?|lanes?)\s*(?:to|=|of|at)?\s*(\d+)/)))set('lane',+m[1],`Fire lanes ${m[1]} ft`);
+  if((m=t.match(/(\d+)\s*(?:parking\s*)?(?:stalls|spaces)\s*(?:per|\/)\s*hall/)))set('park',+m[1],`Parking ${m[1]}/hall`);
+  if((m=t.match(new RegExp(N+'\\s*(?:storey|story|stories|storeys|floors?)\\b'))))set('stories',TF_NUMW[m[1]]||+m[1],`${m[1]} storeys`);
+  if((m=t.match(/generator\s*(?:yard)?s?\s*(?:to|=|of|at)?\s*(\d+(?:\.\d+)?)\s*(?:ac|acre)/)))set('genAc',+m[1],`Generator yard ${m[1]} ac/hall`);
+ }else{
+  if(/all[\s-]*drive[\s-]*up|drive[\s-]*up only|only drive[\s-]*up|switch to drive[\s-]*up/.test(t))set('mode','du','All drive-up');
+  else if(/all[\s-]*(?:climate|multi)|multi[\s-]*stor(?:e)?y only|climate[\s-]*controlled only|switch to (?:climate|multi)/.test(t))set('mode','mu','All multi-storey climate-controlled');
+  else if(/hybrid|mix of drive|both/.test(t))set('mode','hy','Hybrid');
+  if((m=t.match(new RegExp(N+'\\s*(?:storey|story|stories|storeys|floors?)\\b'))))set('stories',TF_NUMW[m[1]]||+m[1],`${m[1]} storeys`);
+  if((m=t.match(/aisles?\s*(?:to|=|of|at)?\s*(\d+)/)))set('aisle',+m[1],`Aisles ${m[1]} ft`);
+  if((m=t.match(/office\s*(?:to|=|of|at)?\s*(\d+)/)))set('office',+m[1],`Office ${m[1]} sf`);
+  if((m=t.match(/(\d+)\s*(?:rv|boat|rv\/boat)[\s\/a-z]*(?:stalls|spaces|parking)?/))||(m=t.match(/(?:rv|boat)[\s\/a-z]*?(?:to|=)\s*(\d+)/)))set('rv',+m[1],`RV/boat ${m[1]} stalls`);
+  else if(/\b(no|remove|drop)\s*(?:the\s*)?(rv|boat)/.test(t))set('rv',0,'No RV/boat');
+  t.replace(/(\d+)\s*%\s*(?:of\s*)?(5x5|5x10|10x10|10x15|10x20|10x30)|(5x5|5x10|10x10|10x15|10x20|10x30)\s*(?:to|=|at)?\s*(\d+)\s*%/g,(_,a,b,c,d)=>{set('mix'+(b||c),+(a||d),`${b||c} ${a||d}%`);return _});
+ }
+ if((m=t.match(/(?:rotate|orient(?:ation)?|angle)\D*(\d+)/)))set('rot',+m[1]%180,`Rows at ${+m[1]%180}°`);
+ if((m=t.match(new RegExp(N+'\\s*phases?\\b')))&&co!=='storage')set('phases',TF_NUMW[m[1]]||+m[1],`${TF_NUMW[m[1]]||m[1]} phases`);
+ if(/\b(max(?:imi[sz]e)?|maximum|most|optimi[sz]e)\b/.test(t)){goal=co==='storage'?(/unit/.test(t)?'units':'nrsf'):(/mw|power|it|load|capacity/.test(t)||1?'it':'score');say.push(`Optimise for ${goal==='it'?'IT MW':goal==='units'?'unit count':'rentable sq ft'}`)}
+ if(/\bundo\b/.test(t))return {ops:[],goal:null,undo:1,reply:'Undone'};
+ return {ops,goal,reply:say.length?say.filter(Boolean).join(' · '):"I didn't catch an edit. Try: \"increase setbacks to 100 ft\", \"add a second hall\", \"move the substation to the NW corner\", \"switch to all drive-up\", \"make it 2 phases\"."}}
+// apply ops with schema clamping; returns new params
+function tfApplyOps(co,I,ops){const S=(typeof TF_EDIT_SCHEMA!=='undefined'?TF_EDIT_SCHEMA.keys[co]:null)||{},P=Object.assign({},I);
+ for(const o of ops||[]){const d=S[o.k];if(!d)continue;let v=o.d!=null?(+P[o.k]||0)+(+o.d):o.v;if(d.length>=3){v=+v;if(!isFinite(v))continue;v=Math.max(d[1],Math.min(d[2],v));if(d[3]===1)v=Math.round(v)}else v=String(v);P[o.k]=v}return P}
+
+// ---- Site Plan deal list: deals enter ONLY by an explicit "Add to Site Plan" (no stage/score auto-add). Stored per browser.
+const TFL_K='edks_sp_in';
+function tfList(co){try{const o=JSON.parse(localStorage.getItem(TFL_K)||'{}');return Array.isArray(o[co])?o[co]:[]}catch(e){return []}}
+function tfInList(co,id){return tfList(co).includes(id)}
+function tfSetList(co,L){let o={};try{o=JSON.parse(localStorage.getItem(TFL_K)||'{}')||{}}catch(e){}o[co]=L;try{localStorage.setItem(TFL_K,JSON.stringify(o))}catch(e){}}
+function tfAddDeal(co,id){if(!id)return;const L=tfList(co);if(!L.includes(id)){L.push(id);tfSetList(co,L)}location.hash='#plan/'+co+'/'+id;if(SP.co===co&&SP.id===id)spShow(id,co)}
+function tfDelDeal(co,id){tfSetList(co,tfList(co).filter(x=>x!==id));try{localStorage.removeItem('edks_tf_'+co+'_'+id)}catch(e){}if(SP.id===id){SP.id=null;spShow('',co)}}
+spSites=function(co){co=co||SP.co;const A=co==='storage'?SR:S,L=tfList(co);return A.filter(s=>L.includes(s.id)&&s.lat&&s.lon).slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)))};
+// ---- configurator UI
+const TF={I:null,key:null,r:null,undo:[],chat:[],opts:[],cmp:[],raf:0,url:null};
+const TF_SL={land:[['Program',[['halls','Data halls',0,40,1],['hallMW','IT MW / hall',1,60,.5],['pue','PUE',1.05,1.8,.01],['stories','Stories',1,4,1],['phases','Phases',1,8,1]]],
+ ['Prototype',[['hallW','Hall width ft',100,400,10],['hallL','Hall length ft',200,1500,25],['genAc','Gen/cooling yard ac/hall',0,6,.25],['subAc','Substation ac',0,20,.5],['park','Parking / hall',0,150,1]]],
+ ['Site',[['setF','Front setback ft',0,400,5],['setS','Side setback ft',0,400,5],['setR','Rear setback ft',0,400,5],['lane','Fire lane ft',20,60,1],['rot','Row orientation °',0,179,1]]]],
+ storage:[['Product',[['stories','CC storeys',1,6,1],['mW','CC depth ft',60,200,5],['duW','Drive-up depth ft',20,60,1],['aisle','Drive aisle ft',20,40,1],['office','Office sf',0,5000,100],['rv','RV/boat stalls',0,200,1]]],
+ ['Unit mix %',[['mix5x5','5x5',0,100,1],['mix5x10','5x10',0,100,1],['mix10x10','10x10',0,100,1],['mix10x15','10x15',0,100,1],['mix10x20','10x20',0,100,1],['mix10x30','10x30',0,100,1]]],
+ ['Site',[['setF','Front setback ft',0,200,5],['setS','Side setback ft',0,200,5],['setR','Rear setback ft',0,200,5],['rot','Row orientation °',0,179,1]]]]};
+const TF_SEL={land:[['cool','Cooling',['air','liquid','hybrid']],['subPos','Substation',['auto','N','S','E','W','NE','NW','SE','SW']],['front','Front faces',['S','N','E','W']]],storage:[['mode','Layout',[['hy','Hybrid'],['du','All drive-up'],['mu','All climate-controlled']]],['front','Front faces',['S','N','E','W']]]};
+const TF_KPI={land:[['it','IT MW',1],['fac','Facility MW',1],['halls','Halls',0],['cov','Coverage %',1],['far','FAR',3],['stalls','Parking',0]],storage:[['nrsf','Net rentable sf',0],['units','Units',0],['cov','Coverage %',1],['gsf','Gross sf',0],['rv','RV/boat',0]]};
+const tfK=(s)=>'edks_tf_'+SP.co+'_'+s.id;
+function tfCtxFor(s){const P=spProj(+s.lat,+s.lon),R=SP.poly.map(P.f),N=spNB(s,SP.inp),ge=SP.co==='storage'?null:spGridEst(s);
+ return {P,R,ctx:{gridMW:ge?(SP.inp.gridOv!==''&&SP.inp.gridOv!=null?+SP.inp.gridOv:ge.mw):null,gridWhy:ge?(ge.cap?'site cap':'estimate'):'',nb:(x,y)=>spNBhit(x,y,N)>0,zone:tfZone(SPX.zn[s.id],SP.co)}}}
+function tfMount(s){const host=$('viewPlan');let el=$('tfX');if(!el){el=document.createElement('section');el.id='tfX';el.className='tf';$('spX').before(el);tfWire(el)}
+ ['sp-bldf','sp-hallf','sp-halll','sp-plantf','sp-subf','sp-flagf','sp-flagl'].forEach(k=>SP.map&&SP.map.getLayer(k)&&SP.map.setLayoutProperty(k,'visibility','none'));
+ const co=SP.co,inL=s&&tfInList(co,s.id),A=(co==='storage'?SR:S).filter(x=>!tfInList(co,x.id)&&!(typeof hidK==='function'&&hidK(co,x.id)));
+ const add=`<div class="tfadd"><label class="lbl mono" for="tfAddQ">Add deal</label><input id="tfAddQ" class="inp mono" list="tfAddL" placeholder="Search ${co==='storage'?'Everstow':'Terrafice'} pipeline"><datalist id="tfAddL">${A.map(x=>`<option value="${esc(x.name)}" data-id="${esc(x.id)}">`).join('')}</datalist><button class="tbtn" type="button" id="tfAddB">Add to Site Plan</button>${inL?`<button class="tbtn" type="button" id="tfDelB">Remove from Site Plan</button>`:''}</div>`;
+ if(!s||!inL){el.innerHTML=`<div class="tfhd"><h3>Configurator</h3>${add}</div><p class="lbl mono">${s?'This deal is not in Site Plan. Add it to plan it.':'No deals in Site Plan yet. Add one from the pipeline.'}</p>`;tfMapClear();return}
+ const key=co+'/'+s.id;if(TF.key!==key){TF.key=key;TF.undo=[];TF.chat=[];TF.opts=[];TF.cmp=[];let p=null;try{p=JSON.parse(localStorage.getItem(tfK(s))||'null')}catch(e){}
+  TF.I=Object.assign({},TF_DEF[co],SP.inp.tf||{},p||{});if(co==='land'&&!p){const ge=spGridEst(s),cap=SP.inp.gridOv!==''&&SP.inp.gridOv!=null?+SP.inp.gridOv:ge.mw;if(cap>0)TF.I.halls=Math.max(1,Math.ceil(cap/TF.I.pue/TF.I.hallMW))}
+  el.innerHTML=`<div class="tfhd"><h3>Configurator <span class="lbl mono">live solve · TestFit-style</span></h3>${add}</div><div class="tfbadges" id="tfBadges"></div>
+  <div class="tfgrid"><aside class="tfin" id="tfIn"></aside><div class="tfmid"><div class="tfkpi" id="tfKpi"></div><div class="tfplan" id="tfPlan"></div><div id="tfChk"></div>
+  <div class="btns"><button class="tbtn" type="button" id="tfGen">Generate options</button><button class="tbtn" type="button" id="tfSave">Save scheme</button><button class="tbtn" type="button" id="tfPng">Export PNG</button><button class="tbtn" type="button" id="tfGeo">GeoJSON</button><button class="tbtn" type="button" id="tfDxf">DXF</button><span class="lbl mono" id="tfMsg"></span></div>
+  <div id="tfOpts"></div><div id="tfCmp"></div></div>
+  <aside class="tfchat"><div class="lbl mono">Chat to modify <span id="tfEng"></span></div><div class="tflog" id="tfLog"></div><form id="tfF"><input id="tfQ" class="inp mono" autocomplete="off" placeholder="e.g. add a second hall · setbacks to 100 ft"><button class="tbtn" type="submit">Send</button><button class="tbtn" type="button" id="tfUndo">Undo</button></form></aside></div>`;tfForm()}
+ else{const a=el.querySelector('.tfadd');if(a)a.outerHTML=add}
+ Promise.resolve(spxZn(s)).then(()=>{if(spSite()===s)tfRun()})}
+function tfForm(){const co=SP.co,I=TF.I;$('tfIn').innerHTML=TF_SL[co].map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,a,b,st])=>`<label class="tfsl"><span>${l}</span><input type="range" data-tf="${k}" min="${a}" max="${b}" step="${st}" value="${esc(I[k])}"><input class="inp mono" type="number" data-tf="${k}" step="${st}" value="${esc(I[k])}"></label>`).join('')}</div>`).join('')+
+ `<div class="spsec"><div class="lbl mono">Options</div>${TF_SEL[co].map(([k,l,O])=>`<label class="spf"><span>${l}</span><select class="inp mono" data-tf="${k}">${O.map(o=>{const [v,t]=Array.isArray(o)?o:[o,o];return `<option value="${v}"${String(I[k])===v?' selected':''}>${t}</option>`}).join('')}</select></label>`).join('')}</div>`}
+function tfRun(){const s=spSite();if(!s||!TF.I)return;const {P,R,ctx}=tfCtxFor(s),r=tfSolve(SP.co,R,TF.I,ctx);TF.r=r;TF.P=P;TF.ctx=ctx;try{localStorage.setItem(tfK(s),JSON.stringify(TF.I))}catch(e){}tfOut(s,r);tfDraw(r)}
+function tfFmt(v,d){return v==null?'—':spN(v,d)}
+function tfOut(s,r){const co=SP.co,Z=r&&TF.ctx.zone,E=r.E;
+ const bd=[];if(Z&&Z.has)bd.push(`<span class="spbadge">ZONING ${esc(Z.district||'')}</span>`);else bd.push('<span class="spbadge spest">ZONING: NO DATA · DEFAULTS</span>');
+ r.warn.filter(w=>w.k==='use'||w.k==='height').forEach(w=>bd.push(`<span class="spbadge tfwarn">${esc(w.t)}</span>`));
+ if(co==='land')bd.push(`<span class="spbadge">GRID ${tfFmt(TF.ctx.gridMW,0)} MW · ${esc(TF.ctx.gridWhy)}</span>`);
+ if(Z&&Z.has)bd.push(`<span class="lbl mono">Setbacks used ${E.setF}/${E.setS}/${E.setR} ft · height ${E.maxH===''||E.maxH==null?'—':E.maxH+' ft'}</span>`);$('tfBadges').innerHTML=bd.join(' ');
+ $('tfKpi').innerHTML=TF_KPI[co].map(([k,l,d])=>`<div class="tfk"><div class="lbl mono">${l}</div><b class="mono">${tfFmt(r.k[k],d)}</b></div>`).join('')+`<div class="tfk"><div class="lbl mono">Binding</div><b class="mono">${esc(r.bind)}</b></div>`;
+ const ph=co==='land'?`<div class="lbl mono">Phasing ${r.phMW.map((m,i)=>'P'+(i+1)+' '+spN(m,1)+' MW').join(' · ')} · height ${r.height} ft · ${r.n}/${r.want} halls placed${r.capIT!=null?' · cap '+spN(r.capIT,1)+' MW IT':''}</div>`:`<div class="lbl mono">Mix ${r.mix.map(([k,n])=>k+' '+n).join(' · ')} · avg ${spN(r.avg)} sf · CC ${r.stories} storeys</div>`;
+ $('tfChk').innerHTML=ph+r.circ.concat(r.warn.filter(w=>w.k!=='use'&&w.k!=='height').map(w=>({ok:false,t:w.t}))).map(c=>`<div class="lbl mono ${c.ok?'':'tfbad'}">${c.ok?'OK':'CHECK'} · ${esc(c.t)}</div>`).join('');
+ $('tfPlan').innerHTML=tfSvg(r,520,300);$('tfEng').textContent=tfUrl()?'· AI':'· rules';tfLog();tfOptsR();tfCmpR()}
+// features in lon/lat for map + exports
+function tfFeats(r){const P=TF.P,F=[],q=(R,kind,lab)=>{const [x,y,w,h]=R,c=[[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]].map(p=>P.b(r.C.un(p)));F.push({type:'Feature',properties:{kind,label:lab||kind},geometry:{type:'Polygon',coordinates:[c]}})};
+ if(r.co==='land'){r.halls.forEach((h,i)=>{q(h.hall,'hall','Hall '+(i+1)+' · P'+r.phase[i]);if(h.gen)q(h.gen,'yard','Gen/cooling yard')});if(r.sub)q(r.sub,'sub','Substation');if(r.park)q(r.park,'park','Parking '+r.stalls)}
+ else{if(r.mu)q(r.mu,'cc','Climate-controlled · '+r.stories+' storeys');r.du.forEach(d=>q(d,'du','Drive-up'));if(r.office)q(r.office,'office','Office');r.rv.forEach(d=>q(d,'rv','RV/boat'))}return F}
+const TF_COL={hall:'#F14B21',yard:'#7a7a7a',sub:'#ffd23f',park:'#4a4a4a',cc:'#F14B21',du:'#c9a227',office:'#ffffff',rv:'#5a5a5a'};
+function tfDraw(r){const m=SP.map;if(!m)return;const fc={type:'FeatureCollection',features:tfFeats(r)};if(!m.getSource('tf-geo')){m.addSource('tf-geo',{type:'geojson',data:fc});
+ m.addLayer({id:'tf-f',type:'fill',source:'tf-geo',paint:{'fill-color':['match',['get','kind'],...Object.entries(TF_COL).flat(),'#888'],'fill-opacity':.55}});m.addLayer({id:'tf-l',type:'line',source:'tf-geo',paint:{'line-color':'#fff','line-width':1}})}else m.getSource('tf-geo').setData(fc)}
+function tfMapClear(){const m=SP.map;if(m&&m.getSource('tf-geo'))m.getSource('tf-geo').setData({type:'FeatureCollection',features:[]})}
+function tfSvg(r,W,H){const C=r.C,pts=C.Q,[x0,y0,x1,y1]=C.bb,sc=Math.min((W-20)/(x1-x0||1),(H-20)/(y1-y0||1)),X=x=>10+(x-x0)*sc,Y=y=>H-10-(y-y0)*sc,rect=(R,c,o)=>`<rect x="${X(R[0])}" y="${Y(R[1]+R[3])}" width="${R[2]*sc}" height="${R[3]*sc}" fill="${c}" fill-opacity="${o||.7}" stroke="#fff" stroke-width=".5"/>`;
+ let g=`<polygon points="${pts.map(p=>X(p[0])+','+Y(p[1])).join(' ')}" fill="none" stroke="#9A9A9A" stroke-dasharray="4 3"/>`;
+ if(r.co==='land'){r.halls.forEach(h=>{g+=rect(h.hall,TF_COL.hall);if(h.gen)g+=rect(h.gen,TF_COL.yard)});if(r.sub)g+=rect(r.sub,TF_COL.sub);if(r.park)g+=rect(r.park,TF_COL.park)}else{if(r.mu)g+=rect(r.mu,TF_COL.cc);r.du.forEach(d=>g+=rect(d,TF_COL.du));if(r.office)g+=rect(r.office,TF_COL.office);r.rv.forEach(d=>g+=rect(d,TF_COL.rv))}
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" style="background:#000;display:block">${g}</svg>`}
+function tfLog(){const el=$('tfLog');if(!el)return;el.innerHTML=TF.chat.map(c=>`<div class="tfmsg ${c.who}"><span class="lbl mono">${c.who==='u'?'You':'Plan'}</span> ${esc(c.t)}${c.diff?`<div class="mono tfdiff">${c.diff}</div>`:''}</div>`).join('');el.scrollTop=1e6}
+function tfDiff(a,b){return TF_KPI[SP.co].filter(([k])=>a[k]!==b[k]).map(([k,l,d])=>`${l}: ${tfFmt(a[k],d)} → ${tfFmt(b[k],d)}`).join('<br>')||('No change in metrics'+(TF.r&&TF.r.bind?' · binding: '+TF.r.bind:''))}
+// LLM adapter: POST to the kmask plan-edit endpoint when configured; any failure falls back to the rule parser
+function tfUrl(){const u=window.EDKS_PLAN_EDIT_URL||(()=>{try{return localStorage.getItem('edks_plan_edit_url')}catch(e){return null}})()||TF_EDIT_SCHEMA.url;return u==='off'?null:u}
+async function tfInterpret(text){const u=tfUrl(),co=SP.co,rb=tfParse(text,co,TF.I);if(rb.undo||rb.goal)return Object.assign({src:'rules'},rb);
+ if(u&&window.EDKS_BK&&EDKS_BK.idToken){try{const tok=await EDKS_BK.idToken();if(tok){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),4000);
+  const res=await fetch(u,{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({message:text.slice(0,500),schema:tfEditSchemaFor(co),params:TF.I})});clearTimeout(tm);
+  if(res.ok){const j=await res.json();if(j&&j.changes&&typeof j.changes==='object'){const ops=Object.entries(j.changes).filter(([,v])=>v!=null).map(([k,v])=>({k,v}));
+   if(ops.length||!rb.ops.length)return {src:'ai',ops,goal:null,reply:j.reply||(ops.length?'Updated':'No change')}}}}}catch(e){}}
+ return Object.assign({src:'rules'},rb)}
+async function tfChat(text){if(!text.trim())return;TF.chat.push({who:'u',t:text});tfLog();const a=await tfInterpret(text),before=TF.r.k;
+ if(a.undo){tfUndo();return}if(!a.ops.length&&!a.goal){TF.chat.push({who:'p',t:a.reply});tfLog();return}
+ TF.undo.push(Object.assign({},TF.I));TF.I=tfApplyOps(SP.co,TF.I,a.ops);
+ if(a.goal){const X=tfCtxFor(spSite()),O=tfGen(SP.co,X.R,TF.I,X.ctx);O.sort((x,y)=>(y.k[a.goal]||0)-(x.k[a.goal]||0));if(O[0])TF.I=Object.assign({},O[0].p)}
+ tfForm();tfRun();TF.chat.push({who:'p',t:a.reply,diff:tfDiff(before,TF.r.k)});tfLog()}
+function tfUndo(){const p=TF.undo.pop();if(!p){TF.chat.push({who:'p',t:'Nothing to undo'});tfLog();return}const b=TF.r.k;TF.I=p;tfForm();tfRun();TF.chat.push({who:'p',t:'Undone',diff:tfDiff(b,TF.r.k)});tfLog()}
+function tfOptsR(){const el=$('tfOpts');if(!el)return;if(!TF.opts.length){el.innerHTML='';return}const K=TF_KPI[SP.co];
+ el.innerHTML=`<table class="tftab"><thead><tr><th>#</th>${K.map(([,l])=>`<th>${l}</th>`).join('')}<th>Rows °</th><th>Binding</th><th>Flags</th><th></th><th>Compare</th></tr></thead><tbody>${TF.opts.map((o,i)=>`<tr><td class="mono">${i+1}</td>${K.map(([k,,d])=>`<td class="mono">${tfFmt(o.k[k],d)}</td>`).join('')}<td class="mono">${o.p.rot}</td><td>${esc(o.bind)}</td><td class="mono">${o.warn}</td><td><button class="tbtn" type="button" data-tfa="${i}">Apply</button></td><td><input type="checkbox" data-tfc="${i}"${TF.cmp.includes(i)?' checked':''}></td></tr>`).join('')}</tbody></table>`}
+function tfCmpR(){const el=$('tfCmp');if(!el)return;const s=spSite();if(!TF.cmp.length||!s){el.innerHTML='';return}const {R,ctx}=tfCtxFor(s);
+ el.innerHTML=`<div class="tfcmp">${TF.cmp.slice(0,3).map(i=>{const o=TF.opts[i];if(!o)return '';const r=tfSolve(SP.co,R,o.p,ctx);return `<div><div class="lbl mono">Option ${i+1}</div>${tfSvg(r,300,180)}${TF_KPI[SP.co].map(([k,l,d])=>`<div class="lbl mono">${l} <b>${tfFmt(r.k[k],d)}</b></div>`).join('')}</div>`}).join('')}</div>`}
+function tfDl(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+function tfDxf(r){const L=['0','SECTION','2','ENTITIES'],poly=(pts,layer)=>{L.push('0','LWPOLYLINE','8',layer,'90',String(pts.length),'70','1');pts.forEach(p=>L.push('10',p[0].toFixed(2),'20',p[1].toFixed(2)))},q=(R,ly)=>{const [x,y,w,h]=R;poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(r.C.un),ly)};
+ poly(tfCtxFor(spSite()).R.slice(0,-1),'BOUNDARY');if(r.co==='land'){r.halls.forEach(h=>{q(h.hall,'HALL');if(h.gen)q(h.gen,'YARD')});if(r.sub)q(r.sub,'SUBSTATION');if(r.park)q(r.park,'PARKING')}else{if(r.mu)q(r.mu,'CLIMATE');r.du.forEach(d=>q(d,'DRIVEUP'));if(r.office)q(r.office,'OFFICE');r.rv.forEach(d=>q(d,'RV'))}
+ L.push('0','ENDSEC','0','EOF');return L.join('\n')}
+async function tfSaveScheme(){const s=spSite(),B=spxBK(),r=TF.r;if(!s||!r||!tfInList(SP.co,s.id))return;const co=SP.co,R=x=>Math.round(x*1e6)/1e6;
+ const g={poly:SP.poly.map(p=>[R(p[0]),R(p[1])]),b:tfFeats(r).slice(0,60).map(f=>({t:f.properties.kind,c:f.geometry.coordinates[0].slice(0,4).flat().map(R)}))};
+ const nm=(co==='storage'?spN(r.k.nrsf)+' NRSF':spN(r.k.it,1)+' MW IT · '+r.n+' halls')+' · TF · '+new Date().toLocaleDateString();
+ const d={site_id:s.id,co,name:nm.slice(0,80),v:2,k:Object.assign({},r.k),bind:r.bind,zbind:'',circ:r.circ.filter(c=>!c.ok).map(c=>c.id),jur:'',p:JSON.stringify(Object.assign({},SP.inp,{tf:TF.I})).slice(0,8000),g:JSON.stringify(g).slice(0,24000),restricted:!!(typeof RIDS!=='undefined'&&RIDS.has&&RIDS.has(s.id))};
+ if(!B){$('tfMsg').textContent='No Firestore connection: not saved';return}try{const id=await B.savePlan(d);const L=SPX.saved[co+'/'+s.id]||(SPX.saved[co+'/'+s.id]={list:[],st:'ok'});L.list.unshift(Object.assign({id,ts:new Date().toISOString(),by:B.email},d));$('tfMsg').textContent='Saved "'+d.name+'" (1 write)';spxSavedRender(s)}catch(e){$('tfMsg').textContent='Save failed: '+e.message}}
+function tfWire(el){const sched=()=>{cancelAnimationFrame(TF.raf);TF.raf=requestAnimationFrame(tfRun)};
+ el.addEventListener('input',e=>{const t=e.target,k=t.dataset.tf;if(!k||!TF.I)return;TF.I[k]=t.tagName==='SELECT'?t.value:+t.value;el.querySelectorAll(`[data-tf="${k}"]`).forEach(x=>{if(x!==t)x.value=t.value});sched()});
+ el.addEventListener('change',e=>{const t=e.target;if(t.dataset.tf&&!TF.undo.length)TF.undo.push(Object.assign({},TF.I));if(t.dataset.tfc!=null){const i=+t.dataset.tfc;TF.cmp=t.checked?TF.cmp.concat(i).slice(-3):TF.cmp.filter(x=>x!==i);tfCmpR()}});
+ el.addEventListener('submit',e=>{e.preventDefault();const q=$('tfQ');const v=q.value;q.value='';tfChat(v)});
+ el.addEventListener('click',e=>{const id=e.target.id,s=spSite(),co=SP.co;
+  if(id==='tfAddB'){const v=$('tfAddQ').value.trim(),A=co==='storage'?SR:S,x=A.find(y=>y.name===v||y.id===v);if(x)tfAddDeal(co,x.id);else $('tfAddQ').value=''}
+  else if(id==='tfDelB'&&s)tfDelDeal(co,s.id);else if(id==='tfUndo')tfUndo();else if(id==='tfSave')tfSaveScheme();
+  else if(id==='tfGen'&&s){$('tfMsg').textContent='Generating…';setTimeout(()=>{const {R,ctx}=tfCtxFor(s);TF.opts=tfGen(co,R,TF.I,ctx);TF.cmp=[];$('tfMsg').textContent=TF.opts.length+' options ranked by '+(co==='storage'?'NRSF':'IT MW');tfOptsR();tfCmpR()},20)}
+  else if(id==='tfGeo'&&TF.r)tfDl(s.id+'-plan.geojson',new Blob([JSON.stringify({type:'FeatureCollection',features:tfFeats(TF.r)})],{type:'application/geo+json'}));
+  else if(id==='tfDxf'&&TF.r)tfDl(s.id+'-plan.dxf',new Blob([tfDxf(TF.r)],{type:'application/dxf'}));
+  else if(id==='tfPng'&&TF.r){const svg=tfSvg(TF.r,1600,1000).replace('width="100%"','width="1600" height="1000"'),img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=1600;c.height=1100;const x=c.getContext('2d');x.fillStyle='#0A0A0A';x.fillRect(0,0,1600,1100);x.drawImage(img,0,0);x.fillStyle='#fff';x.font='22px JetBrains Mono, monospace';x.fillText(s.name+' · '+TF_KPI[co].map(([k,l,d])=>l+' '+tfFmt(TF.r.k[k],d)).join(' · '),20,1060);c.toBlob(b=>tfDl(s.id+'-plan.png',b))};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
+  const a=e.target.closest('[data-tfa]');if(a){TF.undo.push(Object.assign({},TF.I));TF.I=Object.assign({},TF.opts[+a.dataset.tfa].p);tfForm();tfRun()}})}
+const spRunTF0=spRun;spRun=function(){spRunTF0();tfMount(spSite())};
+
+function spDealSecSt(s){if(!isAdm())return '';const inL=tfInList('storage',s.id);return `<div class="sec spdeal"><h4>Site plan</h4><div class="btns">${inL?`<a class="btn" href="#plan/storage/${esc(s.id)}" onclick="dlg.close()">Open in Site Plan</a><button class="btn" type="button" onclick="tfDelDeal('storage','${esc(s.id)}');dlg.close()">Remove from Site Plan</button>`:`<button class="btn" type="button" onclick="dlg.close();tfAddDeal('storage','${esc(s.id)}')">Move to Site Plan</button>`}</div></div>`}
+function spDealSec(s){const p=spSum(s.id),inL=tfInList('land',s.id);if(!isAdm())return '';return `<div class="sec spdeal"><h4>Site plan</h4>${p?kv([['Max IT load',`<b class="mono">${spN(p.it,1)} MW</b> · ${spN(p.fac,1)} MW facility`],['Binding',`<span class="spbadge">${esc(p.bind)}</span>`],['Mix',`Grid ${spN(p.grid)} MW · gas ${spN(p.gas)} MW · ${p.halls} halls`],['Saved',esc(new Date(p.ts).toLocaleString())+' · this browser']]):'<p class="desc muted">No plan saved in this browser.</p>'}<div class="btns">${inL?`<a class="btn" href="#plan/land/${esc(s.id)}" onclick="dlg.close()">Open in Site Plan</a><button class="btn" type="button" onclick="tfDelDeal('land','${esc(s.id)}');dlg.close()">Remove from Site Plan</button>`:`<button class="btn" type="button" onclick="dlg.close();tfAddDeal('land','${esc(s.id)}')">Move to Site Plan</button>`}</div></div>`}
 function spUI(){const b=$('planTab');if(b)b.hidden=!isAdm();document.body.classList.toggle('spadm',isAdm())}
 function spHide(){const v=$('viewPlan');if(v)v.hidden=true;document.body.classList.remove('planon')}
 function planView(v){const seg=v.split('/').slice(1).filter(Boolean);let co=null,id='';if(seg[0]==='land'||seg[0]==='storage'){co=seg[0];id=seg[1]||SP.last[co]||''}else{id=seg[0]||SP.id||'';co=id&&!S.find(x=>x.id===id)&&SR.find(x=>x.id===id)?'storage':(id?'land':SP.co)}$('dealSeg').hidden=true;$('viewMap').hidden=true;document.body.classList.remove('mapfull');$('viewLand').hidden=true;$('viewStorage').hidden=true;$('viewPlan').hidden=false;document.body.classList.add('planon');
@@ -1762,7 +2033,7 @@ function openStorage(id){const r=SR.find(x=>x.id===id);if(!r)return;if(!BGP)bgLo
  const contacts=(r.contacts||[]).map(c=>`<div class="contact"><div class="role">${esc(c.role)}</div><div><b>${esc(c.name||c.org)}</b>${c.title?' · '+esc(c.title):''}</div>${c.name&&c.org?`<div class="lbl">${esc(c.org)}</div>`:''}<div class="btns">${c.phone?`<a class="btn" href="${tel(c.phone)}">Call ${esc(c.phone)}</a>`:''}${c.email?`<a class="btn" href="mailto:${esc(c.email)}?subject=${encodeURIComponent(r.name+' ('+r.city_label+', KS)')}">Email ${esc(c.email)}</a>`:''}</div>${c.note?`<div class="src">${esc(c.note)}</div>`:''}${c.source?`<div class="src">Source: <a href="${esc(c.source)}" target="_blank" rel="noopener">${esc(c.source)}</a></div>`:''}</div>`).join('');
  $('dBadges').innerHTML=stB('storage',r.id)+$('dBadges').innerHTML;
  openDeal('storage',r,[r.county&&r.county+' County',r.city_label].filter(Boolean).join(' · '),storTiles(r),{
- overview:`${driversSec('storage',r)}${dealBox('storage',r)}
+ overview:`${driversSec('storage',r)}${dealBox('storage',r)}${spDealSecSt(r)}
  <div class="btns" style="margin:0 0 16px"><a class="btn" href="${esc(r.url)}" target="_blank" rel="noopener">Listing ↗</a><a class="btn" href="https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lon}" target="_blank" rel="noopener">Map ↗</a></div>`,
  site:`${storFacts(r)}<div class="cols">${col(`<div class="sec"><h4>Score ${r.score}/100 · tap a part</h4>${r.score_cap?`<p class="desc" style="color:#c9a227">${esc(r.score_cap)}</p>`:''}${parts}</div>`)}
  ${col(`<div class="sec"><h4>Format fit</h4>${kv(fmts)}</div>`)}
