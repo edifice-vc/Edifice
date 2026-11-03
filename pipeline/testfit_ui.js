@@ -59,13 +59,15 @@ function tfSvg(r,W,H){const C=r.C,pts=C.Q,[x0,y0,x1,y1]=C.bb,sc=Math.min((W-20)/
  if(r.co==='land'){r.halls.forEach(h=>{g+=rect(h.hall,TF_COL.hall);if(h.gen)g+=rect(h.gen,TF_COL.yard)});if(r.sub)g+=rect(r.sub,TF_COL.sub);if(r.park)g+=rect(r.park,TF_COL.park)}else{if(r.mu)g+=rect(r.mu,TF_COL.cc);r.du.forEach(d=>g+=rect(d,TF_COL.du));if(r.office)g+=rect(r.office,TF_COL.office);r.rv.forEach(d=>g+=rect(d,TF_COL.rv))}
  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" style="background:#000;display:block">${g}</svg>`}
 function tfLog(){const el=$('tfLog');if(!el)return;el.innerHTML=TF.chat.map(c=>`<div class="tfmsg ${c.who}"><span class="lbl mono">${c.who==='u'?'You':'Plan'}</span> ${esc(c.t)}${c.diff?`<div class="mono tfdiff">${c.diff}</div>`:''}</div>`).join('');el.scrollTop=1e6}
-function tfDiff(a,b){return TF_KPI[SP.co].filter(([k])=>a[k]!==b[k]).map(([k,l,d])=>`${l}: ${tfFmt(a[k],d)} → ${tfFmt(b[k],d)}`).join('<br>')||'No change in metrics'}
+function tfDiff(a,b){return TF_KPI[SP.co].filter(([k])=>a[k]!==b[k]).map(([k,l,d])=>`${l}: ${tfFmt(a[k],d)} → ${tfFmt(b[k],d)}`).join('<br>')||('No change in metrics'+(TF.r&&TF.r.bind?' · binding: '+TF.r.bind:''))}
 // LLM adapter: POST to the kmask plan-edit endpoint when configured; any failure falls back to the rule parser
-function tfUrl(){return window.EDKS_PLAN_EDIT_URL||(()=>{try{return localStorage.getItem('edks_plan_edit_url')}catch(e){return null}})()||null}
-async function tfInterpret(text){const u=tfUrl(),co=SP.co;if(u&&window.EDKS_BK&&EDKS_BK.idToken){try{const tok=await EDKS_BK.idToken(),ac=new AbortController(),tm=setTimeout(()=>ac.abort(),6000);
-  const res=await fetch(u.replace(/\/$/,'')+(/\/plan_edit$/.test(u)?'':TF_EDIT_SCHEMA.path),{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({v:1,text,co,params:TF.I,keys:TF_EDIT_SCHEMA.keys[co],metrics:TF.r&&TF.r.k})});clearTimeout(tm);
-  if(res.ok){const j=await res.json();if(j&&Array.isArray(j.ops))return Object.assign({src:'ai'},j)}}catch(e){}}
- return Object.assign({src:'rules'},tfParse(text,co,TF.I))}
+function tfUrl(){const u=window.EDKS_PLAN_EDIT_URL||(()=>{try{return localStorage.getItem('edks_plan_edit_url')}catch(e){return null}})()||TF_EDIT_SCHEMA.url;return u==='off'?null:u}
+async function tfInterpret(text){const u=tfUrl(),co=SP.co,rb=tfParse(text,co,TF.I);if(rb.undo||rb.goal)return Object.assign({src:'rules'},rb);
+ if(u&&window.EDKS_BK&&EDKS_BK.idToken){try{const tok=await EDKS_BK.idToken();if(tok){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),6000);
+  const res=await fetch(u,{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({message:text.slice(0,500),schema:tfEditSchemaFor(co),params:TF.I})});clearTimeout(tm);
+  if(res.ok){const j=await res.json();if(j&&j.changes&&typeof j.changes==='object'){const ops=Object.entries(j.changes).filter(([,v])=>v!=null).map(([k,v])=>({k,v}));
+   if(ops.length||!rb.ops.length)return {src:'ai',ops,goal:null,reply:j.reply||(ops.length?'Updated':'No change')}}}}}catch(e){}}
+ return Object.assign({src:'rules'},rb)}
 async function tfChat(text){if(!text.trim())return;TF.chat.push({who:'u',t:text});tfLog();const a=await tfInterpret(text),before=TF.r.k;
  if(a.undo){tfUndo();return}if(!a.ops.length&&!a.goal){TF.chat.push({who:'p',t:a.reply});tfLog();return}
  TF.undo.push(Object.assign({},TF.I));TF.I=tfApplyOps(SP.co,TF.I,a.ops);

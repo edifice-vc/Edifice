@@ -1,6 +1,6 @@
 // ---- TestFit-style configurator (Site Plan). Pure solvers first (tested in pipeline/tests/test_testfit.py), UI after.
 // Units: feet in a local plane (spProj). Rotated frame: rows run along x after rotating the site by -rot.
-const TF_DEF={land:{halls:8,hallW:250,hallL:1000,stories:1,storyFt:32,hallMW:12,pue:1.3,subAc:5,genAc:1.5,cool:'air',setF:100,setS:100,setR:100,lane:30,park:40,phases:2,rot:0,subPos:'auto',maxH:'',cov:'',front:'S'},
+const TF_DEF={land:{halls:8,hallW:250,hallL:1000,stories:1,storyFt:42,hallMW:12,pue:1.3,subAc:5,genAc:1.5,cool:'air',setF:100,setS:100,setR:100,lane:30,park:40,phases:2,rot:0,subPos:'auto',maxH:'',cov:'',front:'S'},
  storage:{mode:'hy',stories:3,storyFt:11,mW:120,duW:30,aisle:28,office:1200,rv:20,setF:25,setS:25,setR:25,rot:0,effDU:.92,effM:.78,mix5x5:10,mix5x10:25,mix10x10:30,mix10x15:15,mix10x20:15,mix10x30:5,maxH:'',cov:'',front:'S'}};
 const TF_UNIT={mix5x5:25,mix5x10:50,mix10x10:100,mix10x15:150,mix10x20:200,mix10x30:300};
 const TF_COOL={air:1,liquid:.85,hybrid:.92};// cooling yard factor on generator/mech yard depth
@@ -39,7 +39,7 @@ const tfCorner=(C,pos)=>{const dir={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0],NE:[1,1],N
  const [x0,y0,x1,y1]=C.bb,c=C.un([(x0+x1)/2,(y0+y1)/2]),r=Math.hypot(x1-x0,y1-y0);return tfRot([c[0]+dir[0]*r,c[1]+dir[1]*r],-C.rot)};
 // ---- data center solve. ctx: {gridMW (site cap, null=unknown), nb, zone(tfZone), linePt (local ft) }
 function tfDC(R,I,ctx){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfCtx(R,E,ctx.nb),site=C.A,warn=[];
- const st=Math.max(1,Math.round(+E.stories||1)),h=st*(+E.storyFt||32);let stE=st;if(E.maxH!==''&&E.maxH!=null&&h>+E.maxH){stE=Math.max(0,Math.floor(+E.maxH/(+E.storyFt||32)));warn.push({k:'height',t:`Design height ${h} ft exceeds the ${E.maxH} ft limit${stE?' · capped at '+stE+' storey':''}`})}
+ const st=Math.max(1,Math.round(+E.stories||1)),h=st*(+E.storyFt||42);let stE=st;if(E.maxH!==''&&E.maxH!=null&&h>+E.maxH){stE=Math.max(1,Math.floor(+E.maxH/(+E.storyFt||42)));warn.push({k:'height',t:`Design height ${stE*(+E.storyFt||42)} ft exceeds the ${E.maxH} ft zoning limit${stE*(+E.storyFt||42)>+E.maxH?' · needs a height variance':' · capped at '+stE+' storey'}`})}
  const placed=[],lane=+E.lane||30,sub=+E.subAc>0?Math.sqrt(+E.subAc*43560):0;let subR=null;
  if(sub){const tgt=E.subPos&&E.subPos!=='auto'?tfCorner(C,E.subPos):ctx.linePt?tfRot(ctx.linePt,-C.rot):[C.bb[2],C.bb[1]];subR=tfPlaceNear(C,sub,sub,tgt,placed,lane);if(subR){subR.push(lane);placed.push(subR)}else warn.push({k:'sub',t:'No room for the substation'})}
  const hw=+E.hallW,hl=+E.hallL,gy=(+E.genAc||0)*43560/hl*(TF_COOL[E.cool]||1),bw=hl,bh=hw+gy;
@@ -54,7 +54,7 @@ function tfDC(R,I,ctx){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfCtx(R
  const ph=Math.max(1,Math.round(+E.phases||1)),phase=halls.map((_,i)=>Math.floor(i*ph/Math.max(1,n))+1),phMW=Array.from({length:ph},(_,k)=>Math.min(it,phase.filter(p=>p<=k+1).length*hallMW)).map((v,k,a)=>v-(k?a[k-1]:0));
  const fp=n*hw*hl,cov=site?fp/site:0,far=site?fp*stE/site:0,bind=!stE?'Height':capIT!=null&&itRaw>=capIT-1e-9&&n>=needCap?'Grid cap':n<Math.min(want,needCap)?(n>=covN?'Coverage/FAR':'Land / setbacks / no-build'):'Hall count';
  const circ=[{id:'lane',ok:lane>=26,t:`Fire lane ${lane} ft (IFC aerial access ≥ 26 ft)`},{id:'hose',ok:hw<=300,t:`Hall depth ${hw} ft (≤ 300 ft keeps every wall within 150 ft hose reach of a lane)`}];
- if(Z&&Z.okU===-1)warn.push({k:'use',t:`Zoning ${Z.district||''}: data center ${Z.use||'not listed'}`});else if(Z&&Z.okU===0)warn.push({k:'use',t:`Zoning ${Z.district||''}: data center ${Z.use} (discretionary)`});
+ if(Z&&Z.okU===-1)warn.push({k:'use',t:`Zoning ${Z.district||''}: data center ${String(Z.use||'not listed').replace(/_/g,' ')}`});else if(Z&&Z.okU===0)warn.push({k:'use',t:`Zoning ${Z.district||''}: data center ${Z.use} (discretionary)`});
  const score=it-(warn.length*.5)-circ.filter(c=>!c.ok).length;
  return {co:'land',C,E,halls,sub:subR,park:parkR,stalls,n,want,needCap,capIT,it,itRaw,fac,hallMW,fp,cov,far,height:stE*(+E.storyFt||32),stories:stE,phase,phMW,bind,warn,circ,site,score,
   k:{it:+it.toFixed(2),fac:+fac.toFixed(2),halls:n,cov:+(cov*100).toFixed(1),far:+far.toFixed(3),stalls}}}
@@ -73,7 +73,7 @@ function tfST(R,I,ctx){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfCtx(R
  const duSf=du.reduce((a,r)=>a+r[2]*r[3],0),muSf=mu?mu[2]*mu[3]:0,offSf=+E.office||0,nrsf=Math.max(0,duSf*(+E.effDU||.92)+muSf*st*(+E.effM||.78)-(mu?offSf:0));
  const mk=Object.keys(TF_UNIT),tot=mk.reduce((a,k)=>a+(+E[k]||0),0)||1,avg=mk.reduce((a,k)=>a+TF_UNIT[k]*(+E[k]||0)/tot,0),units=Math.round(nrsf/avg);
  const mix=mk.map(k=>[k.slice(3),Math.round(units*(+E[k]||0)/tot)]),cov=site?fpU/site:0;
- if(Z&&Z.okU===-1)warn.push({k:'use',t:`Zoning ${Z.district||''}: self-storage ${Z.use||'not listed'}`});else if(Z&&Z.okU===0)warn.push({k:'use',t:`Zoning ${Z.district||''}: self-storage ${Z.use} (discretionary)`});
+ if(Z&&Z.okU===-1)warn.push({k:'use',t:`Zoning ${Z.district||''}: self-storage ${String(Z.use||'not listed').replace(/_/g,' ')}`});else if(Z&&Z.okU===0)warn.push({k:'use',t:`Zoning ${Z.district||''}: self-storage ${Z.use} (discretionary)`});
  const circ=[{id:'aisle',ok:aisle>=26,t:`Drive aisle ${aisle} ft (fire access ≥ 26 ft; 10x30 trucks need ~28 ft)`}];
  const bind=fpU>=covMax-1?'Coverage':mu&&st<(+E.stories||1)?'Height':'Setbacks / site shape';
  return {co:'storage',C,E,mu,du,office,rv,rvN,stories:st,nrsf,units,mix,avg,duSf,muSf,gsf:duSf+muSf*st,cov,site,bind,warn,circ,score:nrsf/1000-warn.length*2,
