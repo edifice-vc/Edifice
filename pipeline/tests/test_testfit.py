@@ -1,6 +1,6 @@
 import json, pathlib, shutil, subprocess, unittest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SRC = ''.join((ROOT / 'pipeline' / f).read_text() for f in ('planEditSchema.js', 'testfit.js'))
+SRC = 'const CV_REF=' + (ROOT / 'pipeline' / 'civil_ref.json').read_text().strip() + ';\n' + '\n'.join((ROOT / 'pipeline' / f).read_text() for f in ('planEditSchema.js', 'testfit.js', 'civil.js'))
 HELP = '''
 const sq=a=>{const h=Math.sqrt(a*43560)/2;return [[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]]};
 const rects=r=>r.co==='land'?r.halls.flatMap(h=>[h.hall,h.gen].filter(Boolean)).concat([r.sub,r.park].filter(Boolean)):[r.mu,r.office].filter(Boolean).concat(r.du,r.rv);

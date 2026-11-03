@@ -82,8 +82,9 @@ def firebase_config(env_name, emulator):
     return {k: cfg[k] for k in FB_KEYS if cfg.get(k)}
 
 def _testfit(tpl):
-    """Inline the Site Plan configurator (planEditSchema.js, testfit.js, testfit_ui.js) at the template marker."""
-    js = "\n".join(open(os.path.join(HERE, f), encoding="utf-8").read() for f in ("planEditSchema.js", "testfit.js", "testfit_ui.js"))
+    """Inline the Site Plan configurator (civil_ref.json, planEditSchema.js, testfit.js, civil.js, testfit_ui.js) at the template marker."""
+    ref = open(os.path.join(HERE, "civil_ref.json"), encoding="utf-8").read().strip()  # public NOAA Atlas 14 grid + FAA runways
+    js = "const CV_REF=" + ref.replace("</", "<\\/") + ";\n" + "\n".join(open(os.path.join(HERE, f), encoding="utf-8").read() for f in ("planEditSchema.js", "testfit.js", "civil.js", "testfit_ui.js"))
     if tpl.count("/*__TESTFIT__*/") != 1:
         sys.exit("[render] template layout changed: cannot find the /*__TESTFIT__*/ marker")
     return tpl.replace("/*__TESTFIT__*/", js)
