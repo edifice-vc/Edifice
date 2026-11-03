@@ -7,7 +7,7 @@
 // Server -> client: {changes:{<key>:<new value>}, reply:"<one short sentence>", model}
 //   The client drops unknown keys and clamps to [min,max] again (tfApplyOps).
 // Goals ("maximize NRSF"), undo and "regenerate" are handled locally by the rule parser (tfParse) before any call.
-// Errors: non-200, timeout (6 s) or malformed JSON -> rule parser fallback.
+// Errors: non-200, timeout (4 s) or malformed JSON -> rule parser fallback.
 const TF_EDIT_SCHEMA={v:1,
  keys:{
   land:{halls:['Data halls (count)',0,40,1],hallW:['Hall width ft',80,400,10],hallL:['Hall length ft',150,1500,25],stories:['Hall stories',1,4,1],

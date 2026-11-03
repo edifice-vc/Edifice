@@ -63,7 +63,7 @@ function tfDiff(a,b){return TF_KPI[SP.co].filter(([k])=>a[k]!==b[k]).map(([k,l,d
 // LLM adapter: POST to the kmask plan-edit endpoint when configured; any failure falls back to the rule parser
 function tfUrl(){const u=window.EDKS_PLAN_EDIT_URL||(()=>{try{return localStorage.getItem('edks_plan_edit_url')}catch(e){return null}})()||TF_EDIT_SCHEMA.url;return u==='off'?null:u}
 async function tfInterpret(text){const u=tfUrl(),co=SP.co,rb=tfParse(text,co,TF.I);if(rb.undo||rb.goal)return Object.assign({src:'rules'},rb);
- if(u&&window.EDKS_BK&&EDKS_BK.idToken){try{const tok=await EDKS_BK.idToken();if(tok){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),6000);
+ if(u&&window.EDKS_BK&&EDKS_BK.idToken){try{const tok=await EDKS_BK.idToken();if(tok){const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),4000);
   const res=await fetch(u,{method:'POST',signal:ac.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},body:JSON.stringify({message:text.slice(0,500),schema:tfEditSchemaFor(co),params:TF.I})});clearTimeout(tm);
   if(res.ok){const j=await res.json();if(j&&j.changes&&typeof j.changes==='object'){const ops=Object.entries(j.changes).filter(([,v])=>v!=null).map(([k,v])=>({k,v}));
    if(ops.length||!rb.ops.length)return {src:'ai',ops,goal:null,reply:j.reply||(ops.length?'Updated':'No change')}}}}}catch(e){}}
