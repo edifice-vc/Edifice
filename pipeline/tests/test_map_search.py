@@ -74,3 +74,22 @@ class Guards(unittest.TestCase):
     def test_bar_visible_on_full_map(self):
         self.assertIn('body.mapfull .ais:not(.kmais)', TPL)
         self.assertIn('id="kmQ"', TPL)
+
+
+class MapCamera(unittest.TestCase):
+    def test_clear_never_moves_camera(self):
+        body = fn('kmaClear')
+        for bad in ('ksMinZoom', 'fitBounds', 'flyTo', 'jumpTo', 'easeTo', 'kmaFit'):
+            self.assertNotIn(bad, body)
+        # empty input goes straight to kmaClear, never schedules kmAsk
+        self.assertRegex(TPL, r"if\(!e\.target\.value\.trim\(\)\)\{kmaClear\(\);return\}")
+        self.assertRegex(TPL, r"async function kmAsk\(raw\)\{[^\n]*?if\(!raw\)\{kmaClear\(\);return\}")
+
+    def test_zoom_all_control(self):
+        self.assertIn("new G.NavigationControl({showCompass:false}),'top-right');map.addControl(new KmZoomAll(),'top-right')", TPL)
+        self.assertIn('title="Zoom out to all"', TPL)
+        z = re.search(r'^function kmaZoomAll\(\).*$', TPL, re.M).group(0)
+        self.assertIn('kmaVis()', z)
+        self.assertIn('ksMinZoom(M.map,true)', z)
+        self.assertNotIn('kmQ', z)
+        self.assertNotIn('kmaClear', z)
