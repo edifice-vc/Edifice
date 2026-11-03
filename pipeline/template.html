@@ -1125,14 +1125,15 @@ let KM_T=0;function kmQueue(){if(!mapOn())return;cancelAnimationFrame(KM_T);KM_T
 let KM_SK='';async function drawMap(){if(!mapOn())return;sppLoad();const sk=KM.show+'|'+KM.by+'|'+!!ST+'|'+!!SPPD;if(KM_SK!==sk){const op=$('kmFd')?$('kmFd').open:null;$('kmSide').innerHTML=kmSide();if(op!=null)$('kmFd').open=op;KM_SK=sk}kmSync();const fn=(KM.show!=='storage'?fCount('land'):0)+(KM.show!=='land'&&ST?fCount('storage'):0)+(KM_AADT&&KM.show!=='land'?1:0);$('kmFn').textContent=fn?'· '+fn:'';kmSize();
  try{await loadGL()}catch(e){$('kmMap').innerHTML='<p class="desc" style="padding:16px">The map library could not load. Check the connection and try again.</p>';return}
  if(!KM_M)kmBuild();kmSize();const M=KM_M;
- const P=[].concat(KM.show!=='storage'?KM_R.land.map(o=>['land',o]):[],KM.show!=='land'?KM_R.storage.filter(o=>!KM_AADT||((o.traffic||{}).aadt||0)>=KM_AADT).map(o=>['storage',o]):[]);const C=mColors(P),n={},FS=[];let pl=0;
+ const P=[].concat(KM.show!=='storage'?KM_R.land.map(o=>['land',o]):[],KM.show!=='land'?KM_R.storage.filter(o=>!KM_AADT||((o.traffic||{}).aadt||0)>=KM_AADT).map(o=>['storage',o]):[]);kmxAdd(P);const C=mColors(P),n={},FS=[];let pl=0;
  P.forEach(([v,o])=>{if(typeof o.lat!=='number'||typeof o.lon!=='number')return;pl++;const k=mKey(v,o);n[k]=(n[k]||0)+1;
   FS.push({type:'Feature',geometry:{type:'Point',coordinates:[o.lon,o.lat]},properties:{id:o.id,v,n:o.name,k,s:String(LS(v,o)??'—'),col:C[k]||'#777777',r:0}})});
  // rank by score within the visible set: 1 = highest; ties by name then id; unscored sites stay unnumbered
  FS.map(f=>[f,parseFloat(f.properties.s)]).filter(([,x])=>isFinite(x)).sort((a,b)=>b[1]-a[1]||String(a[0].properties.n||'').localeCompare(String(b[0].properties.n||''))||String(a[0].properties.id).localeCompare(String(b[0].properties.id))).forEach(([f],i)=>f.properties.r=i+1);
  if(M.ready)M.map.getSource('deals').setData({type:'FeatureCollection',features:FS});
  $('kmLeg').innerHTML=Object.keys(C).filter(k=>n[k]).map(k=>`<span><i class="dot" style="background:${C[k]}"></i>${esc(k)} <b class="mono">${n[k]}</b></span>`).join('')||'<span class="lbl">No deals match the filters.</span>';
- $('kmCount').textContent=`${pl} of ${P.length} deals on map`+(pl<P.length?' · '+(P.length-pl)+' without a location':'')}
+ const tot=(KM.show!=='storage'?S.filter(o=>!hidK('land',o.id)).length:0)+(KM.show!=='land'&&ST?SR.filter(o=>!hidK('storage',o.id)).length:0),fh=Math.max(0,tot-P.length);
+ $('kmCount').textContent=`${pl} of ${P.length} deals on map`+(pl<P.length?' · '+(P.length-pl)+' without a location':'')+(fh?` · ${fh} hidden by filters`:'')}
 function kmSave(){try{localStorage.setItem('edks_km',JSON.stringify(KM))}catch(x){}}
 document.addEventListener('click',e=>{const s=e.target.closest('[data-kshow]'),b=e.target.closest('[data-kby]');if(!s&&!b)return;if(s){KM.show=s.dataset.kshow;if(KM.show!=='land'&&KM.by==='util')KM.by='stage'}else KM.by=b.dataset.kby;kmSave();drawMap();KM_LYR.forEach(x=>x[3]&&toggleLayer(x[0],KM_MLY.has(x[0])));if(KM.show==='land')ringSet(null)});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!('mly' in t.dataset))return;t.checked?KM_MLY.add(t.value):KM_MLY.delete(t.value);try{localStorage.setItem('edks_mly',JSON.stringify([...KM_MLY]))}catch(x){}toggleLayer(t.value,t.checked)});
@@ -1184,7 +1185,7 @@ function kmaShow(r){const el=$('kmAR');if(!r){el.hidden=true;el.innerHTML='';ret
  el.innerHTML=`<div class="kmah"><span class="lbl mono">${esc(r.head)}</span><button type="button" class="aiclr lbl mono" data-kmax>Clear</button></div>${r.chips&&r.chips.length?`<div class="kmaf">${r.chips.map(c=>`<span class="aichip mono" style="cursor:default;margin:0 4px 4px 0">${esc(c)}</span>`).join('')}</div>`:''}${r.rows.map(x=>`<div class="kmrow"><button type="button" class="kmgo" data-kmar="${esc(x.k)}">${esc(x.t||'—')}<small>${esc(x.m||'')}</small></button>${x.open?`<button type="button" class="kmop lbl mono" data-kmop="${esc(x.k)}">Open</button>`:''}</div>`).join('')}${r.note?`<div class="kmnote">${esc(r.note)}</div>`:''}`;el.hidden=false}
 function kmaRow(v,o){return {k:v+'|'+o.id,t:o.name||o.id,m:[stL(stageOf(v,o.id)),v==='land'?'Terrafice':'Everstow',[o.city||o.city_label,o.county?o.county+' Co':''].filter(Boolean).join(', '),'score '+(LS(v,o)??'—')].join(' · '),open:1}}
 function kmaReset(){aiUndo('land');aiUndo('storage');if(KMA.show){KM.show=KMA.show;KMA.show=null;kmSave()}if(KMA.spp&&KM_M&&KM_M.ready&&KM_M.map.getLayer('ly-spp_subs'))KM_M.map.setFilter('ly-spp_subs',null);KMA.spp=false;kmaRing(null)}
-function kmaClear(){kmaReset();$('kmQ').value='';$('aiQ').value='';render();if(ST)sRender();aiChips();kmaShow(null)}
+function kmaClear(){KMX.clear();kmaReset();$('kmQ').value='';$('aiQ').value='';render();if(ST)sRender();aiChips();kmaShow(null)}
 // zoom-all control (under +/-): fit ALL deals for the active toggle, ignoring search filters (maxZoom 9); Kansas extent if none. Never touches the search.
 function kmaZoomAll(){const M=KM_M;if(!M||!M.ready)return;const pts=kmaAll().filter(([,o])=>o.lat!=null&&o.lon!=null).map(([,o])=>[+o.lon,+o.lat]);if(!pts.length){ksMinZoom(M.map,true);return}let w=180,e=-180,s=90,n=-90;pts.forEach(([x,y])=>{w=Math.min(w,x);e=Math.max(e,x);s=Math.min(s,y);n=Math.max(n,y)});const ph=innerWidth<=760,col=document.body.classList.contains('kmcol');M.map.fitBounds([[w,s],[e,n]],{padding:ph?{top:160,left:24,right:24,bottom:col?40:Math.round(M.map.getContainer().clientHeight*.38)}:{top:150,bottom:70,right:70,left:col||innerWidth<1100?40:290},maxZoom:9,duration:900})}
 class KmZoomAll{onAdd(){const d=document.createElement('div');d.className='mapboxgl-ctrl maplibregl-ctrl mapboxgl-ctrl-group maplibregl-ctrl-group kmzall';d.innerHTML='<button type="button" id="kmZAll" title="Zoom out to all" aria-label="Zoom out to all">ALL</button>';d.firstChild.addEventListener('click',kmaZoomAll);this._d=d;return d}onRemove(){this._d.remove()}}
@@ -1204,8 +1205,9 @@ async function kmAsk(raw){const seq=++KMA.seq;raw=String(raw||'').trim();if(!raw
   dropT();render();if(ST)sRender();const F=kmaFuzzy(left||raw,kmaVis().filter(([,o])=>typeof o.lat==='number'));if(F.length){P=F;how='Closest name matches'}}
  kmaRing(near);kmaFit(P.map(([,o])=>[o.lon,o.lat]));
  P=P.slice().sort((a,b)=>(LS(b[0],b[1])||0)-(LS(a[0],a[1])||0));if(how)P=kmaFuzzy(left0(views)||raw,P);
- kmaShow({head:(how?how+' · ':'')+P.length+' deal'+(P.length===1?'':'s')+(near?' within '+near.mi+' mi of '+near.label:''),chips:kmaChips(),rows:P.slice(0,30).map(([v,o])=>kmaRow(v,o)),note:P.length>30?'Showing the top 30 by score; all '+P.length+' are on the map.':P.length?'':'No deals match. Remove a filter or try a broader phrase.'});
- if(P.length===1)kmaPick(P[0][0],P[0][1].id)}
+ const HX=near?[]:kmaHiddenMatches(raw,P).slice(0,10);
+ kmaShow({head:(how?how+' · ':'')+P.length+' deal'+(P.length===1?'':'s')+(near?' within '+near.mi+' mi of '+near.label:''),chips:kmaChips(),rows:P.slice(0,30).map(([v,o])=>kmaRow(v,o)).concat(HX.map(([v,o])=>Object.assign(kmaRow(v,o),{m:'Hidden by your filters · click to show · '+kmaRow(v,o).m}))),note:[P.length>30?'Showing the top 30 by score; all '+P.length+' are on the map.':'',HX.length?HX.length+' matching deal'+(HX.length===1?' is':'s are')+' hidden by your saved filters (stage, Terrafice/Everstow, score, acres…). Click one to show it, or Reset filters.':'',!P.length&&!HX.length?'No deals match. Remove a filter or try a broader phrase.':''].filter(Boolean).join(' ')});
+ if(P.length===1&&!HX.length)kmaPick(P[0][0],P[0][1].id);else if(!P.length&&HX.length===1)kmaPick(HX[0][0],HX[0][1].id)}
 // LLM query parser (Cloud Run "kmask"): only the query text + Firebase ID token leave the browser. Its structured
 // filters are turned back into a phrase the rule parser understands; any error/timeout falls back to the rule parser.
 const KM_LLM_URL='https://kmask-312620064853.us-central1.run.app/parse';
@@ -1234,7 +1236,12 @@ async function kmAskSmart(raw){raw=String(raw||'').trim();if(!raw||raw.split(/\s
  const f=await kmaLLM(raw,3500);if(seq!==KMA.seq)return;const c=f&&kmaCanon(f);
  if(!c)return kmAsk(raw);await kmAsk(c);if(!el.hidden&&!el.querySelector('.kmai'))el.insertAdjacentHTML('afterbegin','<div class="kmai mono" title="Parsed by AI">AI · '+esc(c)+'</div>')}
 function left0(views){return views.map(v=>AI[v].terms.join(' ')).find(Boolean)||''}
-function kmaPick(v,id){const o=objOf(v,id);if(!o)return;kmCard(v,id);const M=KM_M;if(M&&M.ready){if(typeof o.lat==='number')M.map.flyTo({center:[o.lon,o.lat],zoom:Math.max(M.map.getZoom(),11),duration:800});M.map.setFilter('deals-halo',['==',['get','id'],id])}}
+// KMX: deals picked by name (search result / card) that the saved filters hide; drawn anyway until Clear.
+const KMX=new Set();function kmxAdd(P){if(!KMX.size)return;const have=new Set(P.map(([v,o])=>v+'|'+o.id));KMX.forEach(k=>{if(have.has(k))return;const [v,id]=k.split('|'),o=objOf(v,id);if(o&&!hidK(v,id))P.push([v,o])})}
+function kmVisK(v,id){return (KM_R[v]||[]).some(o=>o.id===id)}
+function kmaHiddenMatches(raw,P){const ws=kmaNorm(raw).split(/[^a-z0-9]+/).filter(w=>w.length>1&&!['the','and','of','in','at','deal','deals','site','sites','near','lot','lots'].includes(w));if(!ws.length)return [];const seen=new Set(P.map(([v,o])=>v+'|'+o.id));
+ return [].concat(S.map(o=>['land',o]),ST?SR.map(o=>['storage',o]):[]).filter(([v,o])=>typeof o.lat==='number'&&!hidK(v,o.id)&&!seen.has(v+'|'+o.id)&&!kmVisK(v,o.id)&&ws.every(w=>kmaNorm(o.name).includes(w)))}
+function kmaPick(v,id){const o=objOf(v,id);if(!o)return;if(!kmVisK(v,id)&&!hidK(v,id)){KMX.add(v+'|'+id);kmQueue()}kmCard(v,id);const M=KM_M;if(M&&M.ready){if(typeof o.lat==='number')M.map.flyTo({center:[o.lon,o.lat],zoom:Math.max(M.map.getZoom(),11),duration:800});M.map.setFilter('deals-halo',['==',['get','id'],id])}}
 let KMA_T=0;$('kmQ').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(KMA_T);kmAskSmart(e.target.value)}else if(e.key==='Escape'){kmaClear();e.target.blur()}});
 $('kmQ').addEventListener('input',e=>{clearTimeout(KMA_T);if(!e.target.value.trim()){kmaClear();return}KMA_T=setTimeout(()=>kmAsk(e.target.value),450)});
 $('kmAR').addEventListener('click',e=>{if(e.target.closest('[data-kmax]')){kmaClear();$('kmQ').focus();return}const o=e.target.closest('[data-kmop]');if(o){const [v,id]=o.dataset.kmop.split('|');v==='land'?openSite(id):openStorage(id);return}
