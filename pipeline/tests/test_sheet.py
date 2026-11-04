@@ -44,5 +44,39 @@ class Sheet(unittest.TestCase):
  return {v:['P1','P2','P3','P4','P5'].every(t=>svg.includes('>'+t+'<')),brg:/[NS] \\d+°\\d\\d'\\d\\d(&quot;|") [EW]/.test(svg),cnc:svg.includes('NOT FOR CONSTRUCTION'),bn:s2.includes('BOUNDARY NEEDED'),hall:s2.includes('HALL 1')}""")
         self.assertTrue(r['v']); self.assertTrue(r['brg']); self.assertTrue(r['cnc']); self.assertTrue(r['bn']); self.assertFalse(r['hall'])
 
+    def test_tx_row_by_voltage(self):
+        r = self.js("return [69,115,138,161,230,345,500,765,null].map(shTxRow)")
+        self.assertEqual(r, [75, 100, 100, 100, 150, 175, 200, 250, 100])
+
+    def test_flood_zone_no_build(self):
+        r = self.js("return ['A','AE','AO','AH','VE','A99','X','X PROTECTED BY LEVEE','D','',null].map(shFloodNB)")
+        self.assertEqual(r, [True]*6 + [False]*5)
+
+    def test_contours_on_plane(self):
+        # z = x/10 over 0..100 ft: 2 ft interval -> straight N-S contours at x = 20..100 (z=0 edge not crossed)
+        r = self.js("""const nx=11,ny=6,G=[];for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)G.push(i);const C=shContours(G,nx,ny,0,0,10,10,2);
+ const S=shSlope(G,nx,ny,0,0,10,10);return {zs:C.map(c=>c.z),xs:C.map(c=>c.segs.every(([p,q])=>Math.abs(p[0]-c.z*10)<1e-6&&Math.abs(q[0]-c.z*10)<1e-6)),n:C[1].segs.length,s:S.mean,iv:[shInterval(12),shInterval(80)]}""")
+        self.assertEqual(r['zs'], [2, 4, 6, 8, 10]); self.assertTrue(all(r['xs'])); self.assertEqual(r['n'], 5)
+        self.assertAlmostEqual(r['s'], 10, places=6); self.assertEqual(r['iv'], [2, 10])
+
+    def test_wrap(self):
+        r = self.js("const t='Power [H] 115 kV transmission; ROW 100 ft by voltage [A] (no recorded easement) substations: Foo';return shWrap(t,40)")
+        self.assertTrue(all(len(x) <= 40 for x in r)); self.assertGreater(len(r), 2)
+        self.assertEqual(' '.join(x.strip() for x in r), 'Power [H] 115 kV transmission; ROW 100 ft by voltage [A] (no recorded easement) substations: Foo')
+
+    def test_power_and_flood_no_build_and_sheet(self):
+        # 115 kV line along y=0 (100 ft ROW) + Zone AE polygon in the NE corner; both removed from net, drawn on the sheet, panel stays in width
+        r = self.js("""const R=sq(80),tx=[{kv:115,row:shTxRow(115),L:[[-3000,0],[3000,0]],src:'HIFLD',owner:'WESTAR'}],fl=[{zone:'AE',nb:true,R:[[[300,300],[1200,300],[1200,1200],[300,1200],[300,300]]]},{zone:'X',nb:false,R:[[[-900,-900],[-500,-900],[-500,-500],[-900,-900]]]}];
+ const N={segs:tx.map(o=>[o.L[0][0],o.L[0][1],o.L[1][0],o.L[1][1],o.row/2,6,o.row,'115 kV']),polys:fl.filter(f=>f.nb).map(f=>[f.R,2])};
+ const segD=(x,y,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy)));return Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy)};
+ const nbK=(x,y)=>{for(const q of N.segs)if(segD(x,y,[q[0],q[1]],[q[2],q[3]])<q[4])return q[5];for(const [RR,k] of N.polys)if(tfIn(x,y,RR[0]))return k;return 0};const r=tfDC(R,Object.assign({},TF_DEF.land,{halls:40}),{nb:(x,y)=>nbK(x,y)>0,nbKind:nbK});
+ const G=[];for(let j=0;j<30;j++)for(let i=0;i<30;i++)G.push(1500+i*0.3+j*0.1);const topo={nx:30,ny:30,X0:-1000,Y0:-1000,dx:70,dy:70,G,src:'test DEM'};
+ const svg=tfSheet(r,{polySrc:'parcel',N,ext:{tx,flood:fl,subs:[{name:'Test Sub',kv:115,at:[100,-200]}],topo,src:{flood:'FEMA NFHL',tx:'HIFLD'},errs:{}}});
+ const T=[...svg.matchAll(/<text x="([0-9.]+)"[^>]*xml:space="preserve">([^<]*)</g)].map(m=>[+m[1],m[2].replace(/&[a-z]+;/g,'x').length]);
+ return {power:r.build.power,flood:r.build.flood,kv:svg.includes('115 kV'),fema:svg.includes('FEMA ZONE AE'),sub:svg.includes('SUB Test Sub'),topo:svg.includes('Topo [U]'),slope:/avg\s*[0-9.]+%/.test(svg)&&svg.includes('relief'),maxc:Math.max(...T.filter(t=>t[0]>900).map(t=>t[1])),fs:+(svg.match(/font-size="([0-9.]+)" fill="#333" xml:space/)||[0,0])[1]}""")
+        self.assertGreater(r['power'], 0.5); self.assertGreater(r['flood'], 5)
+        for k in ('kv', 'fema', 'sub', 'topo', 'slope'): self.assertTrue(r[k], k)
+        self.assertLessEqual(r['maxc'] * r['fs'] * 0.61, 1500 - 960 - 20)
+
 if __name__ == '__main__':
     unittest.main()

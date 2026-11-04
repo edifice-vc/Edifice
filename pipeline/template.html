@@ -1325,9 +1325,9 @@ function spNB(s,inp){const c=spCx(s),P=spProj(+s.lat,+s.lon),segs=[],polys=[];
  if(c)(c.exclusions||[]).forEach(x=>addP(x.geometry||x,3));
  const d=SP.sd&&SP.sd.sites&&SP.sd.sites[s.id];if(d&&d.geo&&(inp?inp.flood:1)!=0){addP(d.geo.sfha,2);addP(d.geo.floodway,2)}
  // public roads (OSM, ROW/2 + front setback) and NHD streams (+ buffer), fetched in the browser: kinds 4 and 5
- const X=typeof SHX!=='undefined'&&SHX[s.id];if(X&&X.roads){const sf=+((typeof TF!=='undefined'&&TF.I&&TF.I.setF)||(inp&&inp.set)||50);X.roads.forEach(o=>{const L=o.L;for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],o.row/2+sf,4,o.row,o.name])});(X.streams||[]).forEach(L=>{for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],X.streamBuf||50,5,0,'stream'])})}
+ const X=typeof SHX!=='undefined'&&SHX[s.id];if(X&&X.roads){const sf=+((typeof TF!=='undefined'&&TF.I&&TF.I.setF)||(inp&&inp.set)||50);X.roads.forEach(o=>{const L=o.L;for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],o.row/2+sf,4,o.row,o.name])});(X.streams||[]).forEach(L=>{for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],X.streamBuf||50,5,0,'stream'])});(X.tx||[]).forEach(o=>{const L=o.L,w=o.row||100;for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],w/2,6,w,(o.kv?o.kv+' kV':'transmission')])});(X.flood||[]).forEach(f=>{if(f.nb)polys.push([f.R,2])})}
  return {segs,polys}}
-// 0 = buildable, 4 = public road ROW + setback, 5 = stream buffer, 1 = easement corridor, 2 = FEMA flood, 3 = drawn exclusion
+// 0 = buildable, 4 = public road ROW + setback, 5 = stream buffer, 6 = transmission ROW, 1 = easement corridor, 2 = FEMA flood, 3 = drawn exclusion
 function spNBhit(x,y,N){if(!N)return 0;for(const q of N.segs)if(spSegD(x,y,[q[0],q[1]],[q[2],q[3]])<q[4])return q[5]||1;
  for(const [R,k] of N.polys)if(spInside(x,y,R[0])&&!R.slice(1).some(h=>spInside(x,y,h)))return k;return 0}
 function spKey(id,co){return ((co||SP.co)==='storage'?'edks_splan_':'edks_plan_')+id}
