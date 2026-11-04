@@ -32,8 +32,8 @@ COLLECTION = "parcels"
 COUNTY = {
     "McPherson": {"url": "https://services8.arcgis.com/5ehLV5DLlzhyV3k5/arcgis/rest/services/Ownership_Online_Map/FeatureServer/1",
                   "apn": ["ParcelNum", "KSPID"], "owner": ["owner", "PrimaryOwn"], "acres": ["Acres", "Area_Acres"]},
-    "Butler": {"url": "https://ww1.bucoks.com/bucogis1/rest/services/BuCoKsGIS_ParcelData_NC/MapServer/0",
-               "apn": ["PARCELNUM", "PID"], "owner": ["Owner"], "acres": ["ACRES", "Acres_1"]},
+    "Butler": {"url": "https://ww1.bucoks.com/bucogis1/rest/services/BuCoKsGIS_ParcelBoundaries_NC/MapServer/0",   # ParcelData_NC returns no geometry
+               "apn": ["PID", "PARCELNUM"], "owner": [], "acres": ["ACRES"]},
     "Lyon": {"url": "https://services8.arcgis.com/dw5aksXsLRAhbdxH/arcgis/rest/services/Lyon_County_Parcels/FeatureServer/0",
              "apn": ["FULL_PID", "PARCELNUM", "PID"], "owner": [], "acres": ["ACRES"]},
     "Franklin": {"url": "https://services1.arcgis.com/Cdr6tOjJ99MjOR6x/arcgis/rest/services/Appraiser_Parcel_Search_WFL1/FeatureServer/4",
@@ -42,8 +42,8 @@ COUNTY = {
                 "apn": ["PIN", "QUICKREFID"], "owner": [], "acres": ["ACRES"]},
     "Montgomery": {"url": "https://services8.arcgis.com/NlV1tPHJ1eShmjwO/arcgis/rest/services/MontgomeryCountyKS_BeaconUpdated/FeatureServer/2",
                    "apn": ["ParcelID", "KSPID"], "owner": ["OwnerName"], "acres": ["GIS_Acres", "Def_Acres"]},
-    "Saline": {"url": "https://services8.arcgis.com/cD0H9S6X6JRTzQnb/arcgis/rest/services/Parcels/FeatureServer/0",   # City of Salina: geometry only
-               "apn": [], "owner": [], "acres": []},
+    "Saline": {"url": "https://services2.arcgis.com/cuBVqVP04yYSBGZ9/arcgis/rest/services/Parcels_1/FeatureServer/0",   # Saline County (sacoks) county-wide; replaces City of Salina geometry-only layer
+               "apn": ["Name", "PARCNUM", "PID"], "owner": ["OWNERNAME"], "acres": ["CLACRE", "Calc_Acre"]},
     "Sedgwick": {"url": "https://services7.arcgis.com/McLat6HlPl45bNBv/arcgis/rest/services/Sedgwick_County_Land_Records/FeatureServer/4",
                  "apn": ["PIN", "AIN", "GEOCODE"], "owner": [], "acres": ["ParcAcresC"]},
     "Finney": {"url": "https://utility.arcgis.com/usrsvcs/servers/9e3691d1d0e64182aa19dac298b6c7f8/rest/services/FinneyCountyAppraisers/Parcels/MapServer/0",
@@ -54,6 +54,18 @@ COUNTY = {
                 "apn": ["PARCELNUMBER", "PID"], "owner": ["owner1"], "acres": ["SYSCALACRES"]},
     "Ford": {"url": "https://services7.arcgis.com/QfD34vvHtHcH5kGh/arcgis/rest/services/FOCO_Parcel_Mosaic/FeatureServer/0",   # public AGOL mosaic 2025-08-28
              "apn": ["ParcelID", "QuickRefID"], "owner": ["OWNER"], "acres": ["Acres"]},
+    "Cloud": {"url": "https://services9.arcgis.com/yGerJCngvNpaN2km/arcgis/rest/services/CloudCoKS_ParcelsOpenRecords/FeatureServer/0",   # county open-records layer, verified 2026-11-04
+              "apn": ["PropertyNu", "PID", "QuickRefID"], "owner": ["PartyName", "PrimaryOwn"], "acres": ["ACRES", "LegalAcres"]},
+    "Wyandotte": {"url": "https://gisweb.wycokck.org/arcgis/rest/services/GISPUB/Parcel_Polygons/FeatureServer/0",   # Unified Government GISPUB, geometry + parcel no. only
+                  "apn": ["PARCEL", "PARCEL_NBR"], "owner": [], "acres": ["ACRE"]},
+    "Geary": {"url": "https://services6.arcgis.com/FV7KF2rCsQjt0P3e/arcgis/rest/services/GeCo_Parcel_Ownership/FeatureServer/0",   # Geary County (gecoks) AGOL
+              "apn": ["PIN19", "PIN", "QuickRefID"], "owner": ["OWNERNAME"], "acres": ["Acreage", "TOTACRES"]},
+    "Leavenworth": {"url": "https://services9.arcgis.com/YvdlPN5z971EmeG3/arcgis/rest/services/Parcel_Boundaries/FeatureServer/0",   # Leavenworth County (lvcoks)
+                    "apn": ["FULL_PID", "PID"], "owner": ["OwnerName"], "acres": ["ACRES"]},
+    "Cowley": {"url": "https://services2.arcgis.com/duYcbdxVVOdnGdbq/arcgis/rest/services/Parcels/FeatureServer/0",   # Cowley KSPIDs 018-
+               "apn": ["KSPID", "PIN"], "owner": ["OwnerName", "PartyName"], "acres": ["AREA_ACRES", "Acreage"]},
+    "Linn": {"url": "https://services3.arcgis.com/TKhOZbXZBgxGSTZN/arcgis/rest/services/Secure_Ownership_WFL1/FeatureServer/0",   # Linn County KS ownership
+             "apn": ["PARCEL_CAM", "PropertyNu"], "owner": ["PartyName"], "acres": ["Acres"]},
     "Sumner": {"url": "https://services6.arcgis.com/1T9VnnU2vFIMRmpS/arcgis/rest/services/SU_Parcels/FeatureServer/0",
                "apn": ["PARCELNUM", "PID"], "owner": [], "acres": ["GIS_Acres"]},
 }
@@ -275,7 +287,8 @@ def push(a):
     import edks
     from google.cloud import firestore
     data = json.load(open(OUT)); client = edks.db(); plan = []
-    ids = [s for s, r in data.items() if r.get("src") != "none"]
+    ids = [s for s, r in data.items() if r.get("src") != "none" and not r.get("flag")   # flagged = failed accuracy check, held for review
+           and (not getattr(a, "only", None) or s in a.only)]
     refs = [client.collection(COLLECTION).document(s) for s in ids]; have = {}
     for k in range(0, len(refs), 100):
         for s in client.get_all(refs[k:k + 100]): have[s.id] = (s.to_dict() or {}).get("h") if s.exists else None
@@ -299,5 +312,5 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); sp = ap.add_subparsers(dest="cmd", required=True)
     s = sp.add_parser("stage"); s.add_argument("--only", nargs="*"); s.add_argument("--refresh", action="store_true"); s.add_argument("--no-zoneomics", action="store_true")
     sp.add_parser("deals")
-    p = sp.add_parser("push"); p.add_argument("--apply", action="store_true")
+    p = sp.add_parser("push"); p.add_argument("--apply", action="store_true"); p.add_argument("--only", nargs="*")
     a = ap.parse_args(); sys.path.insert(0, HERE); {"deals": deals, "stage": stage, "push": push}[a.cmd](a)

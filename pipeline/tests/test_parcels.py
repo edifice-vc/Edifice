@@ -33,3 +33,9 @@ def test_max_neighbors_nearest_first():
 def test_doc_hash_stable():
     rec = {"src": "s", "deal": {"apn": "1"}, "neighbors": [], "radius_m": 402, "county": "T", "extra": 1}
     assert P.doc_of(rec) == P.doc_of(dict(rec, extra=2))
+
+
+def test_wyandotte_geary_sources_registered():
+    import parcels
+    assert "wycokck.org" in parcels.COUNTY["Wyandotte"]["url"]
+    assert parcels.COUNTY["Geary"]["owner"] == ["OWNERNAME"]
