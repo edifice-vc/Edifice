@@ -1318,15 +1318,17 @@ const spCx=s=>(s&&SP.cx[s.id])||null;
 // no-build geometry in the site's local ft frame: easement segments [ax,ay,bx,by,half,label] and polygons [[outer,...holes],kind]
 function spNB(s,inp){const c=spCx(s),P=spProj(+s.lat,+s.lon),segs=[],polys=[];
  if(c)(c.easements||[]).forEach(e=>{const T=SP_ET[e.type]||SP_ET.ue,w=e.width_ft!=null&&e.width_ft!==''?+e.width_ft:T[1],sb=e.setback_ft!=null&&e.setback_ft!==''?+e.setback_ft:T[2],g=e.geometry||{};
-  (g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]).forEach(L=>{for(let i=1;i<L.length;i++){const a=P.f(L[i-1]),b=P.f(L[i]);segs.push([a[0],a[1],b[0],b[1],w/2+sb])}});
+  (g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]).forEach(L=>{for(let i=1;i<L.length;i++){const a=P.f(L[i-1]),b=P.f(L[i]);segs.push([a[0],a[1],b[0],b[1],w/2+sb,1,w,(e.label||e.type||'')+(e.holder?' · '+e.holder:'')+' '+w+"' wide"])}});
   // traced easement polygon (full recorded width): the whole polygon is hard no-build, plus the setback from its edges
   (g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[]).forEach(r=>{const RR=r.map(R=>R.map(P.f));polys.push([RR,1]);if(sb>0)RR.forEach(R=>{for(let i=1;i<R.length;i++)segs.push([R[i-1][0],R[i-1][1],R[i][0],R[i][1],sb])})})});
  const addP=(g,k)=>{if(!g)return;(g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[]).forEach(r=>polys.push([r.map(R=>R.map(P.f)),k]))};
  if(c)(c.exclusions||[]).forEach(x=>addP(x.geometry||x,3));
  const d=SP.sd&&SP.sd.sites&&SP.sd.sites[s.id];if(d&&d.geo&&(inp?inp.flood:1)!=0){addP(d.geo.sfha,2);addP(d.geo.floodway,2)}
+ // public roads (OSM, ROW/2 + front setback) and NHD streams (+ buffer), fetched in the browser: kinds 4 and 5
+ const X=typeof SHX!=='undefined'&&SHX[s.id];if(X&&X.roads){const sf=+((typeof TF!=='undefined'&&TF.I&&TF.I.setF)||(inp&&inp.set)||50);X.roads.forEach(o=>{const L=o.L;for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],o.row/2+sf,4,o.row,o.name])});(X.streams||[]).forEach(L=>{for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],X.streamBuf||50,5,0,'stream'])});(X.tx||[]).forEach(o=>{const L=o.L,w=o.row||100;for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],w/2,6,w,(o.kv?o.kv+' kV':'transmission')])});(X.flood||[]).forEach(f=>{if(f.nb)polys.push([f.R,2])})}
  return {segs,polys}}
-// 0 = buildable, 1 = easement corridor, 2 = FEMA flood, 3 = drawn exclusion
-function spNBhit(x,y,N){if(!N)return 0;for(const q of N.segs)if(spSegD(x,y,[q[0],q[1]],[q[2],q[3]])<q[4])return 1;
+// 0 = buildable, 4 = public road ROW + setback, 5 = stream buffer, 6 = transmission ROW, 1 = easement corridor, 2 = FEMA flood, 3 = drawn exclusion
+function spNBhit(x,y,N){if(!N)return 0;for(const q of N.segs)if(spSegD(x,y,[q[0],q[1]],[q[2],q[3]])<q[4])return q[5]||1;
  for(const [R,k] of N.polys)if(spInside(x,y,R[0])&&!R.slice(1).some(h=>spInside(x,y,h)))return k;return 0}
 function spKey(id,co){return ((co||SP.co)==='storage'?'edks_splan_':'edks_plan_')+id}
 function spLoad(id){try{return JSON.parse(localStorage.getItem(spKey(id))||'null')}catch(e){return null}}
@@ -2070,9 +2072,9 @@ function cvOffset(Q,D){const n=Q.length-1;if(n<3)return null;let sa=0;for(let i=
  for(let i=0;i<n;i++){const a=Q[i],b=Q[i+1],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l*sg,ny=dx/l*sg,d=D[i]||0;Ls.push([[a[0]+nx*d,a[1]+ny*d],[dx,dy]])}
  const P=[];for(let i=0;i<n;i++){const [p,u]=Ls[(i+n-1)%n],[q,v]=Ls[i],cr=u[0]*v[1]-u[1]*v[0];if(Math.abs(cr)<1e-6){P.push(q);continue}const t=((q[0]-p[0])*v[1]-(q[1]-p[1])*v[0])/cr;P.push([p[0]+u[0]*t,p[1]+u[1]*t])}P.push(P[0]);return P}
 // buildable-area accounting on a lattice (rotated frame). C from tfCtx; extra: rects to deduct (pond). returns acres by category
-function cvBuildable(C,nbKind,pond){const [x0,y0,x1,y1]=C.bb,st=Math.max(8,Math.sqrt(C.A)/140),o={gross:0,row:0,setback:0,easement:0,flood:0,excl:0,pond:0,net:0};
+function cvBuildable(C,nbKind,pond){const [x0,y0,x1,y1]=C.bb,st=Math.max(8,Math.sqrt(C.A)/140),o={gross:0,row:0,road:0,setback:0,easement:0,stream:0,power:0,flood:0,excl:0,pond:0,net:0};
  for(let y=y0+st/2;y<y1;y+=st)for(let x=x0+st/2;x<x1;x+=st){if(!tfIn(x,y,C.Q))continue;o.gross++;const e=C.edgeAt(x,y);
-  if(e&&e.inRow){o.row++;continue}const k=nbKind?nbKind(...C.un([x,y])):0;if(k===2){o.flood++;continue}if(k===1){o.easement++;continue}if(k===3){o.excl++;continue}
+  if(e&&e.inRow){o.row++;continue}const k=nbKind?nbKind(...C.un([x,y])):0;if(k===2){o.flood++;continue}if(k===1){o.easement++;continue}if(k===3){o.excl++;continue}if(k===4){o.road++;continue}if(k===5){o.stream++;continue}if(k===6){o.power++;continue}
   if(e&&e.inSet){o.setback++;continue}if(pond&&x>=pond[0]&&x<=pond[0]+pond[2]&&y>=pond[1]&&y<=pond[1]+pond[3]){o.pond++;continue}o.net++}
  const f=C.A/43560/Math.max(1,o.gross);for(const k in o)o[k]=o[k]*f;return o}
 // ---- phasing. targets from tgtMW + phases, or phMW "50,100" (cumulative increments). basis 'fac' (utility MW) or 'it'
@@ -2091,6 +2093,137 @@ const CV_CHECK=[['cover','Cover sheet & site data table','computed','Parcel area
  ['faa','Height & FAA Part 77','computed','Zoning limit vs Part 77 notice (77.9) and obstruction surfaces (77.19) from FAA NASR runways; filing is via FAA OE/AAA Form 7460-1'],
  ['esc','Erosion control / NPDES (KDHE)','estimated','Disturbed acres, KDHE construction general permit NOI (≥1 ac, KEIMS) + SWP3, sediment basin 3,600 cf/ac drained. Needs SWP3 by qualified preparer'],
  ['phase','Phasing plan (data centers)','computed','Per-phase halls, IT/facility MW, acres, detention, roads and utility corridors vs grid cap']];
+
+// ---- Site plan sheet (civil-style, light ground). Land first: boundary -> setbacks -> water/flood -> infrastructure -> developable acres; buildings only inside net developable.
+// Local plane units are feet (x east, y north). Pure helpers first (unit-tested), renderer after.
+function shBearing(a,b){const dx=b[0]-a[0],dy=b[1]-a[1];let az=Math.atan2(dx,dy)*180/Math.PI;if(az<0)az+=360;
+ const ns=az<=90||az>=270?'N':'S',ew=az<180?'E':'W';let q=ns==='N'?(ew==='E'?az:360-az):(ew==='E'?180-az:az-180);
+ let d=Math.floor(q),m=Math.floor((q-d)*60),s=Math.round(((q-d)*60-m)*60);if(s===60){s=0;m++}if(m===60){m=0;d++}
+ return {az,txt:ns+' '+d+'°'+String(m).padStart(2,'0')+"'"+String(s).padStart(2,'0')+'" '+ew}}
+function shDist(a,b){return Math.hypot(b[0]-a[0],b[1]-a[1])}
+// courses of a ring (closed or open): [{n,from,to,a,b,brg,dist}]
+function shCourses(R){const P=shOpen(R),n=P.length,C=[];for(let i=0;i<n;i++){const a=P[i],b=P[(i+1)%n];C.push({n:i+1,from:i+1,to:(i+1)%n+1,a,b,brg:shBearing(a,b).txt,dist:shDist(a,b)})}return C}
+function shOpen(R){const P=(R||[]).slice();if(P.length>1){const a=P[0],b=P[P.length-1];if(Math.abs(a[0]-b[0])<1e-9&&Math.abs(a[1]-b[1])<1e-9)P.pop()}
+ // drop consecutive duplicates
+ return P.filter((p,i)=>!i||Math.abs(p[0]-P[i-1][0])>1e-6||Math.abs(p[1]-P[i-1][1])>1e-6)}
+// point register: unique numbered points with a description; dedupes within tol ft
+function shPoints(tol){const L=[];return {L,add(xy,desc){for(const p of L)if(shDist(p.xy,xy)<(tol||.5))return p.n;const n=L.length+1;L.push({n,xy,desc});return n}}}
+// signed area (ft2), positive = CCW
+function shArea(R){const P=shOpen(R);let s=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];s+=a[0]*b[1]-b[0]*a[1]}return s/2}
+// band polygon around segment a-b of half width w
+function shBand(a,b,w){const L=shDist(a,b)||1,nx=-(b[1]-a[1])/L*w,ny=(b[0]-a[0])/L*w;return [[a[0]+nx,a[1]+ny],[b[0]+nx,b[1]+ny],[b[0]-nx,b[1]-ny],[a[0]-nx,a[1]-ny]]}
+// segment intersection point or null
+function shX(a,b,c,d){const r=[b[0]-a[0],b[1]-a[1]],s=[d[0]-c[0],d[1]-c[1]],den=r[0]*s[1]-r[1]*s[0];if(Math.abs(den)<1e-12)return null;
+ const t=((c[0]-a[0])*s[1]-(c[1]-a[1])*s[0])/den,u=((c[0]-a[0])*r[1]-(c[1]-a[1])*r[0])/den;return t>=0&&t<=1&&u>=0&&u<=1?[a[0]+t*r[0],a[1]+t*r[1]]:null}
+// where polylines cross the ring: access / crossing points
+function shCross(R,lines){const P=shOpen(R),o=[];for(const Ln of lines)for(let i=1;i<Ln.length;i++)for(let j=0;j<P.length;j++){const x=shX(Ln[i-1],Ln[i],P[j],P[(j+1)%P.length]);if(x)o.push(x)}return o}
+// nice graphic-scale length (ft) for ~target ft
+function shNice(t){const p=Math.pow(10,Math.floor(Math.log10(t))),m=t/p;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p}
+function shFt(v){return Math.round(v).toLocaleString('en-US')+"'"}
+// OSM highway class -> assumed ROW width ft (KDOT/county typical) [A]
+const SH_ROW={motorway:300,trunk:150,primary:100,secondary:80,tertiary:70,unclassified:60,residential:60,road:60};
+function shRow(hw){return SH_ROW[hw]||null}
+// transmission voltage (kV) -> assumed ROW / clearance width ft [A] (typical utility easement widths; replace with the recorded easement)
+const SH_TX=[[99,75],[161,100],[230,150],[345,175],[500,200]];
+function shTxRow(kv){kv=+kv;if(!(kv>0))return 100;for(const [v,w] of SH_TX)if(kv<=v)return w;return 250}
+// FEMA flood zone counts as no-build: SFHA (A, AE, AH, AO, AR, A1-30, A99, V, VE); X / D do not
+function shFloodNB(z){return /^(A|AE|AH|AO|AR|A99|A\d{1,2}|V|VE|V\d{1,2})$/i.test(String(z||'').trim().replace(/^ZONE\s+/i,''))}
+// contour interval by relief within the parcel: flat ground 2 ft, otherwise 10 ft
+function shInterval(relief){return relief<=40?2:10}
+// marching squares on a row-major grid G[j*nx+i] at (X0+i*dx, Y0+j*dy); returns [{z,segs:[[p,q],..]}]
+function shContours(G,nx,ny,X0,Y0,dx,dy,iv){let lo=Infinity,hi=-Infinity;G.forEach(v=>{if(v!=null&&isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}});const out=[];if(!isFinite(lo)||!(iv>0))return out;
+ for(let z=Math.ceil(lo/iv)*iv;z<=hi;z+=iv){const segs=[];for(let j=0;j<ny-1;j++)for(let i=0;i<nx-1;i++){const c=[[i,j],[i+1,j],[i+1,j+1],[i,j+1]].map(([a,b])=>[X0+a*dx,Y0+b*dy,G[b*nx+a]]);if(c.some(p=>p[2]==null||!isFinite(p[2])))continue;
+  const q=[];for(let k=0;k<4;k++){const A=c[k],B=c[(k+1)%4];if((A[2]<z)!==(B[2]<z)){const t=(z-A[2])/(B[2]-A[2]);q.push([A[0]+t*(B[0]-A[0]),A[1]+t*(B[1]-A[1])])}}
+  if(q.length===2)segs.push(q);else if(q.length===4)segs.push([q[0],q[1]],[q[2],q[3]])}if(segs.length)out.push({z:Math.round(z*100)/100,segs})}return out}
+// slope % stats (central differences) over grid cells passing keep(x,y)
+function shSlope(G,nx,ny,X0,Y0,dx,dy,keep){let s=0,n=0,mx=0,lo=Infinity,hi=-Infinity;for(let j=1;j<ny-1;j++)for(let i=1;i<nx-1;i++){const x=X0+i*dx,y=Y0+j*dy;if(keep&&!keep(x,y))continue;const v=G[j*nx+i];if(v==null)continue;lo=Math.min(lo,v);hi=Math.max(hi,v);
+  const gx=(G[j*nx+i+1]-G[j*nx+i-1])/(2*dx),gy=(G[(j+1)*nx+i]-G[(j-1)*nx+i])/(2*dy);if(!isFinite(gx+gy))continue;const p=Math.hypot(gx,gy)*100;s+=p;n++;mx=Math.max(mx,p)}return n?{mean:s/n,max:mx,lo,hi,relief:hi-lo}:null}
+// wrap monospace text to n chars (continuation lines indented 2)
+function shWrap(t,n){t=String(t);if(t.length<=n)return [t];const o=[];let cur=t;while(cur.length>n){let k=cur.lastIndexOf(' ',n);if(k<n*.5)k=n;o.push(cur.slice(0,k).replace(/\s+$/,''));cur='  '+cur.slice(k).replace(/^\s+/,'')}if(cur.trim())o.push(cur);return o}
+
+// ---- renderer. meta: {s, P (spProj), ext:{roads,streams}, N (spNB), polySrc, zone, src}
+function tfSheet(r,meta,W,H){meta=meta||{};W=W||1500;H=H||960;const C=r.C,un=C.un,R=shOpen(C.Q.map(un)),E=r.E||{},Z=meta.zone||{},esc2=v=>String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+ const MW=Math.round(W*.64),TB=54,MH=H-TB;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});
+ const pad=Math.max(x1-x0,y1-y0)*.12+80;x0-=pad;y0-=pad;x1+=pad;y1+=pad;const sc=Math.min((MW-40)/(x1-x0),(MH-40)/(y1-y0)),ox=20+((MW-40)-(x1-x0)*sc)/2,oy=20+((MH-40)-(y1-y0)*sc)/2;
+ const X=x=>ox+(x-x0)*sc,Y=y=>oy+(y1-y)*sc,pts=a=>a.map(p=>X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)).join(' '),poly=(a,st)=>`<polygon points="${pts(a)}" ${st}/>`,pl=(a,st)=>`<polyline points="${pts(a)}" fill="none" ${st}/>`;
+ const rc=Rr=>{const [x,y,w,h]=Rr;return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(un)},txt=(x,y,t,o)=>`<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" ${o||''}>${esc2(t)}</text>`;
+ const PT=shPoints(1),ink='#1d1d1b',F='font-family="JetBrains Mono,monospace"',g=[],lab=[];
+ const defs=`<defs><pattern id="hP" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(30)"><line x1="0" y1="0" x2="0" y2="9" stroke="#7b2cbf" stroke-width="1"/></pattern><pattern id="hE" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#d62728" stroke-width="1.4"/></pattern><pattern id="hW" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><line x1="0" y1="0" x2="0" y2="6" stroke="#1f6fd1" stroke-width="1.1"/></pattern><pattern id="hX" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0L8 8M8 0L0 8" stroke="#8a5a00" stroke-width=".8"/></pattern><clipPath id="shClip"><rect x="0" y="0" width="${MW}" height="${MH}"/></clipPath></defs>`;
+ const vis=p=>p[0]>x0&&p[0]<x1&&p[1]>y0&&p[1]<y1,spIn2=(x,y,P)=>{let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
+ // 1 boundary (points first so parcel corners are P1..Pn)
+ const BC=R.map((p,i)=>PT.add(p,r.boundaryNeeded?'Assumed corner (no parcel)':'Parcel boundary corner'));
+ // 1b topo contours (DEM) under everything; index contours every 5th interval labeled
+ const ext0=meta.ext||{},T=ext0.topo;let topoS=null,topoIv=null;if(T&&T.G&&T.G.length===T.nx*T.ny){topoS=shSlope(T.G,T.nx,T.ny,T.X0,T.Y0,T.dx,T.dy,(x,y)=>spIn2(x,y,R));if(topoS){topoIv=shInterval(topoS.relief);
+  shContours(T.G,T.nx,T.ny,T.X0,T.Y0,T.dx,T.dy,topoIv).forEach(({z,segs})=>{const idx=Math.abs(Math.round(z/topoIv))%5===0;g.push(`<path d="${segs.map(([p,q])=>'M'+X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)+'L'+X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)).join('')}" fill="none" stroke="#a0805a" stroke-width="${idx?1:.45}" stroke-opacity="${idx?.85:.6}"/>`);
+   if(idx){const m=segs[Math.floor(segs.length/2)][0];if(vis(m))lab.push(txt(X(m[0]),Y(m[1])-2,Math.round(z)+"'",`${F} font-size="8" fill="#7a5c36" stroke="#fbfaf6" stroke-width="2.5" paint-order="stroke"`))}})}}
+ // 2 water / flood / exclusions from the no-build set (local unrotated ft)
+ const N=meta.N||{segs:[],polys:[]};
+ (N.polys||[]).forEach(([RR,k])=>{const c=k===2?'#1f6fd1':k===3?'#8a5a00':'#d62728';g.push(poly(RR[0],`fill="url(#${k===2?'hW':k===3?'hX':'hE'})" stroke="${c}" stroke-width="1"`))});
+ const ext=ext0,cl=[];
+ (ext.streams||[]).forEach(L=>{L.forEach((p,i)=>{if(i)g.push(poly(shBand(L[i-1],p,ext.streamBuf||50),'fill="url(#hW)" stroke="none"'))});g.push(pl(L,'stroke="#1f6fd1" stroke-width="2.2"'));const e=[L[0],L[L.length-1]];e.forEach(p=>{if(vis(p))PT.add(p,'Stream (NHD) end / buffer limit')})});
+ (ext.flood||[]).forEach(f=>{if(!f.nb)return;const r0=f.R[0]||[];if(!r0.length)return;let cx=0,cy=0;r0.forEach(p=>{cx+=p[0];cy+=p[1]});cx/=r0.length;cy/=r0.length;const inP=r0.filter(p=>vis(p)&&spIn2(p[0],p[1],R));const at=vis([cx,cy])?[cx,cy]:inP[0];if(at)lab.push(txt(X(at[0]),Y(at[1]),'FEMA ZONE '+f.zone+(f.bfe!=null?' BFE '+f.bfe:''),`${F} font-size="9.5" fill="#174f99" font-weight="bold" text-anchor="middle" stroke="#fbfaf6" stroke-width="2.5" paint-order="stroke"`))});
+ // 2b transmission lines with assumed ROW band [A]; substations
+ (ext.tx||[]).forEach(o=>{const w=o.row||100;o.L.forEach((p,i)=>{if(i)g.push(poly(shBand(o.L[i-1],p,w/2),'fill="url(#hP)" fill-opacity=".55" stroke="none"'))});g.push(pl(o.L,'stroke="#7b2cbf" stroke-width="1.8" stroke-dasharray="14 4 2 4"'));
+  const VL=o.L.filter(vis),m=VL[Math.floor(VL.length/2)];if(m)lab.push(txt(X(m[0])+5,Y(m[1])+12,(o.kv?o.kv+' kV':'TRANSMISSION')+' '+(o.owner?o.owner.slice(0,24)+' ':'')+'('+w+"' ROW [A])",`${F} font-size="9.5" fill="#5a189a" font-weight="bold" stroke="#fbfaf6" stroke-width="2.5" paint-order="stroke"`))});
+ shCross(R,(ext.tx||[]).map(o=>o.L)).forEach(p=>PT.add(p,'Transmission line at boundary'));
+ (ext.subs||[]).forEach(o=>{if(o.R)g.push(poly(o.R,'fill="#e9d8fd" stroke="#5a189a" stroke-width="1"'));const p=o.at;if(!vis(p))return;lab.push(`<rect x="${X(p[0])-5}" y="${Y(p[1])-5}" width="10" height="10" fill="#7b2cbf" stroke="#fff"/>`+txt(X(p[0])+8,Y(p[1])+4,'SUB '+(o.name||'').slice(0,26)+(o.kv?' '+o.kv+' kV':''),`${F} font-size="9.5" fill="#5a189a" font-weight="bold"`));PT.add(p,'Substation (OSM)')});
+ // 3 infrastructure: roads with ROW band, easements as hatched bands
+ (ext.roads||[]).forEach(o=>{const w=o.row||60;o.L.forEach((p,i)=>{if(i)g.push(poly(shBand(o.L[i-1],p,w/2),'fill="#cfcac0" stroke="none"'))});g.push(pl(o.L,'stroke="#fff" stroke-width="1" stroke-dasharray="10 8"'));cl.push(o.L);
+  const m=o.L[Math.floor(o.L.length/2)];if(vis(m)&&o.name)lab.push(txt(X(m[0])+4,Y(m[1])-4,o.name.toUpperCase()+' ('+w+"' ROW)",`${F} font-size="10" fill="#555"`))});
+ (N.segs||[]).filter(q=>(q[5]||1)===1).forEach(q=>{const a=[q[0],q[1]],b=[q[2],q[3]];g.push(poly(shBand(a,b,q[6]!=null?q[6]/2:q[4]),'fill="url(#hE)" stroke="#d62728" stroke-width=".8"'));if(vis(a))PT.add(a,'Easement end'+(q[7]?' · '+q[7]:''));if(vis(b))PT.add(b,'Easement end'+(q[7]?' · '+q[7]:''))});
+ const eL=(meta.easeLab||[]);eL.forEach(e=>{if(vis(e.at))lab.push(txt(X(e.at[0])+6,Y(e.at[1])+12,e.t,`${F} font-size="10" fill="#a01818"`))});
+ // boundary line + vertices
+ g.push(poly(R,`fill="${meta.polySrc==='square'?'none':'rgba(255,255,255,.0)'}" stroke="${ink}" stroke-width="2.4" ${meta.polySrc==='square'?'stroke-dasharray="12 6"':''}`));
+ const CO=shCourses(R),per=CO.reduce((a,c)=>a+c.dist,0),many=CO.length>10;
+ CO.forEach(c=>{const mx=(c.a[0]+c.b[0])/2,my=(c.a[1]+c.b[1])/2;let an=Math.atan2(-(c.b[1]-c.a[1]),c.b[0]-c.a[0])*180/Math.PI;if(an>90)an-=180;if(an<-90)an+=180;
+  const short=c.dist*sc<150;lab.push(`<text ${F} font-size="10" fill="${ink}" text-anchor="middle" transform="translate(${X(mx).toFixed(1)},${Y(my).toFixed(1)}) rotate(${an.toFixed(1)}) translate(0,-6)">${esc2(many||short?'L'+c.n:c.brg+'  '+c.dist.toFixed(2)+"'")}</text>`)});
+ // setbacks: dashed ring + per-edge dimension
+ if(C.setRing&&C.setRing.length>2){const S=shOpen(C.setRing.map(un));g.push(poly(S,'fill="none" stroke="#b8860b" stroke-width="1.3" stroke-dasharray="8 5"'));S.forEach(p=>PT.add(p,'Setback line corner'))}
+ if(C.rowRing&&C.rowRing.length>2)g.push(poly(C.rowRing.map(un),'fill="none" stroke="#c0392b" stroke-width="1" stroke-dasharray="3 3"'));
+ C.edges.forEach(([a,b,s,h,k])=>{if(!(s>0))return;const A=un(a),B=un(b),L=shDist(A,B);if(L*sc<60)return;const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2,cx=(x0+x1)/2,cy=(y0+y1)/2;let nx=-(B[1]-A[1])/L,ny=(B[0]-A[0])/L;if(nx*(cx-mx)+ny*(cy-my)<0){nx=-nx;ny=-ny}
+  const P2=[mx+nx*s,my+ny*s];lab.push(`<line x1="${X(mx)}" y1="${Y(my)}" x2="${X(P2[0])}" y2="${Y(P2[1])}" stroke="#b8860b" stroke-width=".8" marker-end="url(#ar)" marker-start="url(#ar)"/>`+txt(X(P2[0])+3,Y(P2[1])+11,Math.round(s)+"' "+String(k.kind||'').toUpperCase()+' SETBACK',`${F} font-size="9.5" fill="#8a6100"`))});
+ // access points where roads touch / cross the boundary
+ const AX=shCross(R,cl);AX.forEach((p,i)=>{const n=PT.add(p,'Access / road crossing at boundary');lab.push(`<path d="M${X(p[0])-6},${Y(p[1])}l6,-9l6,9z" fill="#F14B21"/>`+txt(X(p[0])+8,Y(p[1])+3,'ACCESS '+(i+1),`${F} font-size="9.5" fill="#b83a14" font-weight="bold"`))});
+ // 4 detention pond as a basin with contour rings
+ if(r.pond){const Q=rc(r.pond),[px,py,pw,ph]=r.pond;g.push(poly(Q,'fill="#a9cfe8" stroke="#1f4e79" stroke-width="1.2"'));for(let i=1;i<=3;i++){const d=Math.min(pw,ph)*.11*i;if(pw-2*d>4&&ph-2*d>4)g.push(poly(rc([px+d,py+d,pw-2*d,ph-2*d]),'fill="none" stroke="#1f4e79" stroke-width=".6" stroke-dasharray="4 3"'))}
+  Q.forEach(p=>PT.add(p,'Detention pond top-of-bank corner'));const c=un([px+pw/2,py+ph/2]);lab.push(txt(X(c[0]),Y(c[1]),'DETENTION BASIN',`${F} font-size="10" fill="#0d3557" text-anchor="middle" font-weight="bold"`)+txt(X(c[0]),Y(c[1])+12,(r.sw?r.sw.Vac.toFixed(2)+' ac-ft req · ':'')+(pw*ph/43560).toFixed(2)+' ac',`${F} font-size="9.5" fill="#0d3557" text-anchor="middle"`))}
+ // 5 buildings (only when a real boundary exists)
+ const BS=[],bld=(Rr,fill,name,ph)=>{const Q=rc(Rr);g.push(poly(Q,`fill="${fill}" fill-opacity=".85" stroke="${ink}" stroke-width=".9"`));const ns=Q.map(p=>PT.add(p,name+' corner'));const c=un([Rr[0]+Rr[2]/2,Rr[1]+Rr[3]/2]);
+  if(Rr[2]*sc>40&&Rr[3]*sc>14)lab.push(txt(X(c[0]),Y(c[1])+3,name+' '+Math.round(Rr[2])+"'×"+Math.round(Rr[3])+"'",`${F} font-size="${Math.min(10,Math.max(7,Rr[3]*sc/3))}" fill="#111" text-anchor="middle"`));BS.push([name,Math.round(Rr[2])+"×"+Math.round(Rr[3]),Math.round(Rr[2]*Rr[3]),ph||'',ns[0]+'–'+ns[3]])};
+ if(!r.boundaryNeeded){if(r.co==='land'){r.halls.forEach((h,i)=>{bld(h.hall,TF_PH[(r.phase[i]-1)%8],'HALL '+(i+1),'P'+r.phase[i]);if(h.gen)bld(h.gen,'#9a9a9a','YARD '+(i+1),'P'+r.phase[i])});if(r.sub)bld(r.sub,'#ffd23f','SUBSTATION','P1');if(r.park)bld(r.park,'#bdbdbd','PARKING','P1')}
+  else{if(r.mu)bld(r.mu,'#F14B21','CLIMATE-CTRL','');r.du.forEach((d,i)=>bld(d,'#f2b45a','DRIVE-UP '+(i+1),''));if(r.office)bld(r.office,'#ffffff','OFFICE','');r.rv.forEach((d,i)=>bld(d,'#7da7d9','RV/BOAT '+(i+1),''))}}
+ // vertex markers on top
+ const vx=PT.L.map(p=>{const b=p.n<=BC.length;return `<circle cx="${X(p.xy[0]).toFixed(1)}" cy="${Y(p.xy[1]).toFixed(1)}" r="${b?3.2:1.8}" fill="${b?ink:'#fff'}" stroke="${ink}" stroke-width=".8"/>`+(b||PT.L.length<160?txt(X(p.xy[0])+4,Y(p.xy[1])-4,(b?'P':'')+p.n,`${F} font-size="${b?10:7.5}" fill="${b?ink:'#444'}"${b?' font-weight="bold"':''}`):'')}).join('');
+ if(r.boundaryNeeded)lab.push(`<rect x="${MW/2-230}" y="${MH/2-34}" width="460" height="68" fill="#fff" stroke="#F14B21" stroke-width="2"/>`+txt(MW/2,MH/2-6,'BOUNDARY NEEDED',`font-family="Jost,sans-serif" font-size="22" fill="#F14B21" text-anchor="middle"`)+txt(MW/2,MH/2+16,'No parcel polygon on file · dashed square = '+(r.site/43560).toFixed(2)+' ac around the pin · no buildings placed',`${F} font-size="9.5" fill="#333" text-anchor="middle"`));
+ // furniture: north arrow, graphic scale
+ const nb=shNice((x1-x0)/5),sx=30,sy=MH-26;let fur=`<g ${F} font-size="9" fill="${ink}"><rect x="${sx}" y="${sy}" width="${nb*sc/2}" height="5" fill="${ink}"/><rect x="${sx+nb*sc/2}" y="${sy}" width="${nb*sc/2}" height="5" fill="#fff" stroke="${ink}" stroke-width=".8"/>${txt(sx,sy+16,'0')}${txt(sx+nb*sc/2-6,sy+16,String(nb/2))}${txt(sx+nb*sc-8,sy+16,nb+' ft')}${txt(sx+nb*sc+16,sy+16,'GRAPHIC SCALE  1" ≈ '+Math.round(96/sc)+' ft @ 96 dpi')}</g>`;
+ fur+=`<g transform="translate(${MW-50},56)"><path d="M0,-30L10,10L0,2L-10,10Z" fill="${ink}"/><text ${F} font-size="14" text-anchor="middle" y="-34" fill="${ink}">N</text></g>`;
+ // right panel
+ const b=r.build||{},AC=v=>v==null||!isFinite(v)?'—':v.toFixed(2),zt=(v,u)=>v==null?null:v+(u||''),tag=(v,t)=>v==null?'[A]':'['+t+']',lines=[];
+ const H1=t=>lines.push(['h',t]),Ln=t=>lines.push(['t',t]);
+ H1(((meta.s&&meta.s.name)||'Site')+' · SHEET C-1 · CONCEPT SITE PLAN');Ln('Parcel '+((meta.apn)||'—')+' · '+(meta.polySrc==='square'?'NO BOUNDARY ON FILE':'boundary '+(meta.bsrc||'GIS'))+' · '+((r.site||0)/43560).toFixed(2)+' ac gross');
+ H1('DEVELOPABLE LAND BUDGET (ac)');[['Gross parcel',b.gross],['− ROW dedication',b.row],['− Public road ROW + setback',b.road],['− Setbacks & buffers',b.setback],['− Easements',b.easement],['− Streams + buffer (NHD)',b.stream],['− Transmission ROW [A]',b.power],['− Floodplain FEMA A/AE',b.flood],['− Other no-build',b.excl],['− Detention',b.pond],['= NET DEVELOPABLE',b.net]].forEach(([l,v])=>Ln(l.padEnd(30,'.')+AC(v).padStart(8)));
+ H1('ZONING / SITE DATA');Ln('[Z]oneomics [C]ounty GIS [F]EMA NFHL [N]HD [T]IGER [H]IFLD [O]SM [U]SGS 3DEP [A]ssumed');
+ Ln('District '+(Z.district||'—')+' '+(Z.has?'[Z]':'[A]')+' · use '+(Z.use||'not stated')+' '+(Z.use?'[Z]':'[A]'));
+ Ln('Setbacks F/S/R '+(E.setF)+'/'+(E.setS)+'/'+(E.setR)+' ft '+(Z.front!=null?'[Z]':'[A]'));Ln('Max height '+(E.maxH===''||E.maxH==null?'—':E.maxH+' ft')+' '+tag(Z.maxH,'Z')+' · coverage '+(zt(Z.cov,'%')||'—')+' '+tag(Z.cov,'Z')+' · FAR '+(Z.far==null?'—':Z.far)+' '+tag(Z.far,'Z'));
+ Ln('Boundary '+(meta.polySrc==='square'?'[A] square at pin':'[C] '+(meta.bsrc||'county GIS')));Ln('Roads '+((ext.roads||[]).length?((ext.roads||[]).some(o=>o.src==='TIGER')?'[T] Census TIGER centerlines':'[O] OSM centerlines')+((ext.roads||[]).some(o=>o.rail)?' + rail':'')+', ROW by class [A]':'none found / not loaded'));const SR=ext.src||{},ER=ext.errs||{};Ln('Streams '+((ext.streams||[]).length?'[N] '+(SR.streams||'NHD')+', '+(ext.streamBuf||50)+"' buffer each side [A]":ER.streams?'NOT LOADED ('+ER.streams.slice(0,60)+')':'none mapped ('+(SR.streams||'NHD')+')'));
+ const TX=ext.tx||[];Ln('Power '+(TX.length?'['+(TX.some(o=>o.src==='HIFLD')?'H':'O')+'] '+[...new Set(TX.map(o=>o.kv?o.kv+' kV':'? kV'))].join(', ')+' transmission; ROW '+[...new Set(TX.map(o=>o.row))].join('/')+"' by voltage [A] (no recorded easement)":ER.tx?'NOT LOADED ('+ER.tx.slice(0,60)+')':'no transmission within 600 ft [H]')+((ext.subs||[]).length?' · substations: '+ext.subs.map(o=>o.name+(o.kv?' '+o.kv+' kV':'')).slice(0,3).join('; ')+' [O]':''));
+ const FZ=[...new Set((ext.flood||[]).map(f=>f.zone))].filter(Boolean);Ln('Flood '+(FZ.length?'[F] '+(SR.flood||'FEMA NFHL')+' zones '+FZ.join(', ')+(b.flood>0?' · '+AC(b.flood)+' ac A/AE on parcel = no-build':' · none in SFHA on parcel'):ER.flood?'NOT LOADED ('+ER.flood.slice(0,60)+')':b.flood>0?'[F] FEMA NFHL SFHA/floodway':'[F] no SFHA within 600 ft'));
+ Ln('Topo '+(topoS?'[U] '+(T.src||'USGS 3DEP')+' · '+topoIv+"' contours (index every "+topoIv*5+"') · elev "+Math.round(topoS.lo)+'–'+Math.round(topoS.hi)+" ft, relief "+Math.round(topoS.relief)+" ft · slope avg "+topoS.mean.toFixed(1)+'% max '+topoS.max.toFixed(1)+'%'+(topoS.max>15?' · steep areas >15% need grading review':topoS.mean<1?' · flat: confirm positive drainage (min 1%)':''):ER.topo?'NOT LOADED ('+ER.topo.slice(0,60)+')':'DEM not loaded'));Ln('Impervious '+(r.sw?(r.sw.imp*100).toFixed(1)+'%':'—')+' · detention '+(r.sw?r.sw.Vac.toFixed(2)+' ac-ft req [A] TR-55':'—'));
+ if(BS.length){H1('BUILDING SCHEDULE');Ln('ID'.padEnd(14)+'Size ft'.padEnd(11)+'SF'.padStart(9)+'  Ph  Pts');BS.slice(0,14).forEach(q=>Ln(q[0].padEnd(14)+q[1].padEnd(11)+q[2].toLocaleString('en-US').padStart(9)+'  '+String(q[3]).padEnd(4)+q[4]));if(BS.length>14)Ln('… '+(BS.length-14)+' more (Points CSV)');
+  Ln(r.co==='land'?'Total '+(r.k.it||0).toFixed(1)+' MW IT · '+(r.k.fac||0).toFixed(1)+' MW facility':'Total '+Math.round(r.nrsf||0).toLocaleString('en-US')+' NRSF')}
+ H1('BOUNDARY COURSES');CO.slice(0,many?18:12).forEach(c=>Ln(('L'+c.n).padEnd(5)+('P'+c.from+'→P'+c.to).padEnd(10)+c.brg.padEnd(17)+(c.dist.toFixed(2)+"'").padStart(11)));if(CO.length>(many?18:12))Ln('… '+(CO.length-(many?18:12))+' more (Points CSV)');Ln('Perimeter '+shFt(per)+' · closure from GIS polygon');
+ H1('POINT TABLE (lat, lon WGS84)');const PB=meta.P?p=>meta.P.b(p):null;PT.L.slice(0,22).forEach(p=>{const ll=PB?PB(p.xy):null;Ln(String(p.n).padEnd(4)+(ll?ll[1].toFixed(6)+', '+ll[0].toFixed(6):'').padEnd(24)+p.desc.slice(0,26))});if(PT.L.length>22)Ln('… '+(PT.L.length-22)+' more points (Points CSV)');
+ // wrap to the panel width; shrink the font if the panel would overflow the map height
+ let fs=9.2,WL=[];for(let it=0;it<6;it++){const n=Math.floor((W-MW-24)/(fs*.61)),nh=Math.floor((W-MW-24)/(fs*1.14*.61));WL=[];lines.forEach(([k,t])=>shWrap(t,k==='h'?nh:n).forEach(u=>WL.push([k,u])));const h=20+WL.reduce((a,[k])=>a+(k==='h'?fs*1.85:fs*1.36),0);if(h<=MH-6||fs<6.6)break;fs=Math.max(6.5,fs*(MH-6)/h*.99)}
+ let ty=20;const pan=WL.map(([k,t])=>{ty+=k==='h'?fs*1.85:fs*1.36;return txt(MW+14,ty,t,k==='h'?`${F} font-size="${(fs*1.14).toFixed(2)}" font-weight="bold" fill="${ink}" xml:space="preserve"`:`${F} font-size="${fs.toFixed(2)}" fill="#333" xml:space="preserve"`)}).join('');
+ const now=new Date().toISOString().slice(0,10),tb=`<rect x="0" y="${MH}" width="${W}" height="${TB}" fill="#fff" stroke="${ink}"/><text x="14" y="${MH+22}" font-family="Jost,sans-serif" font-size="17" font-weight="300" fill="${ink}">${esc2((r.co==='storage'?'EVERSTOW':'TERRAFICE')+'  |  '+((meta.s&&meta.s.name)||''))}</text>`+txt(14,MH+42,`SHEET C-1 · ${now} · ${((r.site||0)/43560).toFixed(2)} AC${r.co==='land'&&!r.boundaryNeeded?' · '+(r.k.it||0).toFixed(1)+' MW IT':''} · APN ${meta.apn||'—'}`,`${F} font-size="10" fill="#333"`)+txt(W-14,MH+32,'CONCEPTUAL — NOT FOR CONSTRUCTION · NOT A SURVEY',`${F} font-size="12" fill="#F14B21" text-anchor="end" font-weight="bold"`);
+ const leg=[['#cfcac0','Public road ROW'],['url(#hE)','Easement'],['url(#hW)','Stream / FEMA A,AE'],['url(#hP)','Transmission ROW'],['#a9cfe8','Detention'],['none','Setback (dashed)'],['#a0805a','Contour']].map(([c,t],i)=>`<rect x="${30+i*112}" y="${MH-52}" width="12" height="9" fill="${c}" stroke="${ink}" stroke-width=".5"/>`+txt(46+i*112,MH-44,t,`${F} font-size="9" fill="${ink}"`)).join('');
+ tfSheet._last=PT.L;
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" style="background:#fbfaf6;display:block">${defs.replace('</defs>','<marker id="ar" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0L6,3L0,6z" fill="#b8860b"/></marker></defs>')}<rect x="0" y="0" width="${MW}" height="${MH}" fill="#fbfaf6" stroke="${ink}"/><g clip-path="url(#shClip)">${g.join('')}${lab.join('')}${vx}</g>${fur}${leg}<line x1="${MW}" y1="0" x2="${MW}" y2="${MH}" stroke="${ink}"/>${pan}${tb}</svg>`}
+// CSV of every numbered point (for the export button)
+function shPointsCsv(r,meta){const s=tfSheetPts(r,meta);return 'point,description,lat,lon,x_ft,y_ft\n'+s.map(p=>{const ll=meta.P?meta.P.b(p.xy):[NaN,NaN];return [p.n,'"'+p.desc+'"',ll[1].toFixed(7),ll[0].toFixed(7),p.xy[0].toFixed(2),p.xy[1].toFixed(2)].join(',')}).join('\n')}
+function tfSheetPts(r,meta){tfSheet(r,meta);return tfSheet._last||[]}
 
 // ---- Site Plan deal list: deals enter ONLY by an explicit "Add to Site Plan" (no stage/score auto-add). Stored per browser.
 const TFL_K='edks_sp_in';
@@ -2118,11 +2251,11 @@ function tfCtxFor(s){const P=spProj(+s.lat,+s.lon),R=SP.poly.map(P.f),N=spNB(s,S
 const CVS={};
 function cvCtx(s,P,R){const c=CVS[s.id]||cvCache(s.id)||{},pf=typeof CV_REF!=='undefined'&&CV_REF.noaa?cvAtlas(+s.lat,+s.lon):null,o={pf,pfSrc:'NOAA Atlas 14 vol. 8 (PFDS, '+(CV_REF&&CV_REF.noaa?'0.5° grid, bilinear':'n/a')+')',hsg:c.hsg||null,hsgSrc:c.hsgSrc||'',dem:c.dem||null};
  if(o.dem){const C=R&&R.length?R:null;o.demStats=cvDemStats(o.dem,C?(x,y)=>tfIn(x,y,C):null)}if(!CVS[s.id]&&!c.dem)cvLoad(s,P,R);return o}
-function cvCache(id){try{const j=JSON.parse(localStorage.getItem('edks_cv_'+id)||'null');if(j&&j.v===1&&Date.now()-j.ts<90*864e5){CVS[id]=j;return j}}catch(e){}return null}
+function cvCache(id){try{const j=JSON.parse(localStorage.getItem('edks_cv_'+id)||'null');if(j&&j.v===2&&Date.now()-j.ts<90*864e5){CVS[id]=j;return j}}catch(e){}return null}
 function cvLow(s){const c=CVS[s.id];if(!c||!c.dem)return null;const st=cvDemStats(c.dem,c.R?(x,y)=>tfIn(x,y,c.R):null);return st?st.lo:null}
 function cvFAAfor(s,P,R){const c=CVS[s.id]||{},g=c.dem?cvDemStats(c.dem).mean:null;if(g==null||typeof CV_REF==='undefined')return null;const pts=R.slice(0,-1).map(p=>{const b=P.b(p);return [b[1],b[0]]});return cvFAA(pts,g,CV_REF.faa.airports)}
 async function cvLoad(s,P,R){if(CVS[s.id])return;CVS[s.id]={loading:1};let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});
- const n=11,dx=(x1-x0)/(n-1),dy=(y1-y0)/(n-1),pts=[];for(let j=0;j<n;j++)for(let i=0;i<n;i++)pts.push(P.b([x0+i*dx,y0+j*dy]));const o={v:1,ts:Date.now(),R};
+ const n=11,dx=(x1-x0)/(n-1),dy=(y1-y0)/(n-1),pts=[];for(let j=0;j<n;j++)for(let i=0;i<n;i++)pts.push(P.b([x0+i*dx,y0+j*dy]));const o={v:2,ts:Date.now(),R};
  try{const g=JSON.stringify({points:pts,spatialReference:{wkid:4326}}),u='https://elevation.nationalmap.gov/arcgis/rest/services/3DEPElevation/ImageServer/getSamples?geometryType=esriGeometryMultipoint&returnFirstValueOnly=true&f=json&geometry='+encodeURIComponent(g);
   const j=await (await fetch(u)).json(),z=new Array(n*n).fill(null);(j.samples||[]).forEach(q=>{z[q.locationId]=+q.value*3.28084});const ok=z.filter(v=>v!=null&&isFinite(v)),m=ok.reduce((a,b)=>a+b,0)/Math.max(1,ok.length);
   if(ok.length>n)o.dem={x0,y0,dx,dy,nx:n,ny:n,z:z.map(v=>v==null||!isFinite(v)?m:v),src:'USGS 3DEP 1/3 arc-second (ImageServer getSamples, 11×11)'}}catch(e){o.demErr=String(e.message||e)}
@@ -2139,14 +2272,64 @@ function tfMount(s){const host=$('viewPlan');let el=$('tfX');if(!el){el=document
   TF.I=Object.assign({},TF_DEF[co],SP.inp.tf||{},p||{});if(co==='land'&&!p){const ge=spGridEst(s),cap=SP.inp.gridOv!==''&&SP.inp.gridOv!=null?+SP.inp.gridOv:ge.mw;if(cap>0)TF.I.halls=Math.max(1,Math.ceil(cap/TF.I.pue/TF.I.hallMW))}
   el.innerHTML=`<div class="tfhd"><h3>Configurator <span class="lbl mono">live solve · TestFit-style</span></h3>${add}</div><div class="tfbadges" id="tfBadges"></div>
   <div class="tfgrid"><aside class="tfin" id="tfIn"></aside><div class="tfmid"><div class="tfkpi" id="tfKpi"></div><div class="tfplan" id="tfPlan"></div><div id="tfChk"></div><div id="tfCiv"></div>
-  <div class="btns"><button class="tbtn" type="button" id="tfGen">Generate options</button><button class="tbtn" type="button" id="tfSave">Save scheme</button><button class="tbtn" type="button" id="tfPng">Export PNG</button><button class="tbtn" type="button" id="tfGeo">GeoJSON</button><button class="tbtn" type="button" id="tfDxf">DXF</button><button class="tbtn" type="button" id="tfRep">Civil report</button><span class="lbl mono" id="tfMsg"></span></div>
+  <div class="btns"><button class="tbtn" type="button" id="tfGen">Generate options</button><button class="tbtn" type="button" id="tfSave">Save scheme</button><button class="tbtn" type="button" id="tfPng">Export PNG</button><button class="tbtn" type="button" id="tfGeo">GeoJSON</button><button class="tbtn" type="button" id="tfDxf">DXF</button><button class="tbtn" type="button" id="tfPts">Points CSV</button><button class="tbtn" type="button" id="tfRep">Civil report</button><span class="lbl mono" id="tfMsg"></span></div>
   <div id="tfOpts"></div><div id="tfCmp"></div></div>
   <aside class="tfchat"><div class="lbl mono">Chat to modify <span id="tfEng"></span></div><div class="tflog" id="tfLog"></div><form id="tfF"><input id="tfQ" class="inp mono" autocomplete="off" placeholder="e.g. add a second hall · setbacks to 100 ft"><button class="tbtn" type="submit">Send</button><button class="tbtn" type="button" id="tfUndo">Undo</button></form></aside></div>`;tfForm()}
  else{const a=el.querySelector('.tfadd');if(a)a.outerHTML=add}
  Promise.resolve(spxZn(s)).then(()=>{if(spSite()===s)tfRun()})}
 function tfForm(){const co=SP.co,I=TF.I;$('tfIn').innerHTML=TF_SL[co].map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,a,b,st])=>`<label class="tfsl"><span>${l}</span><input type="range" data-tf="${k}" min="${a}" max="${b}" step="${st}" value="${esc(I[k])}"><input class="inp mono" type="number" data-tf="${k}" step="${st}" value="${esc(I[k])}"></label>`).join('')}</div>`).join('')+
  (co==='land'?`<div class="spsec"><div class="lbl mono">Phased MW</div><label class="spf"><span>Per-phase MW (e.g. 50, 100)</span><input class="inp mono" data-tft="phMW" value="${esc(I.phMW||'')}" placeholder="blank = target ÷ phases"></label></div>`:'')+`<div class="spsec"><div class="lbl mono">Options</div>${TF_SEL[co].map(([k,l,O])=>`<label class="spf"><span>${l}</span><select class="inp mono" data-tf="${k}">${O.map(o=>{const [v,t]=Array.isArray(o)?o:[o,o];return `<option value="${v}"${String(I[k])===v?' selected':''}>${t}</option>`}).join('')}</select></label>`).join('')}</div>`}
-function tfRun(){const s=spSite();if(!s||!TF.I)return;const {P,R,ctx}=tfCtxFor(s),r=tfSolve(SP.co,R,TF.I,ctx);TF.r=r;TF.P=P;TF.ctx=ctx;try{localStorage.setItem(tfK(s),JSON.stringify(TF.I))}catch(e){}tfOut(s,r);tfDraw(r)}
+// ---- land layer from public APIs, fetched in the browser and cached in localStorage 30 days (nothing written to Firestore):
+// OSM public roads (Overpass) with class-based ROW [A], NHD flowlines (USGS) with a 50 ft buffer [A]
+const SHX={};
+function shxKey(id){return 'edks_shx_'+id}
+// fetch with timeout + retries (public GIS services are flaky); returns parsed JSON or throws
+async function shxGet(u,o,tries,ms){let err;for(let i=0;i<(tries||2);i++){try{const ac=new AbortController(),t=setTimeout(()=>ac.abort(),ms||20000);const r=await fetch(u,Object.assign({signal:ac.signal},o||{}));clearTimeout(t);if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();if(j&&j.error)throw new Error((j.error.message||'service error')+'');return j}catch(e){err=e;await new Promise(z=>setTimeout(z,800*(i+1)))}}throw err}
+// first source that answers wins: [[label,url,opts],...] -> {j,src}
+async function shxAny(L,tries,ms){const errs=[];for(const [src,u,o] of L){try{return {j:await shxGet(u,o,tries,ms),src}}catch(e){errs.push(src+': '+(e.name==='AbortError'?'timeout':e.message||e))}}throw new Error(errs.join('; '))}
+// DEM from AWS Terrain Tiles (terrarium, sourced from USGS 3DEP in the US): decode PNG tiles in a canvas and resample onto an nx x ny local-ft grid
+async function shxDem(P,X0,Y0,X1,Y1,nx){const ll0=P.b([X0,Y0]),ll1=P.b([X1,Y1]),z=15,n=2**z,tx=lon=>(lon+180)/360*n,ty=lat=>{const r=lat*Math.PI/180;return (1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n};
+ const ta=Math.floor(tx(ll0[0])),tb=Math.floor(tx(ll1[0])),tc=Math.floor(ty(ll1[1])),td=Math.floor(ty(ll0[1]));if((tb-ta+1)*(td-tc+1)>36)throw new Error('area too large for DEM tiles');const T={};
+ await Promise.all([].concat(...Array.from({length:tb-ta+1},(_,i)=>Array.from({length:td-tc+1},(_,j)=>[ta+i,tc+j]))).map(async([x,y])=>{const r=await fetch(`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`);if(!r.ok)throw new Error('tile '+r.status);const bm=await createImageBitmap(await r.blob()),c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.drawImage(bm,0,0);T[x+'/'+y]=g.getImageData(0,0,256,256).data}));
+ const ny=Math.max(2,Math.round(nx*(Y1-Y0)/(X1-X0))),dx=(X1-X0)/(nx-1),dy=(Y1-Y0)/(ny-1),G=[];
+ for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const ll=P.b([X0+i*dx,Y0+j*dy]),fx=tx(ll[0]),fy=ty(ll[1]),X=Math.floor(fx),Y=Math.floor(fy),d=T[X+'/'+Y];if(!d){G.push(null);continue}const px=Math.min(255,Math.floor((fx-X)*256)),py=Math.min(255,Math.floor((fy-Y)*256)),k=(py*256+px)*4;G.push(Math.round(((d[k]*256+d[k+1]+d[k+2]/256)-32768)*3.28084*10)/10)}
+ return {nx,ny,X0,Y0,dx,dy,G,src:'USGS 3DEP via AWS Terrain Tiles (z15 ≈ 4 m)'}}
+async function shxLoad(s,P,R){if(SHX[s.id])return;SHX[s.id]={loading:1};try{const j=JSON.parse(localStorage.getItem(shxKey(s.id))||'null'),age=j?Date.now()-j.ts:1e15;
+  // 30-day cache; a source that failed is retried after 6 h
+  if(j&&j.v===3&&j.n===R.length&&age<30*864e5&&!(j.errs&&Object.keys(j.errs).length&&age>6*36e5)){SHX[s.id]=j;return}}catch(e){}
+ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});const m=600,a=P.b([x0-m,y0-m]),b=P.b([x1+m,y1+m]),o={v:3,ts:Date.now(),n:R.length,roads:[],streams:[],streamBuf:50,tx:[],subs:[],flood:[],topo:null,src:{},errs:{}};
+ const bb=[a[0],a[1],b[0],b[1]].join(','),env='geometry='+bb+'&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&f=geojson',seen=new Set(),rd=p=>[Math.round(p[0]*10)/10,Math.round(p[1]*10)/10],
+  geoms=(f,want)=>{const g=f.geometry||{};return want==='line'?(g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]):(g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[])},
+  tline=(f,fn)=>geoms(f,'line').forEach(L=>fn(L.map(p=>rd(P.f(p))))),ovp=async q=>(await shxAny(['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'].map(u=>['OSM',u,{method:'POST',body:'data='+encodeURIComponent(q)}]),1,25000)).j,fail=(k,e)=>{o.errs[k]=String(e.message||e).slice(0,300)};
+ const TG='https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Transportation/MapServer/';
+ await Promise.all([
+ // 1 public roads + rail: Census TIGERweb first; OSM Overpass only if TIGER fails. ROW by class (TIGER MTFCC) - typical [A], verify on the plat.
+ (async()=>{try{for(const L of [2,8]){const d=await shxGet(TG+L+'/query?'+env+'&outFields=NAME,MTFCC');(d.features||[]).forEach(f=>{const q=f.properties||{},mt=q.MTFCC||'',row=mt==='S1100'?150:mt==='S1200'?100:mt==='S1630'?80:/^S1(400|640|730|740)$/.test(mt)?60:0;if(!row)return;
+   tline(f,Lf=>{const k=(q.NAME||'')+Lf[0].map(Math.round).join();if(seen.has(k))return;seen.add(k);o.roads.push({name:q.NAME||'',hw:mt,row,L:Lf,src:'TIGER'})})})}
+  o.src.roads='TIGER'}catch(e){fail('roads','TIGER: '+(e.message||e))}
+  try{const d=await shxGet(TG+'9/query?'+env+'&outFields=NAME,MTFCC');(d.features||[]).forEach(f=>tline(f,Lf=>o.roads.push({name:((f.properties||{}).NAME||'Railroad'),hw:'rail',rail:1,row:100,L:Lf,src:'TIGER'})))}catch(e){fail('rail','TIGER rail: '+(e.message||e))}
+  if(!o.roads.length&&o.errs.roads)try{const d=await ovp(`[out:json][timeout:25];way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|road)$"](${a[1]},${a[0]},${b[1]},${b[0]});out geom;`);
+   o.roads=(d.elements||[]).filter(w=>w.geometry).map(w=>({name:(w.tags||{}).name||(w.tags||{}).ref||'',hw:(w.tags||{}).highway,row:shRow((w.tags||{}).highway)||60,L:w.geometry.map(g=>rd(P.f([g.lon,g.lat]))),src:'OSM'}));o.src.roads='OSM';delete o.errs.roads}catch(e){fail('roads',o.errs.roads+'; '+(e.message||e))}})(),
+ // 2 streams: USGS NHD (retried) -> Esri Living Atlas NHDPlus V2.1 flowlines -> USA Detailed Streams
+ (async()=>{try{const {j,src}=await shxAny([['USGS NHD','https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/6/query?'+env+'&outFields=gnis_name'],['NHDPlus V2.1 (Living Atlas)','https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/NHDPlusV21/FeatureServer/2/query?'+env+'&outFields=GNIS_NAME'],['USA Detailed Streams (Living Atlas)','https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Detailed_Streams/FeatureServer/0/query?'+env+'&outFields=Name']],2,15000);
+  (j.features||[]).forEach(f=>tline(f,L=>o.streams.push(L)));o.src.streams=src}catch(e){fail('streams',e)}})(),
+ // 3 transmission lines: HIFLD (public FeatureServer) -> OSM power=line; substations: OSM power=substation (HIFLD substations are no longer public)
+ (async()=>{try{const {j}=await shxAny([['HIFLD','https://services1.arcgis.com/Hp6G80Pky0om7QvQ/arcgis/rest/services/Electric_Power_Transmission_Lines/FeatureServer/0/query?'+env+'&outFields=VOLTAGE,VOLT_CLASS,OWNER,ID']],2,20000);
+  (j.features||[]).forEach(f=>{const q=f.properties||{},kv=+q.VOLTAGE>0?+q.VOLTAGE:null;tline(f,L=>o.tx.push({kv,cls:q.VOLT_CLASS||'',owner:q.OWNER&&q.OWNER!=='NOT AVAILABLE'?q.OWNER:'',row:shTxRow(kv),L,src:'HIFLD'}))});o.src.tx='HIFLD'}catch(e){fail('tx','HIFLD: '+(e.message||e))}
+  try{const d=await ovp(`[out:json][timeout:25];(${o.tx.length?'':`way["power"="line"](${a[1]},${a[0]},${b[1]},${b[0]});`}nwr["power"="substation"](${a[1]},${a[0]},${b[1]},${b[0]}););out geom;`);
+   (d.elements||[]).forEach(w=>{const t=w.tags||{};if(t.power==='line'&&w.geometry){const kv=t.voltage?Math.round(+String(t.voltage).split(';')[0]/1000):null;o.tx.push({kv,cls:'',owner:t.operator||'',row:shTxRow(kv),L:w.geometry.map(g=>rd(P.f([g.lon,g.lat]))),src:'OSM'});o.src.tx=o.src.tx||'OSM'}
+    else if(t.power==='substation'){const G=w.geometry||(w.lat?[{lat:w.lat,lon:w.lon}]:w.bounds?[{lat:(w.bounds.minlat+w.bounds.maxlat)/2,lon:(w.bounds.minlon+w.bounds.maxlon)/2}]:[]);if(!G.length)return;const xy=G.map(g=>P.f([g.lon,g.lat]));o.subs.push({name:t.name||t.operator||'Substation',kv:t.voltage?Math.round(+String(t.voltage).split(';')[0]/1000):null,R:xy.length>2?xy.map(rd):null,at:rd([xy.reduce((s,p)=>s+p[0],0)/xy.length,xy.reduce((s,p)=>s+p[1],0)/xy.length]),src:'OSM'})}});o.src.subs='OSM'}catch(e){fail('subs','OSM: '+(e.message||e))}})(),
+ // 4 FEMA NFHL flood hazard zones (layer 28) -> Living Atlas USA Flood Hazard (same NFHL attributes)
+ (async()=>{try{const {j,src}=await shxAny([['FEMA NFHL','https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query?'+env+'&outFields=FLD_ZONE,ZONE_SUBTY,SFHA_TF,STATIC_BFE,DFIRM_ID'],['FEMA NFHL (Living Atlas)','https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0/query?'+env+'&outFields=FLD_ZONE,ZONE_SUBTY,SFHA_TF,STATIC_BFE,DFIRM_ID']],2,25000);
+  (j.features||[]).forEach(f=>{const q=f.properties||{};geoms(f,'poly').forEach(rings=>o.flood.push({zone:q.FLD_ZONE||'',sub:q.ZONE_SUBTY||'',bfe:q.STATIC_BFE>-9000?q.STATIC_BFE:null,firm:q.DFIRM_ID||'',nb:shFloodNB(q.FLD_ZONE),R:rings.map(r=>r.map(p=>rd(P.f(p))))}))});o.src.flood=src}catch(e){fail('flood',e)}})(),
+ // 5 topo: DEM grid over the parcel + 150 ft
+ (async()=>{try{o.topo=await shxDem(P,x0-150,y0-150,x1+150,y1+150,Math.min(110,Math.max(40,Math.round((x1-x0)/30))));o.src.topo=o.topo.src}catch(e){fail('topo',e)}})()]);
+ SHX[s.id]=o;try{localStorage.setItem(shxKey(s.id),JSON.stringify(o))}catch(e){try{const o2=Object.assign({},o,{topo:null});localStorage.setItem(shxKey(s.id),JSON.stringify(o2))}catch(e2){}}if(spSite()===s)tfRun()}
+function shMeta(s){const c=typeof spCx==='function'?spCx(s):null,P=TF.P||spProj(+s.lat,+s.lon),X=SHX[s.id]||{};
+ return {s,P,N:spNB(s,SP.inp),ext:X,polySrc:SP.polySrc,zone:TF.ctx&&TF.ctx.zone,apn:(c&&c.parcel_apn)||(s.parcels||[]).join('; ')||'',bsrc:(c&&c.parcel_src)||(SP.polySrc==='drawn'?'drawn in app':'parcel GIS')}}
+function tfRun(){const s=spSite();if(!s||!TF.I)return;const {P,R,ctx}=tfCtxFor(s);shxLoad(s,P,R);const noB=SP.polySrc==='square',r=tfSolve(SP.co,R,noB?Object.assign({},TF.I,{halls:0}):TF.I,ctx);if(noB)tfStrip(r);TF.r=r;TF.P=P;TF.ctx=ctx;try{localStorage.setItem(tfK(s),JSON.stringify(TF.I))}catch(e){}tfOut(s,r);tfDraw(r)}
+// no real parcel polygon: land analysis only, never a building layout
+function tfStrip(r){r.boundaryNeeded=true;r.pond=null;if(r.co==='land'){r.halls=[];r.sub=null;r.park=null;r.n=0;if(r.k){r.k.it=0;r.k.fac=0}}else{r.mu=null;r.du=[];r.office=null;r.rv=[];if(r.k)for(const k in r.k)if(typeof r.k[k]==='number'&&k!=='site')r.k[k]=0}r.bind='Boundary needed';r.warn=(r.warn||[]).concat([{k:'boundary',t:'BOUNDARY NEEDED: no parcel polygon on file; no buildings placed'}])}
 function tfFmt(v,d){return v==null?'—':spN(v,d)}
 function tfOut(s,r){const co=SP.co,Z=r&&TF.ctx.zone,E=r.E;
  const bd=[];if(Z&&Z.has)bd.push(`<span class="spbadge">ZONING ${esc(Z.district||'')}</span>`);else bd.push('<span class="spbadge spest">ZONING: NO DATA · DEFAULTS</span>');
@@ -2156,7 +2339,7 @@ function tfOut(s,r){const co=SP.co,Z=r&&TF.ctx.zone,E=r.E;
  $('tfKpi').innerHTML=TF_KPI[co].map(([k,l,d])=>`<div class="tfk"><div class="lbl mono">${l}</div><b class="mono">${tfFmt(r.k[k],d)}</b></div>`).join('')+`<div class="tfk"><div class="lbl mono">Binding</div><b class="mono">${esc(r.bind)}</b></div>`;
  const ph=co==='land'?`<div class="lbl mono">Phasing ${r.phMW.map((m,i)=>'P'+(i+1)+' '+spN(m,1)+' MW').join(' · ')} · height ${r.height} ft · ${r.n}/${r.want} halls placed${r.capIT!=null?' · cap '+spN(r.capIT,1)+' MW IT':''}</div>`:`<div class="lbl mono">Mix ${r.mix.map(([k,n])=>k+' '+n).join(' · ')} · avg ${spN(r.avg)} sf · CC ${r.stories} storeys</div>`;
  $('tfChk').innerHTML=ph+r.circ.concat(r.warn.filter(w=>w.k!=='use'&&w.k!=='height').map(w=>({ok:false,t:w.t}))).map(c=>`<div class="lbl mono ${c.ok?'':'tfbad'}">${c.ok?'OK':'CHECK'} · ${esc(c.t)}</div>`).join('');
- $('tfPlan').innerHTML=tfSvg(r,520,300)+tfLegend(r);$('tfCiv').innerHTML=cvPanel(r);$('tfEng').textContent=tfUrl()?'· AI':'· rules';tfLog();tfOptsR();tfCmpR()}
+ $('tfPlan').innerHTML=tfSheet(r,shMeta(s),1500,960);$('tfCiv').innerHTML=cvPanel(r);$('tfEng').textContent=tfUrl()?'· AI':'· rules';tfLog();tfOptsR();tfCmpR()}
 // features in lon/lat for map + exports
 function tfFeats(r){const P=TF.P,F=[],q=(R,kind,lab)=>{const [x,y,w,h]=R,c=[[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]].map(p=>P.b(r.C.un(p)));F.push({type:'Feature',properties:{kind,label:lab||kind},geometry:{type:'Polygon',coordinates:[c]}})};
  if(r.co==='land'){r.halls.forEach((h,i)=>{q(h.hall,'hall'+Math.min(8,r.phase[i]),'Hall '+(i+1)+' · P'+r.phase[i]);if(h.gen)q(h.gen,'yard','Gen/cooling yard')});if(r.sub)q(r.sub,'sub','Substation');if(r.park)q(r.park,'park','Parking '+r.stalls)}
@@ -2212,7 +2395,8 @@ function tfWire(el){const sched=()=>{cancelAnimationFrame(TF.raf);TF.raf=request
   else if(id==='tfGeo'&&TF.r)tfDl(s.id+'-plan.geojson',new Blob([JSON.stringify({type:'FeatureCollection',features:tfFeats(TF.r)})],{type:'application/geo+json'}));
   else if(id==='tfRep'&&TF.r)tfDl(s.id+'-civil-report.html',new Blob([cvReport(s,TF.r,TF.ctx)],{type:'text/html'}));
   else if(id==='tfDxf'&&TF.r)tfDl(s.id+'-plan.dxf',new Blob([tfDxf(TF.r)],{type:'application/dxf'}));
-  else if(id==='tfPng'&&TF.r){const svg=tfSvg(TF.r,1600,1000).replace('width="100%"','width="1600" height="1000"'),img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=1600;c.height=1100;const x=c.getContext('2d');x.fillStyle='#0A0A0A';x.fillRect(0,0,1600,1100);x.drawImage(img,0,0);x.fillStyle='#fff';x.font='22px JetBrains Mono, monospace';x.fillText(s.name+' · '+TF_KPI[co].map(([k,l,d])=>l+' '+tfFmt(TF.r.k[k],d)).join(' · '),20,1060);c.toBlob(b=>tfDl(s.id+'-plan.png',b))};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
+  else if(id==='tfPts'&&TF.r)tfDl(s.id+'-points.csv',new Blob([shPointsCsv(TF.r,shMeta(s))],{type:'text/csv'}));
+  else if(id==='tfPng'&&TF.r){const svg=tfSheet(TF.r,shMeta(s),1600,1000).replace('width="100%"','width="1600" height="1000"'),img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=1600;c.height=1100;const x=c.getContext('2d');x.fillStyle='#0A0A0A';x.fillRect(0,0,1600,1100);x.drawImage(img,0,0);x.fillStyle='#fff';x.font='22px JetBrains Mono, monospace';x.fillText(s.name+' · '+TF_KPI[co].map(([k,l,d])=>l+' '+tfFmt(TF.r.k[k],d)).join(' · '),20,1060);c.toBlob(b=>tfDl(s.id+'-plan.png',b))};img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
   const a=e.target.closest('[data-tfa]');if(a){TF.undo.push(Object.assign({},TF.I));TF.I=Object.assign({},TF.opts[+a.dataset.tfa].p);tfForm();tfRun()}})}
 const spRunTF0=spRun;spRun=function(){spRunTF0();tfMount(spSite())};
 
@@ -2220,7 +2404,7 @@ const spRunTF0=spRun;spRun=function(){spRunTF0();tfMount(spSite())};
 function tfLegend(r){const it=[['#ffd23f','setback line'],['#ff4d4d','ROW dedication'],['#9ad','utility easement / buffer'],[TF_COL.pond,'detention pond']];if(r.co==='land'&&r.rows)r.rows.forEach(w=>it.push([TF_PH[(w.k-1)%8],'Phase '+w.k]));
  return `<div class="lbl mono" style="display:flex;flex-wrap:wrap;gap:10px;margin:4px 0">${it.map(([c,t])=>`<span><i style="display:inline-block;width:10px;height:10px;background:${c};margin-right:4px"></i>${esc(t)}</span>`).join('')}</div>`}
 function cvTables(r,ctx){const sw=r.sw,b=r.build,h=r.hgt,g=r.grade,N=(v,d)=>v==null||!isFinite(v)?'—':spN(v,d),cf=v=>N(v,0)+' cf ('+N(v/43560,2)+' ac-ft)',T=[];
- T.push(['Buildable area',`<table class="tftab"><tbody>${[['Gross parcel',b.gross],['ROW dedication',-b.row],['Setbacks & buffers',-b.setback],['Easements',-b.easement],['Floodplain',-b.flood],['Other no-build',-b.excl],['Detention pond',-b.pond],['Net buildable',b.net]].map(([l,v])=>`<tr><td>${l}</td><td class="mono">${N(v,2)} ac</td></tr>`).join('')}</tbody></table>`,'computed']);
+ T.push(['Buildable area',`<table class="tftab"><tbody>${[['Gross parcel',b.gross],['ROW dedication',-b.row],['Public road / rail ROW + setback',-(b.road||0)],['Setbacks & buffers',-b.setback],['Easements',-b.easement],['Streams + buffer (NHD)',-(b.stream||0)],['Transmission ROW [A]',-(b.power||0)],['Floodplain (FEMA A/AE)',-b.flood],['Other no-build',-b.excl],['Detention pond',-b.pond],['Net buildable',b.net]].map(([l,v])=>`<tr><td>${l}</td><td class="mono">${N(v,2)} ac</td></tr>`).join('')}</tbody></table>`,'computed']);
  if(sw)T.push(['Stormwater detention',`<div class="lbl mono">${esc(sw.ruleT)} · HSG ${esc(Object.entries(sw.hsg).map(([k,v])=>k+' '+Math.round(v*100)+'%').join(' / '))}${sw.hsgAssumed?' (assumed: no SSURGO yet)':''} · impervious ${N(sw.imp*100,1)}% · CN pre ${N(sw.CNpre,0)} → post ${N(sw.CNpost,0)} · C ${N(sw.Cpre,2)} → ${N(sw.Cpost,2)} · Tc ${N(sw.tcPre,0)}/${N(sw.tcPost,0)} min</div>
  <table class="tftab"><thead><tr><th>Storm</th><th>24-h P in</th><th>Q pre cfs</th><th>Q post cfs</th><th>Allowed cfs</th><th>Runoff in</th><th>Storage</th></tr></thead><tbody>${sw.rows.map(w=>`<tr><td>${w.ari}-yr</td><td class="mono">${N(w.P24,2)}</td><td class="mono">${N(w.Qpre,1)}</td><td class="mono">${N(w.Qpost,1)}</td><td class="mono">${w.Qa==null?'—':N(w.Qa,1)}</td><td class="mono">${N(w.Qdin,2)}</td><td class="mono">${cf(w.Vs)}</td></tr>`).join('')}</tbody></table>
  <div class="lbl mono">Required ${cf(sw.V)} (${sw.gov||'—'}-yr governs) · water quality ${cf(sw.WQv)} · design ${cf(sw.Vdes)}${r.pd?` · pond ${N(r.pd.bw,0)}×${N(r.pd.bl,0)} ft bottom, ${r.pd.D} ft live + ${r.pd.fb} ft freeboard, ${r.pd.z}:1 slopes → footprint ${N(r.pd.ac,2)} ac${r.pond?'':' · DOES NOT FIT'}`:''}</div>`,'estimated']);
@@ -2237,7 +2421,7 @@ function cvReport(s,r,ctx){const T=cvTables(r,ctx),E=r.E,cv=ctx.cv||{},now=new D
  <button class="np" onclick="print()">Print / save as PDF</button><h1>Preliminary Civil Site Report</h1><div>${e(s.name)} · ${e(s.id)} · ${(+s.lat).toFixed(5)}, ${(+s.lon).toFixed(5)} · generated ${now}</div>
  <p class="disc">PLANNING ESTIMATE ONLY: NOT AN ENGINEERED OR SEALED DOCUMENT. Not prepared or stamped by a Kansas-licensed Professional Engineer. Every figure needs boundary/topographic survey, title review, geotechnical work and PE design before permitting or construction.</p>
  <h2>1. Site data</h2><table><tbody><tr><td>Parcel</td><td class="mono">${spN(r.site/43560,2)} ac</td></tr><tr><td>Program</td><td class="mono">${r.co==='land'?`${r.n} halls · ${spN(r.k.it,1)} MW IT · ${spN(r.k.fac,1)} MW facility · ${r.stories} storey ${r.height} ft`:`${spN(r.nrsf)} NRSF · ${r.units} units · CC ${r.stories} storeys`}</td></tr><tr><td>Coverage / FAR</td><td class="mono">${spN(r.k.cov,1)}% / ${spN(r.k.far,3)}</td></tr><tr><td>Impervious</td><td class="mono">${r.sw?spN(r.sw.imp*100,1)+'%':'—'}</td></tr><tr><td>Binding constraint</td><td>${e(r.bind)}</td></tr><tr><td>Setbacks</td><td class="mono">${r.C.edges.map(x=>x[4].kind+' '+Math.round(x[2])+' ft').join(' · ')}</td></tr></tbody></table>
- <h2>2. Plan</h2>${tfSvg(r,1000,620)}${tfLegend(r)}
+ <h2>2. Plan</h2>${tfSheet(r,shMeta(s),1500,960)}
  ${T.map(([h,b,st],i)=>`<h2>${i+3}. ${h} <span class="tag ${st.replace(/\s/g,'')}">${st}</span></h2>${b}`).join('')}
  <h2>Checks</h2>${r.circ.map(c=>`<div>${c.ok?'OK':'CHECK'} · ${e(c.t)}</div>`).join('')}${r.warn.map(w=>`<div class="tfbad">CHECK · ${e(w.t)}</div>`).join('')}
  <h2>Data sources</h2><table><tbody>${src.map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</tbody></table>
