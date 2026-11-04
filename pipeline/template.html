@@ -1090,7 +1090,25 @@ function kmBuild(){const G=window.mapboxgl||window.maplibregl;if(KM_MB)G.accessT
   map.on('mousemove','deals',e=>{map.getCanvas().style.cursor='pointer';const p=e.features[0].properties;map.setFilter('deals-halo',['==',['get','id'],p.id]);pop.setLngLat(e.features[0].geometry.coordinates).setHTML(`<div class="kph">${esc(p.n)}</div><div class="mpr"><span>${p.v==='land'?'Terrafice':'Everstow'}</span><b>${esc(p.k)}</b></div><div class="mpr"><span>Score</span><b class="mono">${esc(p.s)}</b></div><div class="mpr"><span>Rank</span><b class="mono">${p.r>0?'#'+p.r:'—'}</b></div>${(()=>{const q=p.v==='land'&&spSum(p.id);return q?`<div class="mpr"><span>Plan</span><b class="mono">${spN(q.it,0)} MW · ${esc(q.bind)}</b></div>`:''})()}<div class="kpf">Click to open</div>`).addTo(map)});
   map.on('mouseleave','deals',()=>{map.getCanvas().style.cursor='';pop.remove();map.setFilter('deals-halo',['==',['get','id'],''])});
   map.on('click','deals',e=>{const p=e.features[0].properties;pop.remove();kmCard(p.v,p.id);map.setFilter('deals-halo',['==',['get','id'],p.id])});
+  if(isAdm())kmParcels(map);
   KM_M.ready=true;KM_MLY.forEach(k=>toggleLayer(k,true));drawMap()})}
+// Parcel boundaries (admin-only): deal parcel in ember, ~1/4-mile neighbours lighter; fades in zoom 11->14; lazy per deal in view.
+const KM_PC=new Map();
+function pcFC(){const F=[];KM_PC.forEach((d,id)=>{if(!d)return;(d.neighbors||[]).forEach(n=>n.g&&F.push({type:'Feature',geometry:n.g,properties:{k:0,id,apn:n.apn||'',ow:n.owner||'',ac:n.acres||0}}));const q=d.deal;if(q&&q.g)F.push({type:'Feature',geometry:q.g,properties:{k:1,id,apn:q.apn||'',ow:q.owner||'',ac:q.acres||0,src:d.src||''}})});return{type:'FeatureCollection',features:F}}
+function kmParcels(map){const Z=(a,b)=>['interpolate',['linear'],['zoom'],11,0,14,a,15,b];
+ map.addSource('pcl',{type:'geojson',data:pcFC()});const bef=map.getLayer('deals-cl')?'deals-cl':undefined;
+ map.addLayer({id:'pcl-f',type:'fill',source:'pcl',minzoom:11,paint:{'fill-color':['case',['==',['get','k'],1],'#F14B21','#E8E6E1'],'fill-opacity':['case',['==',['get','k'],1],Z(0.16,0.16),Z(0.03,0.04)]}},bef);
+ map.addLayer({id:'pcl-l',type:'line',source:'pcl',minzoom:11,paint:{'line-color':['case',['==',['get','k'],1],'#F14B21','rgba(232,230,225,0.55)'],'line-width':['case',['==',['get','k'],1],2,0.7],'line-opacity':Z(1,1)}},bef);
+ const html=p=>`<div class="kph">${p.k?'Deal parcel':'Neighbouring parcel'}</div><div class="mpr"><span>APN</span><b class="mono">${esc(p.apn||'—')}</b></div><div class="mpr"><span>Owner</span><b>${esc(p.ow||'—')}</b></div><div class="mpr"><span>Acres</span><b class="mono">${p.ac?(+p.ac).toFixed(2):'—'}</b></div>`;
+ const hit=e=>!map.queryRenderedFeatures(e.point,{layers:['deals','deals-cl']}).length;
+ map.on('mousemove','pcl-f',e=>{if(!hit(e))return;map.getCanvas().style.cursor='pointer';KM_M.info.setLngLat(e.lngLat).setHTML(html(e.features[0].properties)).addTo(map)});
+ map.on('mouseleave','pcl-f',()=>{map.getCanvas().style.cursor='';KM_M.info.remove()});
+ map.on('click','pcl-f',e=>{if(hit(e))KM_M.info.setLngLat(e.lngLat).setHTML(html(e.features[0].properties)).addTo(map)});
+ let t=0;const go=()=>{clearTimeout(t);t=setTimeout(async()=>{if(map.getZoom()<11||!BK||!BK.parcels)return;const b=map.getBounds(),R=KM_R;
+  const ids=[...(R.land||[]),...(R.storage||[])].filter(o=>o&&o.id&&o.lat!=null&&!KM_PC.has(o.id)&&b.contains([+o.lon,+o.lat])).map(o=>o.id).slice(0,40);
+  if(!ids.length)return;ids.forEach(i=>KM_PC.set(i,null));const r=await Promise.all(ids.map(i=>BK.parcels(i)));r.forEach((d,n)=>KM_PC.set(ids[n],d));
+  if(r.some(Boolean))map.getSource('pcl').setData(pcFC())},250)};
+ map.on('moveend',go);go()}
 async function toggleLayer(k,on){const lg=$('ml-'+k);if(lg)lg.hidden=!on;const M=KM_M;if(!M||!M.ready)return;const map=M.map;
  if(on&&!M.added.has(k)){M.added.add(k);let data=KM_LBASE+k+'.geojson';if(/^bg/.test(k))data=await bgGeo();if(k==='spp_subs'){await sppLoad();data=sppGeo()}if(map.getSource('ly-'+k))return;map.addSource('ly-'+k,{type:'geojson',data});map.addLayer(Object.assign({id:'ly-'+k,source:'ly-'+k,layout:{visibility:'none'}},KM_GL[k],{layout:Object.assign({visibility:'none'},KM_GL[k].layout||{})}),map.getLayer('ks-mask')?'ks-mask':'deals');
   map.on('click','ly-'+k,async e=>{if(map.queryRenderedFeatures(e.point,{layers:['deals','deals-cl']}).length)return;const f=e.features[0],p=Object.assign({},f.properties);if(k==='sscomp'){const q=ring5(await bgLoad(),f.geometry.coordinates[1],f.geometry.coordinates[0]);if(q)p.p5=q.pop5}M.info.setLngLat(e.lngLat).setHTML(lyrPop(k,p)).addTo(map)});

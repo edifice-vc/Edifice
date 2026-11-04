@@ -352,6 +352,14 @@ test('site_plans_saved: admins create, members read non-restricted only, nobody 
   await assertFails(deleteDoc(doc(as(EDITOR), 'site_plans_saved', 's1__abc123')));
   await assertSucceeds(deleteDoc(doc(A, 'site_plans_saved', 's1__abc123')));
 });
+test('parcels are admin-read only and never client-written', async () => {
+  await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), 'parcels', 's1'), { j: '{}', h: 'x' }); });
+  await assertSucceeds(getDoc(doc(as(ADMIN), 'parcels', 's1')));
+  for (const e of [EDITOR, VIEWER, STRANGER]) await assertFails(getDoc(doc(as(e), 'parcels', 's1')));
+  await assertFails(getDocs(collection(as(EDITOR), 'parcels')));
+  await assertFails(setDoc(doc(as(ADMIN), 'parcels', 's2'), { j: '{}' }));
+});
+
 test('zoning (Zoneomics) is admin-read only and never client-written', async () => {
   await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), 'zoning', 's1'), { j: '{}', h: 'x', fixture: true }); });
   await assertSucceeds(getDoc(doc(as(ADMIN), 'zoning', 's1')));

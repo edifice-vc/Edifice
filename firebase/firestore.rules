@@ -101,6 +101,9 @@ service cloud.firestore {
     }
     // Zoneomics zoning per site: licensed data, ADMIN-ONLY, never redistributed. Written only by pipeline/zoneomics.py (admin SDK).
     match /zoning/{id} { allow read: if admin(); allow write: if false; }
+    // Parcel boundaries per active deal (deal parcel + ~1/4-mile neighbours, APN/owner): ADMIN-ONLY, never client-written.
+    // Written only by pipeline/parcels.py (admin SDK).
+    match /parcels/{id} { allow read: if admin(); allow write: if false; }
     // Public Mapbox map token (URL-restricted pk.): readable by any signed-in member, never client-written.
     match /config/mapbox { allow read: if member(); allow write: if false; }
     function senders() {
