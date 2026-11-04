@@ -46,3 +46,33 @@ class Syntax(unittest.TestCase):
         for i, s in enumerate(re.findall(r'<script>(.*?)</script>', TPL, re.S)):
             p = subprocess.run(['node', '--check', '-'], input=s, capture_output=True, text=True)
             self.assertEqual(p.returncode, 0, p.stderr[:500])
+
+
+@unittest.skipUnless(shutil.which('node'), 'node missing')
+class TracedPolygon(NoBuild):
+    def test_polygon_easement_is_hard_no_build(self):
+        r = self.run_js('''
+const s={id:'t',lat:38,lon:-97};
+SP.cx.t={easements:[{type:'hl',width_ft:75,setback_ft:20,approx:false,geometry:{type:'Polygon',coordinates:[[[-97.003,37.9999],[-96.997,37.9999],[-96.997,38.0001],[-97.003,38.0001],[-97.003,37.9999]]]}}]};
+const N=spNB(s,{flood:1});
+console.log(JSON.stringify({inside:spNBhit(0,0,N),sb:spNBhit(0,50,N),out:spNBhit(0,80,N)}))''')
+        self.assertEqual(r['inside'], 1)   # inside the traced polygon (±36 ft)
+        self.assertEqual(r['sb'], 1)       # within the 20 ft setback of its edge
+        self.assertEqual(r['out'], 0)
+
+
+class TraceCommand(unittest.TestCase):
+    def test_trace_replaces_osm_easement(self):
+        import sys, tempfile, types
+        sys.path.insert(0, str(ROOT / 'pipeline')); import site_constraints as sc
+        d = pathlib.Path(tempfile.mkdtemp())
+        (d / 'src.json').write_text(json.dumps({'x': {'lat': 38, 'lon': -97, 'acres': 10,
+            'easements': [{'id': 'p', 'type': 'hl', 'osm_way': 1, 'approx': True}]}}))
+        (d / 'l.geojson').write_text(json.dumps({'type': 'Feature', 'geometry': {'type': 'LineString', 'coordinates': [[-97.01, 37.99], [-96.99, 38.01]]}}))
+        a = types.SimpleNamespace(site='x', file=str(d / 'l.geojson'), id='p', type=None, label=None, basis=None, width=75.0, setback=50.0)
+        sc.trace(a, str(d / 'src.json'))
+        e = json.loads((d / 'src.json').read_text())['x']['easements']
+        self.assertEqual(len(e), 1); self.assertFalse(e[0]['approx']); self.assertEqual(e[0]['width_ft'], 75.0)
+        self.assertNotIn('osm_way', e[0]); self.assertEqual(e[0]['geometry']['type'], 'LineString')
+        a.width = None
+        with self.assertRaises(SystemExit): sc.trace(a, str(d / 'src.json'))

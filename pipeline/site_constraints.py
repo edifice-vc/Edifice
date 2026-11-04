@@ -9,6 +9,9 @@ Output:
   private/site_constraints.json       same shape with easement geometry resolved (OSM ways clipped near the site) and sd.
 
   python3 site_constraints.py stage            # build the private output (public OSM / FEMA / USGS reads only)
+  python3 site_constraints.py trace SITE FILE.geojson --id nustar --type hl [--width 75 --setback 50] [--label ..] [--basis ..]
+                                               # hand-traced easement (LineString centreline + width, or Polygon of the full
+                                               # easement) replaces easement --id in the private src; hard no-build in the planner
   python3 site_constraints.py push [--apply]   # site_constraints/{id} docs {j,h,restricted,by,ts}; dry run without --apply.
                                                # 1 read per site for the hash skip; 1 write per changed site.
 Production write: needs Sahil's explicit approval before --apply.
@@ -73,6 +76,51 @@ def stage(a):
     print(f"[constraints] wrote {OUT} ({os.path.getsize(OUT)//1024} KB)")
 
 
+def load_trace(path):
+    """GeoJSON (Feature, FeatureCollection or bare geometry) -> one LineString/MultiLineString/Polygon/MultiPolygon in lon,lat."""
+    j = json.load(open(path))
+    if j.get("type") == "FeatureCollection":
+        gs = [f["geometry"] for f in j["features"] if f.get("geometry")]
+    elif j.get("type") == "Feature":
+        gs = [j["geometry"]]
+    else:
+        gs = [j]
+    kinds = {g["type"].replace("Multi", "") for g in gs}
+    if len(kinds) != 1 or kinds - {"LineString", "Polygon"}:
+        raise SystemExit(f"trace: need all LineStrings or all Polygons, got {sorted(kinds)}")
+    k = kinds.pop()
+    parts = [c for g in gs for c in (g["coordinates"] if g["type"].startswith("Multi") else [g["coordinates"]])]
+    for part in parts:
+        for p in (part if k == "LineString" else [q for r in part for q in r]):
+            if not (-180 <= p[0] <= 180 and -90 <= p[1] <= 90):
+                raise SystemExit(f"trace: coordinate {p} is not lon,lat")
+    rnd = lambda v: [round(v[0], 7), round(v[1], 7)]
+    if k == "LineString":
+        parts = [[rnd(p) for p in L] for L in parts]
+        return {"type": "LineString", "coordinates": parts[0]} if len(parts) == 1 else {"type": "MultiLineString", "coordinates": parts}
+    parts = [[[rnd(p) for p in R] for R in P] for P in parts]
+    return {"type": "Polygon", "coordinates": parts[0]} if len(parts) == 1 else {"type": "MultiPolygon", "coordinates": parts}
+
+
+def trace(a, src_path=None):
+    src_path = src_path or SRC
+    src = json.load(open(src_path)); c = src.get(a.site)
+    if c is None: raise SystemExit(f"trace: {a.site} not in {src_path}")
+    g = load_trace(a.file)
+    if g["type"].endswith("LineString") and a.width is None:
+        raise SystemExit("trace: a centreline needs --width (recorded easement width, ft)")
+    eas = c.setdefault("easements", []); old = next((e for e in eas if e.get("id") == a.id), {})
+    e = {"id": a.id, "type": a.type or old.get("type", "ue"), "label": a.label or old.get("label", "Traced easement"),
+         "width_ft": a.width, "setback_ft": a.setback if a.setback is not None else 0, "approx": False, "hard": True,
+         "basis": a.basis or f"Hand-traced from the recorded easement map ({os.path.basename(a.file)}), {dt.date.today()}.",
+         "geometry": g}
+    if old.get("osm_way"): e["superseded"] = f"OSM way {old['osm_way']} (approximate centreline)"
+    c["easements"] = [x for x in eas if x.get("id") != a.id] + [e]
+    json.dump(src, open(src_path, "w"), indent=1)
+    print(f"[constraints] {a.site}: easement {a.id} <- {g['type']} from {a.file}; run stage, then push --apply (needs Sahil's OK)")
+    return e
+
+
 def push(a):
     import edks
     from google.cloud import firestore
@@ -94,4 +142,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(); sp = ap.add_subparsers(dest="cmd", required=True)
     s = sp.add_parser("stage"); s.add_argument("--sd", action="store_true", help="recompute sd for every site")
     p = sp.add_parser("push"); p.add_argument("--apply", action="store_true")
-    a = ap.parse_args(); sys.path.insert(0, HERE); {"stage": stage, "push": push}[a.cmd](a)
+    t = sp.add_parser("trace"); t.add_argument("site"); t.add_argument("file"); t.add_argument("--id", default="traced")
+    t.add_argument("--type"); t.add_argument("--label"); t.add_argument("--basis")
+    t.add_argument("--width", type=float); t.add_argument("--setback", type=float)
+    a = ap.parse_args(); sys.path.insert(0, HERE); {"stage": stage, "push": push, "trace": trace}[a.cmd](a)

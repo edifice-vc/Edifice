@@ -1292,7 +1292,9 @@ const spCx=s=>(s&&SP.cx[s.id])||null;
 // no-build geometry in the site's local ft frame: easement segments [ax,ay,bx,by,half,label] and polygons [[outer,...holes],kind]
 function spNB(s,inp){const c=spCx(s),P=spProj(+s.lat,+s.lon),segs=[],polys=[];
  if(c)(c.easements||[]).forEach(e=>{const T=SP_ET[e.type]||SP_ET.ue,w=e.width_ft!=null&&e.width_ft!==''?+e.width_ft:T[1],sb=e.setback_ft!=null&&e.setback_ft!==''?+e.setback_ft:T[2],g=e.geometry||{};
-  (g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]).forEach(L=>{for(let i=1;i<L.length;i++){const a=P.f(L[i-1]),b=P.f(L[i]);segs.push([a[0],a[1],b[0],b[1],w/2+sb])}})});
+  (g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]).forEach(L=>{for(let i=1;i<L.length;i++){const a=P.f(L[i-1]),b=P.f(L[i]);segs.push([a[0],a[1],b[0],b[1],w/2+sb])}});
+  // traced easement polygon (full recorded width): the whole polygon is hard no-build, plus the setback from its edges
+  (g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[]).forEach(r=>{const RR=r.map(R=>R.map(P.f));polys.push([RR,1]);if(sb>0)RR.forEach(R=>{for(let i=1;i<R.length;i++)segs.push([R[i-1][0],R[i-1][1],R[i][0],R[i][1],sb])})})});
  const addP=(g,k)=>{if(!g)return;(g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[]).forEach(r=>polys.push([r.map(R=>R.map(P.f)),k]))};
  if(c)(c.exclusions||[]).forEach(x=>addP(x.geometry||x,3));
  const d=SP.sd&&SP.sd.sites&&SP.sd.sites[s.id];if(d&&d.geo&&(inp?inp.flood:1)!=0){addP(d.geo.sfha,2);addP(d.geo.floodway,2)}
@@ -1507,6 +1509,7 @@ async function spMapInit(){await spLayers();if(SP.map)return;try{await loadGL()}
  ['sp-nb','sp-bld','sp-sub','sp-cxl'].forEach(k=>map.addSource(k,{type:'geojson',data:E}));
  map.addLayer({id:'sp-bldf',type:'fill',source:'sp-bld',paint:{'fill-color':'#6FCF97','fill-opacity':.10}},'sp-hallf');
  map.addLayer({id:'sp-nbf',type:'fill',source:'sp-nb',paint:{'fill-color':['match',['get','k'],1,'#FF7A1A',2,'#3B8BEB','#8A8A8A'],'fill-opacity':.42}},'sp-hallf');
+ map.addLayer({id:'sp-cxlf',type:'fill',source:'sp-cxl',filter:['==',['geometry-type'],'Polygon'],paint:{'fill-color':'#FF7A1A','fill-opacity':.35}});
  map.addLayer({id:'sp-cxll',type:'line',source:'sp-cxl',paint:{'line-color':'#FFD25A','line-width':2,'line-dasharray':['case',['get','approx'],['literal',[2,2]],['literal',[1,0]]]}});
  map.addLayer({id:'sp-cxlt',type:'symbol',source:'sp-cxl',minzoom:12,layout:{'symbol-placement':'line','text-field':['get','t'],'text-size':11,'text-font':KM_MB?['DIN Pro Medium','Arial Unicode MS Regular']:['Noto Sans Regular']},paint:{'text-color':'#FFD25A','text-halo-color':'#0A0A0A','text-halo-width':1.4}});
  map.addLayer({id:'sp-subf',type:'fill',source:'sp-sub',paint:{'fill-color':'#9B7BEA','fill-opacity':.7}});
