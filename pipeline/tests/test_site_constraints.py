@@ -146,3 +146,24 @@ console.log(JSON.stringify({it:r.best.it,k:r.best.k,inst:r.best.inst,gasUse:r.be
         (d / 'b.json').write_text(json.dumps({'gen': {'type': 'nuclear'}}))
         with self.assertRaises(SystemExit):
             sc.plan(types.SimpleNamespace(site='x', file=str(d / 'b.json')), str(d / 'src.json'))
+
+
+class AdoptedPlanView(unittest.TestCase):
+    def test_live_repack_collapsed_under_adopted_plan(self):
+        out = fn('spOut')
+        self.assertIn('<details class="spvar">', out)
+        self.assertIn("Explore variants", out)
+        self.assertIn("(AP?'</details>':'')", out)
+        self.assertTrue(out.index('AP+(AP?') < out.index('<div class="spbig">'))  # adopted panel stays the headline
+
+    @unittest.skipUnless(shutil.which('node'), 'node missing')
+    def test_gas_note(self):
+        gen = re.search(r'^const SP_GEN=.*?\n', TPL, re.M).group(0)
+        src = ('const SP={cx:{}};const spCx=s=>SP.cx[s.id]||null;' + gen + fn('spGasNote') + '''
+SP.cx.a={gen:{type:'fuel_cell',uncapped:true},caps:{gas_mw:0.6},plan:{k:{run:184}}};
+SP.cx.b={gen:{type:'fuel_cell',uncapped:false},caps:{gas_mw:0.6}};SP.cx.c={caps:{gas_mw:0.6}};
+SP.cx.d={gen:{type:'fuel_cell',uncapped:true}};
+console.log(JSON.stringify([spGasNote({id:'a'}),spGasNote({id:'b'}),spGasNote({id:'c'}),spGasNote({id:'d'},{gas:{mmcfd:12.4}})]))''')
+        r = json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        self.assertEqual(r, ['Needs new gas supply (~30 MMcf/d)', '', '', 'Needs new gas supply (~12 MMcf/d)'])
+        self.assertIn('spGasNote(s)?', TPL)  # caps line in the constraints panel drops the 0.6 MW gas cap
