@@ -73,10 +73,24 @@ class Sheet(unittest.TestCase):
  const G=[];for(let j=0;j<30;j++)for(let i=0;i<30;i++)G.push(1500+i*0.3+j*0.1);const topo={nx:30,ny:30,X0:-1000,Y0:-1000,dx:70,dy:70,G,src:'test DEM'};
  const svg=tfSheet(r,{polySrc:'parcel',N,ext:{tx,flood:fl,subs:[{name:'Test Sub',kv:115,at:[100,-200]}],topo,src:{flood:'FEMA NFHL',tx:'HIFLD'},errs:{}}});
  const T=[...svg.matchAll(/<text x="([0-9.]+)"[^>]*xml:space="preserve">([^<]*)</g)].map(m=>[+m[1],m[2].replace(/&[a-z]+;/g,'x').length]);
- return {power:r.build.power,flood:r.build.flood,kv:svg.includes('115 kV'),fema:svg.includes('FEMA ZONE AE'),sub:svg.includes('SUB Test Sub'),topo:svg.includes('Topo [U]'),slope:/avg\s*[0-9.]+%/.test(svg)&&svg.includes('relief'),maxc:Math.max(...T.filter(t=>t[0]>900).map(t=>t[1])),fs:+(svg.match(/font-size="([0-9.]+)" fill="#333" xml:space/)||[0,0])[1]}""")
+ return {power:r.build.power,flood:r.build.flood,kv:svg.includes('115 kV'),fema:svg.includes('FEMA ZONE AE'),sub:svg.includes('SUB Test Sub'),topo:svg.includes('Topo [U]'),slope:/avg(\\s|<[^>]*>)*[0-9.]+%/.test(svg)&&svg.includes('relief'),maxc:Math.max(...T.filter(t=>t[0]>900).map(t=>t[1])),fs:+(svg.match(/font-size="([0-9.]+)" fill="#333" xml:space/)||[0,0])[1]}""")
         self.assertGreater(r['power'], 0.5); self.assertGreater(r['flood'], 5)
         for k in ('kv', 'fema', 'sub', 'topo', 'slope'): self.assertTrue(r[k], k)
         self.assertLessEqual(r['maxc'] * r['fs'] * 0.61, 1500 - 960 - 20)
 
 if __name__ == '__main__':
     unittest.main()
+
+
+@unittest.skipUnless(shutil.which('node'), 'node missing')
+class Packer(unittest.TestCase):
+    def test_l_shaped_parcel_uses_both_legs_and_rotation(self):
+        # L: 2,600 x 700 ft east-west leg + 700 x 2,600 ft north leg; one fixed-angle row pack can't use both legs
+        body = """const L=[[0,0],[2600,0],[2600,700],[700,700],[700,2600],[0,2600],[0,0]];const I=Object.assign({},TF_DEF.land,{halls:40,subAc:0,park:0,setF:50,setS:50,setR:50});
+ const fixed=tfDC0(L,Object.assign({},I,{_pack:'rows',rot:0}),{},null),best=tfDC(L,I,{});let bad=0;
+ best.halls.forEach(h=>{const [x,y,w,hh]=h.hall;for(let i=0;i<=6;i++)for(let j=0;j<=6;j++){const p=best.C.un([x+w*i/6,y+hh*j/6]);if(!tfIn(p[0],p[1],L))bad++}});
+ const legs=new Set(best.halls.map(h=>{const p=best.C.un([h.hall[0]+h.hall[2]/2,h.hall[1]+h.hall[3]/2]);return p[1]<700?'E':'N'}));
+ return {f:fixed.n,b:best.n,bad,legs:legs.size,hw:best.halls.every(h=>Math.round(Math.min(h.hall[2],h.hall[3]))===I.hallW&&Math.round(Math.max(h.hall[2],h.hall[3]))===I.hallL)}"""
+        src = SRC + HELP + 'console.log(JSON.stringify((()=>{' + body + '})()))'
+        r = json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
+        self.assertGreater(r['b'], r['f']); self.assertEqual(r['legs'], 2); self.assertEqual(r['bad'], 0); self.assertTrue(r['hw'])
