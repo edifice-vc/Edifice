@@ -1354,7 +1354,8 @@ function spGasEst0(s){const g=s.gasline||{},L=s.gas||{};let mw=0,why='No mapped 
 // local feet projection around a pin
 function spProj(lat,lon){const kx=364000*Math.cos(lat*Math.PI/180),ky=364000;return {f:(p)=>[(p[0]-lon)*kx,(p[1]-lat)*ky],b:(q)=>[lon+q[0]/kx,lat+q[1]/ky]}}
 // stored parcel boundary from the admin-only constraint doc (site_constraints/{id}.parcel: GeoJSON Polygon, lon/lat); outer ring only
-function spParcel(s){const c=spCx(s),g=c&&c.parcel;if(!g)return null;const R=g.type==='Polygon'?g.coordinates[0]:g.type==='MultiPolygon'?g.coordinates[0][0]:null;return R&&R.length>3?R.map(p=>[+p[0],+p[1]]):null}
+// boundary: site_constraints parcel first, else the admin-only parcels doc deal polygon (only accuracy-passing docs are uploaded)
+function spParcel(s){const c=spCx(s),pd=typeof SP!=='undefined'&&SP.pd&&SP.pd[s.id],g=(c&&c.parcel)||(pd&&pd.deal&&pd.deal.g);if(!g)return null;const R=g.type==='Polygon'?g.coordinates[0]:g.type==='MultiPolygon'?g.coordinates[0][0]:null;return R&&R.length>3?R.map(p=>[+p[0],+p[1]]):null}
 function spSquare(s,ac){const h=Math.sqrt((ac||100)*43560)/2,P=spProj(+s.lat,+s.lon);return [[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]].map(P.b)}
 function spInside(x,y,R){let c=false;for(let i=0,j=R.length-1;i<R.length;j=i++){const [a,b]=R[i],[e,f]=R[j];if((b>y)!==(f>y)&&x<(e-a)*(y-b)/(f-b)+a)c=!c}return c}
 function spSegD(x,y,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;let t=l?((x-a[0])*dx+(y-a[1])*dy)/l:0;t=Math.max(0,Math.min(1,t));const X=a[0]+t*dx-x,Y=a[1]+t*dy-y;return Math.sqrt(X*X+Y*Y)}
@@ -1502,6 +1503,7 @@ function spShow(id,co){if(!isAdm()){location.hash='#deals';return}spShell();co=c
  $('spPick').value=id;spForm();spMapInit().then(()=>spCxLoad(spSite())).then(()=>{spLyrVis();spRun()})}
 // one admin-only doc read per opened deal (site_constraints/{id}); its sd record fills site data for deals outside meta/sitedata
 async function spCxLoad(s){if(!s||SP.cx[s.id]!==undefined)return;const B=window.EDKS_BK;let c=null;try{c=B&&B.siteConstraints?await B.siteConstraints(s.id):(window.EDKS_CX||{})[s.id]||null}catch(e){}
+ SP.pd=SP.pd||{};try{SP.pd[s.id]=(typeof KM_PC!=='undefined'&&KM_PC.get(s.id))||(B&&B.parcels?await B.parcels(s.id):null)}catch(e){SP.pd[s.id]=null}
  SP.cx[s.id]=c||null;if(c&&c.plan&&c.plan.inp&&SP.id===s.id&&SP.co==='land'&&!spLoad(s.id)){SP.inp=Object.assign({},SP_DEF,c.plan.inp);if(typeof spForm==='function')spForm()}if(SP.id===s.id&&SP.polySrc==='square'){const R=spParcel(s);if(R){SP.poly=R;SP.polySrc='parcel'}}if(c&&c.sd){SP.sd=SP.sd||{sites:{}};SP.sd.sites=SP.sd.sites||{};if(!SP.sd.sites[s.id])SP.sd.sites[s.id]=c.sd}SP.G=null}
 function spLyrVis(){const m=SP.map;if(!m)return;const on=SP.co!=='storage';['sp-lines','sp-gas','sp-subs','sp-subl','sp-linel'].forEach(k=>{if(m.getLayer(k))m.setLayoutProperty(k,'visibility',on?'visible':'none')})}
 function spForm(){const I=SP.inp;$('spIn').innerHTML=(SP.co==='storage'?ST_F:SP_F).map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,u])=>`<label class="spf"><span>${l}${u&&u!=='text'?' <i>'+u+'</i>':''}</span><input class="inp mono" data-sp="${k}" type="${u==='text'?'text':'number'}" step="any" value="${esc(I[k])}" placeholder="${k==='gridOv'||k==='gasOv'?'estimate':h.startsWith('Zoning')?'Zoneomics: pending':''}"></label>`).join('')}</div>`).join('')}

@@ -4,7 +4,7 @@ import json, re, subprocess, textwrap
 from pathlib import Path
 
 L = (Path(__file__).resolve().parents[1] / 'template.html').read_text().split('\n')
-NAMES = 'SP_DEF SP_ET SP_GEN spProj spNB spNBhit spGrid spSolve spNoB spCalc spArea spCx spGasEst spGenInp spGridEst spInside spN spPack spPlantFree spSegD spSub spGridEst0 spGasEst0'.split()
+NAMES = 'SP_DEF SP_ET SP_GEN spProj spNB spNBhit spGrid spSolve spNoB spCalc spArea spCx spGasEst spGenInp spGridEst spInside spN spPack spPlantFree spSegD spSub spGridEst0 spGasEst0 spParcel'.split()
 
 
 def fn(name):
@@ -29,7 +29,8 @@ const a=spCalc(s,poly,'parcel',inp);
 SHX[s.id]={roads:[{L:[[-3000,0],[3000,0]],row:100,name:'W Water Well Rd'}],streams:[],tx:[],flood:[]};
 const G=spGrid(poly,inp,s),b=spCalc(s,poly,'parcel',inp,G);
 let inRow=false;(b.H||[]).forEach(([i,j,w,hh])=>{for(let y=j;y<j+hh;y++)for(let x=i;x<i+w;x++)if(G.nb[y*G.nx+x]===4)inRow=true});
-console.log(JSON.stringify({noB:{noB:noB.noB,it:noB.best.it,halls:noB.H.length,top:noB.top.length},
+SP.pd={t1:{deal:{g:{type:'Polygon',coordinates:[poly]}}}};const pr=spParcel(s);
+console.log(JSON.stringify({pd:pr&&pr.length,noB:{noB:noB.noB,it:noB.best.it,halls:noB.H.length,top:noB.top.length},
  a:{build:a.G.buildAc,it:a.best.it,halls:a.H.length},nH:b.H.length,b:{build:G.buildAc,nbR:G.nbR,it:b.best.it,inRow}}));
 ''')
 
@@ -52,3 +53,7 @@ def test_road_row_deducted_before_capacity():
     assert r['b']['it'] <= r['a']['it']
     assert r['a']['it'] > 0 and r['nH'] > 0
     assert not r['b']['inRow']
+
+
+def test_parcels_doc_polygon_used():
+    assert run()['pd'] == 5
