@@ -57,3 +57,28 @@ def test_road_row_deducted_before_capacity():
 
 def test_parcels_doc_polygon_used():
     assert run()['pd'] == 5
+
+
+def test_hall_cap_matches_testfit_layout():
+    """Panel hall count must equal halls drawn by the civil test-fit (single source of truth)."""
+    h = textwrap.dedent(r'''
+const SP={cx:{t1:{caps:{grid_mw:1000,gas_mw:1000}}},ly:{},sd:null},SHX={};const fmt=(v,d)=>(+v).toFixed(d);const esc=x=>String(x);
+const s={id:'t1',lat:38.77,lon:-97.63,acres:100,grid_mw:5000};const P=spProj(s.lat,s.lon),h=1043;
+const poly=[[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]].map(P.b);const G=spGrid(poly,SP_DEF,s);
+const free=spSolve(s,poly,Object.assign({},SP_DEF),G),cap=spSolve(s,poly,Object.assign({},SP_DEF,{_hallCap:1}),G);
+console.log(JSON.stringify({fn:free.best.n,cn:cap.best.n,slots:cap.slots,it:cap.best.it,hit:cap.hallIT}));''')
+    out = subprocess.run(['node', '-e', SRC + '\n' + h], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    r = json.loads(out.stdout.strip().split('\n')[-1])
+    assert r['fn'] > 1 and r['cn'] == 1 and r['slots'] == 1
+    assert r['it'] <= r['hit'] + 1e-6
+
+
+def test_header_never_renders_functions_or_promises():
+    js = fn('acctTxt') + textwrap.dedent(r'''
+console.log(JSON.stringify([acctTxt({email:'a@b.co',role:()=>'admin'}),
+ acctTxt({email:()=>Promise.resolve(null),role:()=>Promise.resolve(null)}),acctTxt({email:'a@b.co',role:{}}),acctTxt(null)]));''')
+    out = subprocess.run(['node', '-e', js], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    assert json.loads(out.stdout) == ['a@b.co · admin', '', 'a@b.co', '']
+    assert "BK.email+' · '+BK.role()" not in '\n'.join(L)
