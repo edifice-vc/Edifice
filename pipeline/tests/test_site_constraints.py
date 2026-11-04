@@ -15,7 +15,7 @@ class NoBuild(unittest.TestCase):
         src = 'const SP={sd:{sites:{}},cx:{}};function own(x){return x}function fmt(x){return x}\n' + et + ''.join(
             fn(n) for n in ['spProj', 'spInside', 'spSegD', 'spNB', 'spNBhit', 'spGridEst', 'spGridEst0', 'spKvMW']) \
             + 'const SP_KV=[[345,450],[230,225],[161,150],[138,110],[115,75],[69,35]];\n' + body
-        return json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
 
     def test_hits_and_caps(self):
         r = self.run_js('''
@@ -86,7 +86,7 @@ class StoredParcel(unittest.TestCase):
 const s={id:'t'};
 const a=spParcel(s);SP.cx.t={parcel:{type:'Polygon',coordinates:[[[-97,38],[-96.99,38],[-96.99,38.01],[-97,38.01],[-97,38]]]}};
 console.log(JSON.stringify({a,b:spParcel(s).length}))'''
-        r = json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        r = json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
         self.assertIsNone(r['a']); self.assertEqual(r['b'], 5)
         self.assertIn("SP.polySrc='parcel'", TPL)            # loaded parcel replaces the square, not a drawn boundary
         self.assertIn("SP.polySrc==='square'){const R=spParcel(s)", TPL)
@@ -117,7 +117,7 @@ class FuelCell(unittest.TestCase):
 const s={id:'t',lat:38,lon:-97};SP.cx.t=%s;
 const inp=Object.assign({},SP_DEF,{hallL:800,wsf:150});const r=spSolve(s,spSquare(s,144),inp);
 console.log(JSON.stringify({it:r.best.it,k:r.best.k,inst:r.best.inst,gasUse:r.best.gasUse,gas:r.best.gas||null,gen:r.gen,grid:r.grid}))''' % json.dumps(gen))
-        return json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
 
     def test_fuel_cell_vs_recip(self):
         fc = self.solve({'gen': {'type': 'fuel_cell', 'grid_mw': 50, 'uncapped': True}})
@@ -164,6 +164,6 @@ SP.cx.a={gen:{type:'fuel_cell',uncapped:true},caps:{gas_mw:0.6},plan:{k:{run:184
 SP.cx.b={gen:{type:'fuel_cell',uncapped:false},caps:{gas_mw:0.6}};SP.cx.c={caps:{gas_mw:0.6}};
 SP.cx.d={gen:{type:'fuel_cell',uncapped:true}};
 console.log(JSON.stringify([spGasNote({id:'a'}),spGasNote({id:'b'}),spGasNote({id:'c'}),spGasNote({id:'d'},{gas:{mmcfd:12.4}})]))''')
-        r = json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        r = json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
         self.assertEqual(r, ['Needs new gas supply (~30 MMcf/d)', '', '', 'Needs new gas supply (~12 MMcf/d)'])
         self.assertIn('spGasNote(s)?', TPL)  # caps line in the constraints panel drops the 0.6 MW gas cap

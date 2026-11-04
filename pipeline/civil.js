@@ -84,9 +84,9 @@ function cvOffset(Q,D){const n=Q.length-1;if(n<3)return null;let sa=0;for(let i=
  for(let i=0;i<n;i++){const a=Q[i],b=Q[i+1],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l*sg,ny=dx/l*sg,d=D[i]||0;Ls.push([[a[0]+nx*d,a[1]+ny*d],[dx,dy]])}
  const P=[];for(let i=0;i<n;i++){const [p,u]=Ls[(i+n-1)%n],[q,v]=Ls[i],cr=u[0]*v[1]-u[1]*v[0];if(Math.abs(cr)<1e-6){P.push(q);continue}const t=((q[0]-p[0])*v[1]-(q[1]-p[1])*v[0])/cr;P.push([p[0]+u[0]*t,p[1]+u[1]*t])}P.push(P[0]);return P}
 // buildable-area accounting on a lattice (rotated frame). C from tfCtx; extra: rects to deduct (pond). returns acres by category
-function cvBuildable(C,nbKind,pond){const [x0,y0,x1,y1]=C.bb,st=Math.max(8,Math.sqrt(C.A)/140),o={gross:0,row:0,setback:0,easement:0,flood:0,excl:0,pond:0,net:0};
+function cvBuildable(C,nbKind,pond){const [x0,y0,x1,y1]=C.bb,st=Math.max(8,Math.sqrt(C.A)/140),o={gross:0,row:0,road:0,setback:0,easement:0,stream:0,flood:0,excl:0,pond:0,net:0};
  for(let y=y0+st/2;y<y1;y+=st)for(let x=x0+st/2;x<x1;x+=st){if(!tfIn(x,y,C.Q))continue;o.gross++;const e=C.edgeAt(x,y);
-  if(e&&e.inRow){o.row++;continue}const k=nbKind?nbKind(...C.un([x,y])):0;if(k===2){o.flood++;continue}if(k===1){o.easement++;continue}if(k===3){o.excl++;continue}
+  if(e&&e.inRow){o.row++;continue}const k=nbKind?nbKind(...C.un([x,y])):0;if(k===2){o.flood++;continue}if(k===1){o.easement++;continue}if(k===3){o.excl++;continue}if(k===4){o.road++;continue}if(k===5){o.stream++;continue}
   if(e&&e.inSet){o.setback++;continue}if(pond&&x>=pond[0]&&x<=pond[0]+pond[2]&&y>=pond[1]&&y<=pond[1]+pond[3]){o.pond++;continue}o.net++}
  const f=C.A/43560/Math.max(1,o.gross);for(const k in o)o[k]=o[k]*f;return o}
 // ---- phasing. targets from tgtMW + phases, or phMW "50,100" (cumulative increments). basis 'fac' (utility MW) or 'it'

@@ -20,7 +20,7 @@ class MapSearch(unittest.TestCase):
                'function LS(v,o){return o.score||0}\n' + const('hvm') + extra
                + ''.join(fn(n) for n in ['kmaNorm', 'kmaNear', 'kmaLev1', 'kmaFuzzy', 'kmaBiz', 'aiMW', 'aiFlood'])
                + 'console.log(JSON.stringify((()=>{' + body + '})()))')
-        return json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
 
     def test_near_phrases(self):
         r = self.js("return ['storage deals near Wichita at LOI','within 10 mi of Hays','sites near 345 kV','near a substation','around Great Bend, ks','McPherson'].map(kmaNear)")
@@ -103,7 +103,7 @@ class MapCamera(unittest.TestCase):
 class LLMCanon(unittest.TestCase):
     def run_js(self, body):
         src = const('KMA_ST') + fn('kmaCanon') + fn('kmaNorm') + fn('kmaNear') + 'console.log(JSON.stringify((()=>{' + body + '})()))'
-        return json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
 
     def test_canon_phrases(self):
         c = self.run_js('return kmaCanon({business:"storage",place:"Wichita",radius_mi:25,stages:["LOI Submitted"],min_score:60,mw_min:50,flood:"exclude",sort:"score",name_terms:["Oak<b>"]})')

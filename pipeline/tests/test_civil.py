@@ -8,7 +8,7 @@ PF = "const PF={'2':[.43,.63,.77,1.06,1.37,1.66,1.83,2.2,2.71,3.19],'10':[.66,.9
 class Civil(unittest.TestCase):
     def js(self, body):
         src = SRC + HELP + PF + 'console.log(JSON.stringify((()=>{' + body + '})()))'
-        return json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
 
     def test_ref_grid_and_atlas(self):
         r = self.js("const p=cvAtlas(38.37,-97.66);return {n:CV_REF.faa.airports.length,p100:p['100'][9],p2:p['2'][9],mpr:CV_REF.faa.airports.some(a=>a.id==='MPR')}")

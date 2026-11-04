@@ -1,6 +1,6 @@
 import json, pathlib, shutil, subprocess, unittest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-SRC = 'const CV_REF=' + (ROOT / 'pipeline' / 'civil_ref.json').read_text().strip() + ';\n' + '\n'.join((ROOT / 'pipeline' / f).read_text() for f in ('planEditSchema.js', 'testfit.js', 'civil.js'))
+SRC = 'const CV_REF=' + (ROOT / 'pipeline' / 'civil_ref.json').read_text().strip() + ';\n' + '\n'.join((ROOT / 'pipeline' / f).read_text() for f in ('planEditSchema.js', 'testfit.js', 'civil.js', 'sheet.js'))
 HELP = '''
 const sq=a=>{const h=Math.sqrt(a*43560)/2;return [[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]]};
 const rects=r=>r.co==='land'?r.halls.flatMap(h=>[h.hall,h.gen].filter(Boolean)).concat([r.sub,r.park].filter(Boolean)):[r.mu,r.office].filter(Boolean).concat(r.du,r.rv);
@@ -14,7 +14,7 @@ const valid=(r,poly,set,nb)=>{const Rs=rects(r);for(const R of Rs)for(const p of
 class TestFit(unittest.TestCase):
     def js(self, body):
         src = SRC + HELP + 'console.log(JSON.stringify((()=>{' + body + '})()))'
-        return json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        return json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
 
     def test_dc_mw_cap_and_geometry(self):
         r = self.js("const R=sq(160),r=tfDC(R,TF_DEF.land,{gridMW:50});return {k:r.k,b:r.bind,v:valid(r,R,100),sub:!!r.sub}")
