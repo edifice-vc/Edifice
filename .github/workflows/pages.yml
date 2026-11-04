@@ -1,0 +1,40 @@
+name: Deploy site to Pages
+
+# Publishes the repo as-is (no Jekyll) with GitHub's Actions-based Pages deploy.
+# Replaces the legacy "pages build and deployment" builder, which kept hanging at deploy.
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["Refresh Kansas sites", "Enrich manually added sites"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 900000
