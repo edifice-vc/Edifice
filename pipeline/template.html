@@ -1325,6 +1325,8 @@ function spGasEst0(s){const g=s.gasline||{},L=s.gas||{};let mw=0,why='No mapped 
  return {mw:Math.round(mw),mi,why,lat:mi==null?0:2.5*mi}}
 // local feet projection around a pin
 function spProj(lat,lon){const kx=364000*Math.cos(lat*Math.PI/180),ky=364000;return {f:(p)=>[(p[0]-lon)*kx,(p[1]-lat)*ky],b:(q)=>[lon+q[0]/kx,lat+q[1]/ky]}}
+// stored parcel boundary from the admin-only constraint doc (site_constraints/{id}.parcel: GeoJSON Polygon, lon/lat); outer ring only
+function spParcel(s){const c=spCx(s),g=c&&c.parcel;if(!g)return null;const R=g.type==='Polygon'?g.coordinates[0]:g.type==='MultiPolygon'?g.coordinates[0][0]:null;return R&&R.length>3?R.map(p=>[+p[0],+p[1]]):null}
 function spSquare(s,ac){const h=Math.sqrt((ac||100)*43560)/2,P=spProj(+s.lat,+s.lon);return [[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]].map(P.b)}
 function spInside(x,y,R){let c=false;for(let i=0,j=R.length-1;i<R.length;j=i++){const [a,b]=R[i],[e,f]=R[j];if((b>y)!==(f>y)&&x<(e-a)*(y-b)/(f-b)+a)c=!c}return c}
 function spSegD(x,y,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;let t=l?((x-a[0])*dx+(y-a[1])*dy)/l:0;t=Math.max(0,Math.min(1,t));const X=a[0]+t*dx-x,Y=a[1]+t*dy-y;return Math.sqrt(X*X+Y*Y)}
@@ -1449,7 +1451,7 @@ function spShell(){const el=$('viewPlan');if(el.dataset.ok)return;el.dataset.ok=
  <section class="spx" id="spX"></section><p class="lbl mono spfoot" id="spFoot"></p>`;
  $('spSeg').addEventListener('click',e=>{const b=e.target.closest('[data-spco]');if(!b||b.dataset.spco===SP.co)return;location.hash='#plan/'+b.dataset.spco+(SP.last[b.dataset.spco]?'/'+SP.last[b.dataset.spco]:'')});
  $('spPick').onchange=e=>{location.hash='#plan/'+SP.co+'/'+e.target.value};
- $('spDraw').onclick=spDrawStart;$('spReset').onclick=()=>{const s=spSite();SP.poly=spSquare(s,s.acres||(SP.co==='storage'?3:100));SP.stL=null;SP.polySrc='square';SP.G=null;spRun()};
+ $('spDraw').onclick=spDrawStart;$('spReset').onclick=()=>{const s=spSite();const R=spParcel(s);SP.poly=R||spSquare(s,s.acres||(SP.co==='storage'?3:100));SP.stL=null;SP.polySrc=R?'parcel':'square';SP.G=null;spRun()};
  $('spSave').onclick=()=>spxSave();
  $('spIn').addEventListener('input',e=>{const t=e.target;if(!t.dataset.sp)return;const k=t.dataset.sp;SP.inp[k]=t.type==='number'?(t.value===''?'':+t.value):t.value;if(['ease','plantSet','flood'].includes(k))SP.G=null;SP.stL=null;clearTimeout(SP.t);SP.t=setTimeout(spRun,250)})}
 const spSite=()=>(SP.co==='storage'?SR:S).find(x=>x.id===SP.id);
@@ -1471,7 +1473,7 @@ function spShow(id,co){if(!isAdm()){location.hash='#deals';return}spShell();co=c
  $('spPick').value=id;spForm();spMapInit().then(()=>spCxLoad(spSite())).then(()=>{spLyrVis();spRun()})}
 // one admin-only doc read per opened deal (site_constraints/{id}); its sd record fills site data for deals outside meta/sitedata
 async function spCxLoad(s){if(!s||SP.cx[s.id]!==undefined)return;const B=window.EDKS_BK;let c=null;try{c=B&&B.siteConstraints?await B.siteConstraints(s.id):(window.EDKS_CX||{})[s.id]||null}catch(e){}
- SP.cx[s.id]=c||null;if(c&&c.sd){SP.sd=SP.sd||{sites:{}};SP.sd.sites=SP.sd.sites||{};if(!SP.sd.sites[s.id])SP.sd.sites[s.id]=c.sd}SP.G=null}
+ SP.cx[s.id]=c||null;if(SP.id===s.id&&SP.polySrc==='square'){const R=spParcel(s);if(R){SP.poly=R;SP.polySrc='parcel'}}if(c&&c.sd){SP.sd=SP.sd||{sites:{}};SP.sd.sites=SP.sd.sites||{};if(!SP.sd.sites[s.id])SP.sd.sites[s.id]=c.sd}SP.G=null}
 function spLyrVis(){const m=SP.map;if(!m)return;const on=SP.co!=='storage';['sp-lines','sp-gas','sp-subs','sp-subl','sp-linel'].forEach(k=>{if(m.getLayer(k))m.setLayoutProperty(k,'visibility',on?'visible':'none')})}
 function spForm(){const I=SP.inp;$('spIn').innerHTML=(SP.co==='storage'?ST_F:SP_F).map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,u])=>`<label class="spf"><span>${l}${u&&u!=='text'?' <i>'+u+'</i>':''}</span><input class="inp mono" data-sp="${k}" type="${u==='text'?'text':'number'}" step="any" value="${esc(I[k])}" placeholder="${k==='gridOv'||k==='gasOv'?'estimate':h.startsWith('Zoning')?'Zoneomics: pending':''}"></label>`).join('')}</div>`).join('')}
 // Site data phase 1 (FEMA NFHL flood, USGS 3DEP slope): D.sitedata, built by pipeline/site_data.py and delivered with the gated data (no extra reads)
@@ -1563,7 +1565,7 @@ function spDrawMap(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;cons
   const c=spCx(s);m.getSource('sp-cxl').setData({type:'FeatureCollection',features:(c&&c.easements||[]).map(e=>({type:'Feature',properties:{approx:!!e.approx,t:(e.label||'Easement')+(e.approx?' · APPROXIMATE':'')},geometry:e.geometry}))})}
  const bb=SP.poly.reduce((b,p)=>[[Math.min(b[0][0],p[0]),Math.min(b[0][1],p[1])],[Math.max(b[1][0],p[0]),Math.max(b[1][1],p[1])]],[[180,90],[-180,-90]]);
  if(SP.fitFor!==s.id+SP.polySrc+SP.poly.length){SP.fitFor=s.id+SP.polySrc+SP.poly.length;m.fitBounds(bb,{padding:60,duration:0,maxZoom:16})}
- $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':'No parcel polygon on file · '+fmt(s.acres,0)+'-acre square around the pin'} · ${spN(r.areaAc)} ac · ${r.H.length} hall slots · buildable ${spN(G.buildAc,1)} ac (easements ${spN(G.nbE,1)} · flood ${spN(G.nbF,1)} · excluded ${spN(G.nbX,1)} · line buffers ${spN(G.easeAc,1)} ac)`;spSD(s);spCX(s,r)}
+ $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':SP.polySrc==='parcel'?'Parcel boundary on file'+(spCx(s).parcel_src?' ('+esc(spCx(s).parcel_src)+')':''):'No parcel polygon on file · '+fmt(s.acres,0)+'-acre square around the pin'} · ${spN(r.areaAc)} ac · ${r.H.length} hall slots · buildable ${spN(G.buildAc,1)} ac (easements ${spN(G.nbE,1)} · flood ${spN(G.nbF,1)} · excluded ${spN(G.nbX,1)} · line buffers ${spN(G.easeAc,1)} ac)`;spSD(s);spCX(s,r)}
 function spOut(s,r){const B=r.best,I=SP.inp,est=(ov)=>ov===''||ov==null?' <span class="spest">ESTIMATE</span>':' <span class="spest ov">OVERRIDE</span>';const fl=s.floodplain;
  const mix=B.fac?Math.round(100*B.gridUse/B.fac):0,mt=x=>x?Math.round(x)+' mo':'—';
  $('spOut').innerHTML=`<div class="spbig"><div class="lbl mono">Max IT load</div><b class="mono">${spN(B.it,1)}<i> MW</i></b><div class="lbl mono">${spN(B.fac,1)} MW facility at PUE ${I.pue} · ${B.n} hall${B.n===1?'':'s'} × ${spN(r.hallIT,1)} MW IT${r.st>1?' · '+r.st+' stories':''}</div></div>

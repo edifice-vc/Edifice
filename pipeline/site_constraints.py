@@ -12,6 +12,7 @@ Output:
   python3 site_constraints.py trace SITE FILE.geojson --id nustar --type hl [--width 75 --setback 50] [--label ..] [--basis ..]
                                                # hand-traced easement (LineString centreline + width, or Polygon of the full
                                                # easement) replaces easement --id in the private src; hard no-build in the planner
+  python3 site_constraints.py parcel SITE FILE.geojson [--src ..] [--acres ..]   # stored parcel boundary (replaces the square)
   python3 site_constraints.py push [--apply]   # site_constraints/{id} docs {j,h,restricted,by,ts}; dry run without --apply.
                                                # 1 read per site for the hash skip; 1 write per changed site.
 Production write: needs Sahil's explicit approval before --apply.
@@ -121,6 +122,20 @@ def trace(a, src_path=None):
     return e
 
 
+def parcel(a, src_path=None):
+    """Store a parcel boundary (GeoJSON Polygon, lon/lat) on the site; Site Planning uses it instead of the acre square."""
+    src_path = src_path or SRC
+    src = json.load(open(src_path)); c = src.get(a.site)
+    if c is None: raise SystemExit(f"parcel: {a.site} not in {src_path}")
+    g = load_trace(a.file)
+    if not g["type"].endswith("Polygon"): raise SystemExit("parcel: need a Polygon")
+    c["parcel"] = g; c["parcel_src"] = a.src or os.path.basename(a.file)
+    if a.acres: c["parcel_ac"] = a.acres
+    json.dump(src, open(src_path, "w"), indent=1)
+    print(f"[constraints] {a.site}: parcel <- {g['type']} from {a.file}; run stage, then push --apply (needs Sahil's OK)")
+    return g
+
+
 def push(a):
     import edks
     from google.cloud import firestore
@@ -146,4 +161,5 @@ if __name__ == "__main__":
     t.add_argument("--type"); t.add_argument("--label"); t.add_argument("--basis")
     t.add_argument("--approx", action="store_true", help="scaled/estimated geometry (dashed, flagged APPROXIMATE)")
     t.add_argument("--width", type=float); t.add_argument("--setback", type=float)
-    a = ap.parse_args(); sys.path.insert(0, HERE); {"stage": stage, "push": push, "trace": trace}[a.cmd](a)
+    q = sp.add_parser("parcel"); q.add_argument("site"); q.add_argument("file"); q.add_argument("--src"); q.add_argument("--acres", type=float)
+    a = ap.parse_args(); sys.path.insert(0, HERE); {"stage": stage, "push": push, "trace": trace, "parcel": parcel}[a.cmd](a)

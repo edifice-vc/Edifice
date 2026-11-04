@@ -76,3 +76,30 @@ class TraceCommand(unittest.TestCase):
         self.assertNotIn('osm_way', e[0]); self.assertEqual(e[0]['geometry']['type'], 'LineString')
         a.width = None
         with self.assertRaises(SystemExit): sc.trace(a, str(d / 'src.json'))
+
+
+class StoredParcel(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('node'), 'node missing')
+    def test_parcel_replaces_square(self):
+        et = re.search(r'^const SP_ET=.*?\n(?=function )', TPL, re.S | re.M).group(0)
+        src = 'const SP={sd:{sites:{}},cx:{}};\n' + et + fn('spParcel') + '''
+const s={id:'t'};
+const a=spParcel(s);SP.cx.t={parcel:{type:'Polygon',coordinates:[[[-97,38],[-96.99,38],[-96.99,38.01],[-97,38.01],[-97,38]]]}};
+console.log(JSON.stringify({a,b:spParcel(s).length}))'''
+        r = json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+        self.assertIsNone(r['a']); self.assertEqual(r['b'], 5)
+        self.assertIn("SP.polySrc='parcel'", TPL)            # loaded parcel replaces the square, not a drawn boundary
+        self.assertIn("SP.polySrc==='square'){const R=spParcel(s)", TPL)
+
+    def test_parcel_command(self):
+        import sys, tempfile, types
+        sys.path.insert(0, str(ROOT / 'pipeline')); import site_constraints as sc
+        d = pathlib.Path(tempfile.mkdtemp())
+        (d / 'src.json').write_text(json.dumps({'x': {'lat': 38, 'lon': -97, 'acres': 10}}))
+        (d / 'p.geojson').write_text(json.dumps({'type': 'Polygon', 'coordinates': [[[-97, 38], [-96.99, 38], [-96.99, 38.01], [-97, 38]]]}))
+        sc.parcel(types.SimpleNamespace(site='x', file=str(d / 'p.geojson'), src='ALTA', acres=144.58), str(d / 'src.json'))
+        c = json.loads((d / 'src.json').read_text())['x']
+        self.assertEqual(c['parcel']['type'], 'Polygon'); self.assertEqual(c['parcel_ac'], 144.58)
+        (d / 'l.geojson').write_text(json.dumps({'type': 'LineString', 'coordinates': [[-97, 38], [-96.99, 38]]}))
+        with self.assertRaises(SystemExit):
+            sc.parcel(types.SimpleNamespace(site='x', file=str(d / 'l.geojson'), src=None, acres=None), str(d / 'src.json'))
