@@ -111,7 +111,7 @@ def trace(a, src_path=None):
         raise SystemExit("trace: a centreline needs --width (recorded easement width, ft)")
     eas = c.setdefault("easements", []); old = next((e for e in eas if e.get("id") == a.id), {})
     e = {"id": a.id, "type": a.type or old.get("type", "ue"), "label": a.label or old.get("label", "Traced easement"),
-         "width_ft": a.width, "setback_ft": a.setback if a.setback is not None else 0, "approx": False, "hard": True,
+         "width_ft": a.width, "setback_ft": a.setback if a.setback is not None else 0, "approx": bool(getattr(a, "approx", False)), "hard": True,
          "basis": a.basis or f"Hand-traced from the recorded easement map ({os.path.basename(a.file)}), {dt.date.today()}.",
          "geometry": g}
     if old.get("osm_way"): e["superseded"] = f"OSM way {old['osm_way']} (approximate centreline)"
@@ -144,5 +144,6 @@ if __name__ == "__main__":
     p = sp.add_parser("push"); p.add_argument("--apply", action="store_true")
     t = sp.add_parser("trace"); t.add_argument("site"); t.add_argument("file"); t.add_argument("--id", default="traced")
     t.add_argument("--type"); t.add_argument("--label"); t.add_argument("--basis")
+    t.add_argument("--approx", action="store_true", help="scaled/estimated geometry (dashed, flagged APPROXIMATE)")
     t.add_argument("--width", type=float); t.add_argument("--setback", type=float)
     a = ap.parse_args(); sys.path.insert(0, HERE); {"stage": stage, "push": push, "trace": trace}[a.cmd](a)
