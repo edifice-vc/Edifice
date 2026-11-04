@@ -1278,7 +1278,15 @@ const ZCLS={P:'ann',S:'ann',I:'pend',C:'pend',X:'reg','?':'unc'};
 let DK='land';try{DK=localStorage.getItem('edks_dk')||'land'}catch(e){}if(DK!=='storage')DK='land';
 // ---- Site Planning (#plan/<siteId>), admin only. Estimates in the browser; working inputs autosave to localStorage (edks_plan_<id>);
 // explicit "Save scheme" writes one compact doc to Firestore site_plans_saved (see the test-fit block below).
-const SP_DEF={hallW:250,hallL:1000,stories:1,storyFt:30,wsf:200,pue:1.3,unitMW:10,acPer10:1,plantSet:1000,bldSet:100,gap:100,ease:150,subAc:5,gridOv:'',gasOv:'',flood:1,maxH:'',cov:'',far:'',zSet:'',use:''};
+const SP_DEF={hallW:250,hallL:1000,stories:1,storyFt:30,wsf:200,pue:1.3,unitMW:10,acPer10:1,plantSet:1000,bldSet:100,gap:100,ease:150,subAc:5,gridOv:'',gasOv:'',flood:1,maxH:'',cov:'',far:'',zSet:'',use:'',gen:'recip'};
+// on-site generation types. recip = N+1 reciprocating engines (unitMW / acPer10 / plantSet inputs). fuel_cell = Bloom Energy Server 6.5 SOFC:
+// 325 kW/unit (Bloom ES6.5 datasheet Feb 2026), 0.088 ac/MW incl. clearances + electrical BOP (AEP/Amazon Hilliard OH: 72.9 MW on ~6.4 ac),
+// installed = 1.31 x running (Nebius/Bloom Vineland: 328 MW installed for ~250 MW), ~7,000 Btu/kWh HHV lifetime planning heat rate,
+// 100 ft clearance from the parcel line (zoning setback + fire/access; <65 dBA @ 10 ft so no engine noise setback). Planning values, not quotes.
+const SP_GEN={fuel_cell:{label:'Bloom ES6.5 fuel cell',unitMW:.325,acMW:.088,redund:1.31,hr:7000,clear:100}};
+// site-level generation settings from the admin-only constraint doc (cx.gen: {type, grid_mw, uncapped}) applied over the inputs
+function spGenInp(s,inp){const c=spCx(s),g=c&&c.gen,t=(g&&g.type)||inp.gen,F=SP_GEN[t];const o=Object.assign({},inp,{gen:F?t:'recip'});
+ if(F)Object.assign(o,{unitMW:F.unitMW,acPer10:F.acMW*10,plantSet:F.clear});if(g&&g.grid_mw!=null&&(o.gridOv===''||o.gridOv==null))o.gridOv=+g.grid_mw;o._unc=!!(g&&g.uncapped);return o}
 const SP={id:null,co:'land',last:{},map:null,draw:null,inp:null,poly:null,res:null,ly:{},cx:{}};
 // No-build easement defaults. ROW = full corridor width centred on the line; setback = extra building setback from each ROW edge.
 // These are TYPICAL values, not law: there is no federal building setback from pipelines (49 CFR 192/195 regulate operators;
@@ -1353,8 +1361,8 @@ function spPlantFree(G,H,inp){const {nx,ny,C,inn,dE,bad}=G,occ=new Uint8Array(nx
  H.forEach(([i,j,w,h])=>{for(let b=Math.max(0,j-g);b<Math.min(ny,j+h+g);b++)for(let a=Math.max(0,i-g);a<Math.min(nx,i+w+g);a++)occ[b*nx+a]=1;out.push(cnt())});return out}
 function spInputs(s){const p=spLoad(s.id)||{};return Object.assign({},SP.co==='storage'?ST_DEF:SP_DEF,p.inp||{})}
 // goal seek: enumerate halls n and gas units k; IT MW = min(n·hall IT, (grid + firm gas)/PUE) subject to land, plant land, gas supply, height, coverage, FAR
-function spSolve(s,poly,inp,G0){const G=G0||spGrid(poly,inp,s),ge=spGridEst(s),gs=spGasEst(s);
- const grid=inp.gridOv!==''&&inp.gridOv!=null?+inp.gridOv:ge.mw,gasCap=inp.gasOv!==''&&inp.gasOv!=null?+inp.gasOv:gs.mw;
+function spSolve(s,poly,inp,G0){inp=spGenInp(s,inp);const FC=SP_GEN[inp.gen]||null,G=G0||spGrid(poly,inp,s),ge=spGridEst(s),gs=spGasEst(s);
+ const grid=inp.gridOv!==''&&inp.gridOv!=null?+inp.gridOv:ge.mw,gasCap=inp.gasOv!==''&&inp.gasOv!=null?+inp.gasOv:inp._unc?1e6:gs.mw;
  const set=Math.max(+inp.bldSet||0,inp.zSet!==''?+inp.zSet:0),H=G.H&&G.Hset===set+'|'+inp.hallW+'|'+inp.hallL+'|'+inp.gap?G.H:spPack(G,inp,set);G.H=H;G.Hset=set+'|'+inp.hallW+'|'+inp.hallL+'|'+inp.gap;
  const pf=G.pf&&G.pfK===G.Hset+'|'+inp.plantSet?G.pf:spPlantFree(G,H,inp);G.pf=pf;G.pfK=G.Hset+'|'+inp.plantSet;
  const fp=inp.hallW*inp.hallL,maxSt=inp.maxH!==''?Math.max(0,Math.floor(+inp.maxH/inp.storyFt)):99,st=Math.min(inp.stories,maxSt);
@@ -1362,8 +1370,8 @@ function spSolve(s,poly,inp,G0){const G=G0||spGrid(poly,inp,s),ge=spGridEst(s),g
  const hallIT=fp*st*inp.wsf/1e6,u=+inp.unitMW||10,acU=u/10*inp.acPer10,O=[];
  for(let n=0;n<=H.length;n++){if(n>covN||n>farN||st<1)break;const plantAc=Math.max(0,pf[n]-(grid>0?inp.subAc:0));
   const kLand=Math.floor(plantAc/acU),kGas=Math.floor(gasCap/u),kMax=Math.min(kLand,kGas);
-  const need=n*hallIT*inp.pue,kNeed=Math.max(0,need-grid)>0?Math.ceil((need-grid)/u)+1:0,k=Math.min(kMax,kNeed);
-  const firm=k>1?(k-1)*u:0,sup=grid+firm,it=Math.min(n*hallIT,sup/inp.pue);
+  const need=n*hallIT*inp.pue,run=Math.max(0,need-grid),kNeed=run>0?(FC?Math.ceil(run*FC.redund/u-1e-9):Math.ceil(run/u)+1):0,k=Math.min(kMax,kNeed);
+  const firm=FC?k*u/FC.redund:k>1?(k-1)*u:0,sup=grid+firm,it=Math.min(n*hallIT,sup/inp.pue);
   const gridUse=Math.min(grid,it*inp.pue),gasUse=Math.max(0,it*inp.pue-gridUse);
   const cost=(gridUse>0?ge.cost:0)+(k?k*u*1.4+gs.lat:0),months=Math.max(gridUse>0?ge.months:0,k?20:0);
   O.push({n,k,it,fac:it*inp.pue,gridUse,gasUse,inst:k*u,cost,months,kLand,kGas,need,sup,bind:''})}
@@ -1373,7 +1381,8 @@ function spSolve(s,poly,inp,G0){const G=G0||spGrid(poly,inp,s),ge=spGridEst(s),g
  if(st<1)bind='Height';else if(B.need>B.sup+1e-6){bind=B.kGas<=B.kLand?(gasCap>=u?'Gas supply':'Grid'+(ge.cap?' cap ('+spN(grid)+' MW)':'')+(gasCap>0?' · gas '+spN(gasCap,1)+' MW < one '+u+' MW unit':' (no gas)')):'Land (gas plant)'}
  else if(B.n>=covN&&covN<=H.length)bind='Coverage';else if(B.n>=farN&&farN<=H.length)bind='FAR';else bind=st<inp.stories?'Height':'Land';
  const top=[],seen=new Set();for(const o of O){if(o.n>Math.ceil(o.it/hallIT-1e-9))continue;const kk=Math.round(o.it);if(seen.has(kk))continue;seen.add(kk);top.push(o);if(top.length>=5)break}
- const r={G,H,ge,gs,grid,gasCap,best:B,bind,top,hallIT,st,acU,set,areaAc:G.areaAc};r.sub=spSub(G,r,inp);return r}
+ if(FC&&B.gasUse){const h=B.gasUse*FC.hr/1000;B.gas={mmbtuh:h,dthd:h*24,mmcfd:h*24/1037}}
+ const r={G,H,ge,gs,grid,gasCap,best:B,bind,top,hallIT,st,acU,set,areaAc:G.areaAc,gen:inp.gen,unc:inp._unc};r.sub=spSub(G,r,inp);return r}
 // substation block (subAc) on buildable cells clear of the halls and their aisles, nearest the mapped transmission line
 function spSub(G,r,inp){const B=r.best;if(!(r.grid>0)||!B||!B.n||!(+inp.subAc>0))return null;const {nx,ny,C}=G,occ=new Uint8Array(nx*ny),g=Math.ceil(inp.gap/C);
  r.H.slice(0,B.n).forEach(([i,j,w,h])=>{for(let b=Math.max(0,j-g);b<Math.min(ny,j+h+g);b++)for(let a=Math.max(0,i-g);a<Math.min(nx,i+w+g);a++)occ[b*nx+a]=1});
@@ -1473,7 +1482,7 @@ function spShow(id,co){if(!isAdm()){location.hash='#deals';return}spShell();co=c
  $('spPick').value=id;spForm();spMapInit().then(()=>spCxLoad(spSite())).then(()=>{spLyrVis();spRun()})}
 // one admin-only doc read per opened deal (site_constraints/{id}); its sd record fills site data for deals outside meta/sitedata
 async function spCxLoad(s){if(!s||SP.cx[s.id]!==undefined)return;const B=window.EDKS_BK;let c=null;try{c=B&&B.siteConstraints?await B.siteConstraints(s.id):(window.EDKS_CX||{})[s.id]||null}catch(e){}
- SP.cx[s.id]=c||null;if(SP.id===s.id&&SP.polySrc==='square'){const R=spParcel(s);if(R){SP.poly=R;SP.polySrc='parcel'}}if(c&&c.sd){SP.sd=SP.sd||{sites:{}};SP.sd.sites=SP.sd.sites||{};if(!SP.sd.sites[s.id])SP.sd.sites[s.id]=c.sd}SP.G=null}
+ SP.cx[s.id]=c||null;if(c&&c.plan&&c.plan.inp&&SP.id===s.id&&SP.co==='land'&&!spLoad(s.id)){SP.inp=Object.assign({},SP_DEF,c.plan.inp);if(typeof spForm==='function')spForm()}if(SP.id===s.id&&SP.polySrc==='square'){const R=spParcel(s);if(R){SP.poly=R;SP.polySrc='parcel'}}if(c&&c.sd){SP.sd=SP.sd||{sites:{}};SP.sd.sites=SP.sd.sites||{};if(!SP.sd.sites[s.id])SP.sd.sites[s.id]=c.sd}SP.G=null}
 function spLyrVis(){const m=SP.map;if(!m)return;const on=SP.co!=='storage';['sp-lines','sp-gas','sp-subs','sp-subl','sp-linel'].forEach(k=>{if(m.getLayer(k))m.setLayoutProperty(k,'visibility',on?'visible':'none')})}
 function spForm(){const I=SP.inp;$('spIn').innerHTML=(SP.co==='storage'?ST_F:SP_F).map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,u])=>`<label class="spf"><span>${l}${u&&u!=='text'?' <i>'+u+'</i>':''}</span><input class="inp mono" data-sp="${k}" type="${u==='text'?'text':'number'}" step="any" value="${esc(I[k])}" placeholder="${k==='gridOv'||k==='gasOv'?'estimate':h.startsWith('Zoning')?'Zoneomics: pending':''}"></label>`).join('')}</div>`).join('')}
 // Site data phase 1 (FEMA NFHL flood, USGS 3DEP slope): D.sitedata, built by pipeline/site_data.py and delivered with the gated data (no extra reads)
@@ -1508,7 +1517,9 @@ async function spMapInit(){await spLayers();if(SP.map)return;try{await loadGL()}
  ['sp-sd-sfha','sp-sd-fw','sp-sd-steep','sp-sd-bld'].forEach(k=>map.addSource(k,{type:'geojson',data:E}));
  map.addLayer({id:'sp-sd-bldl',type:'line',source:'sp-sd-bld',paint:{'line-color':'#6FCF97','line-width':1.6}});map.addLayer({id:'sp-sd-steepf',type:'fill',source:'sp-sd-steep',paint:{'fill-color':'#F2B233','fill-opacity':.35}});map.addLayer({id:'sp-sd-sfhaf',type:'fill',source:'sp-sd-sfha',paint:{'fill-color':'#3B8BEB','fill-opacity':.4}});map.addLayer({id:'sp-sd-fwf',type:'fill',source:'sp-sd-fw',paint:{'fill-color':'#1E4FD8','fill-opacity':.6}});
  map.addSource('sp-flag',{type:'geojson',data:E});map.addLayer({id:'sp-flagf',type:'fill',source:'sp-flag',paint:{'fill-color':['case',['==',['get','k'],'sub'],'#9B7BEA','#FF3B30'],'fill-opacity':.55}});map.addLayer({id:'sp-flagl',type:'line',source:'sp-flag',paint:{'line-color':['case',['==',['get','k'],'sub'],'#9B7BEA','#FF3B30'],'line-width':1.6}});
- ['sp-nb','sp-bld','sp-sub','sp-cxl'].forEach(k=>map.addSource(k,{type:'geojson',data:E}));
+ ['sp-nb','sp-bld','sp-sub','sp-cxl','sp-adopt'].forEach(k=>map.addSource(k,{type:'geojson',data:E}));
+ map.addLayer({id:'sp-adoptf',type:'fill',source:'sp-adopt',paint:{'fill-color':['match',['get','kind'],'hall','#F14B21','fuel_cell','#2CA02C','substation','#9B7BEA','gas_yard','#D62728','pond','#17BECF','#999'],'fill-opacity':.45}});
+ map.addLayer({id:'sp-adoptl',type:'line',source:'sp-adopt',paint:{'line-color':'#222','line-width':1,'line-dasharray':[2,1]}});
  map.addLayer({id:'sp-bldf',type:'fill',source:'sp-bld',paint:{'fill-color':'#6FCF97','fill-opacity':.10}},'sp-hallf');
  map.addLayer({id:'sp-nbf',type:'fill',source:'sp-nb',paint:{'fill-color':['match',['get','k'],1,'#FF7A1A',2,'#3B8BEB','#8A8A8A'],'fill-opacity':.42}},'sp-hallf');
  map.addLayer({id:'sp-cxlf',type:'fill',source:'sp-cxl',filter:['==',['geometry-type'],'Polygon'],paint:{'fill-color':'#FF7A1A','fill-opacity':.35}});
@@ -1554,26 +1565,33 @@ function spDrawMap(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;cons
  const rect=(i,j,w,h)=>{const x=G.x0+i*G.C,y=G.y0+j*G.C,X=x+w*G.C,Y=y+h*G.C;return [[x,y],[X,y],[X,Y],[x,Y],[x,y]].map(P.b)};
  m.getSource('sp-halls').setData({type:'FeatureCollection',features:r.H.map((h,i)=>({type:'Feature',properties:{on:i<r.best.n},geometry:{type:'Polygon',coordinates:[rect(...h)]}}))});
  // gas plant: show its footprint as a block of eligible free cells nearest the deepest interior point
- const F=[];if(r.best.k){const need=Math.ceil(r.best.inst/10*SP.inp.acPer10*43560/(G.C*G.C)),occ=new Uint8Array(G.nx*G.ny),g=Math.ceil(SP.inp.gap/G.C);r.H.slice(0,r.best.n).forEach(([i,j,w,h])=>{for(let b=Math.max(0,j-g);b<Math.min(G.ny,j+h+g);b++)for(let a=Math.max(0,i-g);a<Math.min(G.nx,i+w+g);a++)occ[b*G.nx+a]=1});
-  const el=[];for(let k=0;k<G.nx*G.ny;k++)if(G.inn[k]&&!G.bad[k]&&!occ[k]&&G.dE[k]>=SP.inp.plantSet)el.push(k);let c=el.reduce((a,k)=>G.dE[k]>G.dE[a]?k:a,el[0]);
+ const F=[];if(r.best.k){const need=Math.ceil(r.best.inst/10*spGenInp(s,SP.inp).acPer10*43560/(G.C*G.C)),occ=new Uint8Array(G.nx*G.ny),g=Math.ceil(SP.inp.gap/G.C);r.H.slice(0,r.best.n).forEach(([i,j,w,h])=>{for(let b=Math.max(0,j-g);b<Math.min(G.ny,j+h+g);b++)for(let a=Math.max(0,i-g);a<Math.min(G.nx,i+w+g);a++)occ[b*G.nx+a]=1});
+  const el=[];for(let k=0;k<G.nx*G.ny;k++)if(G.inn[k]&&!G.bad[k]&&!occ[k]&&G.dE[k]>=spGenInp(s,SP.inp).plantSet)el.push(k);let c=el.reduce((a,k)=>G.dE[k]>G.dE[a]?k:a,el[0]);
   if(c!=null){const ci=c%G.nx,cj=Math.floor(c/G.nx);el.sort((a,b)=>Math.hypot(a%G.nx-ci,Math.floor(a/G.nx)-cj)-Math.hypot(b%G.nx-ci,Math.floor(b/G.nx)-cj));el.slice(0,need).forEach(k=>F.push({type:'Feature',geometry:{type:'Polygon',coordinates:[rect(k%G.nx,Math.floor(k/G.nx),1,1)]}}))}}
  m.getSource('sp-plant').setData({type:'FeatureCollection',features:F});
  if(m.getSource('sp-nb')){const runs=(f)=>{const o=[];for(let j=0;j<G.ny;j++){let a=-1;for(let i=0;i<=G.nx;i++){const v=i<G.nx&&f(j*G.nx+i);if(v!==false&&v!==0&&v!=null&&a<0){a=i;o.v=v}else if(a>=0&&(i===G.nx||v!==o.v)){o.push({type:'Feature',properties:{k:o.v},geometry:{type:'Polygon',coordinates:[rect(a,j,i-a,1)]}});a=-1;if(v){a=i;o.v=v}}}}return o};
   m.getSource('sp-nb').setData({type:'FeatureCollection',features:runs(k=>G.inn[k]&&G.nb[k]?G.nb[k]:0)});
   m.getSource('sp-bld').setData({type:'FeatureCollection',features:runs(k=>G.inn[k]&&!G.bad[k]?1:0)});
   const sb=r.sub&&r.sub.cells||[];m.getSource('sp-sub').setData({type:'FeatureCollection',features:sb.map(k=>({type:'Feature',geometry:{type:'Polygon',coordinates:[rect(k%G.nx,Math.floor(k/G.nx),1,1)]}}))});
+  if(m.getSource('sp-adopt'))m.getSource('sp-adopt').setData(spAdoptFC(s));
   const c=spCx(s);m.getSource('sp-cxl').setData({type:'FeatureCollection',features:(c&&c.easements||[]).map(e=>({type:'Feature',properties:{approx:!!e.approx,t:(e.label||'Easement')+(e.approx?' · APPROXIMATE':'')},geometry:e.geometry}))})}
  const bb=SP.poly.reduce((b,p)=>[[Math.min(b[0][0],p[0]),Math.min(b[0][1],p[1])],[Math.max(b[1][0],p[0]),Math.max(b[1][1],p[1])]],[[180,90],[-180,-90]]);
  if(SP.fitFor!==s.id+SP.polySrc+SP.poly.length){SP.fitFor=s.id+SP.polySrc+SP.poly.length;m.fitBounds(bb,{padding:60,duration:0,maxZoom:16})}
  $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':SP.polySrc==='parcel'?'Parcel boundary on file'+(spCx(s).parcel_src?' ('+esc(spCx(s).parcel_src)+')':''):'No parcel polygon on file · '+fmt(s.acres,0)+'-acre square around the pin'} · ${spN(r.areaAc)} ac · ${r.H.length} hall slots · buildable ${spN(G.buildAc,1)} ac (easements ${spN(G.nbE,1)} · flood ${spN(G.nbF,1)} · excluded ${spN(G.nbX,1)} · line buffers ${spN(G.easeAc,1)} ac)`;spSD(s);spCX(s,r)}
-function spOut(s,r){const B=r.best,I=SP.inp,est=(ov)=>ov===''||ov==null?' <span class="spest">ESTIMATE</span>':' <span class="spest ov">OVERRIDE</span>';const fl=s.floodplain;
+function spOut(s,r){const B=r.best,I=SP.inp,AP=spAdoptHtml(s),est=(ov)=>ov===''||ov==null?' <span class="spest">ESTIMATE</span>':' <span class="spest ov">OVERRIDE</span>';const fl=s.floodplain;
  const mix=B.fac?Math.round(100*B.gridUse/B.fac):0,mt=x=>x?Math.round(x)+' mo':'—';
- $('spOut').innerHTML=`<div class="spbig"><div class="lbl mono">Max IT load</div><b class="mono">${spN(B.it,1)}<i> MW</i></b><div class="lbl mono">${spN(B.fac,1)} MW facility at PUE ${I.pue} · ${B.n} hall${B.n===1?'':'s'} × ${spN(r.hallIT,1)} MW IT${r.st>1?' · '+r.st+' stories':''}</div></div>
+ $('spOut').innerHTML=AP+`<div class="spbig"><div class="lbl mono">${AP?'Live estimate (re-packed in the browser; the adopted plan above is the site plan)':'Max IT load'}</div><b class="mono">${spN(B.it,1)}<i> MW</i></b><div class="lbl mono">${spN(B.fac,1)} MW facility at PUE ${I.pue} · ${B.n} hall${B.n===1?'':'s'} × ${spN(r.hallIT,1)} MW IT${r.st>1?' · '+r.st+' stories':''}</div></div>
  <div class="spbind"><span class="lbl mono">Binding constraint</span><span class="spbadge">${esc(r.bind)}</span></div>
- <div class="spmix"><div class="lbl mono">Power mix</div><div class="spbar"><i style="width:${mix}%"></i></div><div class="spmr mono"><span>Grid ${spN(B.gridUse)} MW</span><span>Gas ${spN(B.gasUse)} MW${B.k?' · '+B.k+'×'+I.unitMW+' MW (N+1)':''}</span></div></div>
- ${kv([['Grid available',spN(r.grid)+' MW'+est(I.gridOv)+'<br><small>'+esc(r.ge.why)+'</small>'],['Gas supply',spN(r.gasCap)+' MW'+est(I.gasOv)+'<br><small>'+esc(r.gs.why)+'</small>'],['Power capex',B.fac?'$'+spN(B.cost)+'M · $'+spN(B.cost/B.fac,2)+'M/MW <span class="spest">ESTIMATE</span>':'—'],['Time to power',mt(B.months)+(B.months?' <span class="spest">ESTIMATE</span>':'')],['Site',spN(r.areaAc)+' ac · '+r.H.length+' hall slots'+(fl&&fl.pct!=null?' · '+fmt(fl.pct)+'% in FEMA 100-yr floodplain':'')],['Zoning',(I.use||'<span class="muted">Zoneomics: pending</span>')+(I.maxH!==''?' · '+I.maxH+' ft max':'')+(I.cov!==''?' · '+I.cov+'% cov':'')],['Not modelled','Water, emissions permit']])}
+ <div class="spmix"><div class="lbl mono">Power mix</div><div class="spbar"><i style="width:${mix}%"></i></div><div class="spmr mono"><span>Grid ${spN(B.gridUse)} MW</span><span>${r.gen==='fuel_cell'?'Fuel cell':'Gas'} ${spN(B.gasUse)} MW${B.k?(r.gen==='fuel_cell'?' · '+B.k+'×325 kW Bloom ES6.5 ('+spN(B.inst,1)+' MW installed, 1.31×)':' · '+B.k+'×'+I.unitMW+' MW (N+1)'):''}</span></div></div>
+ ${kv([['Grid available',spN(r.grid)+' MW'+est(I.gridOv)+'<br><small>'+esc(r.ge.why)+'</small>'],['Gas supply',(r.unc&&(I.gasOv===''||I.gasOv==null)?'Uncapped (site setting)':spN(r.gasCap)+' MW'+est(I.gasOv))+'<br><small>'+esc(r.gs.why)+'</small>'+(B.gas?'<br><small>Fuel-cell gas at ~7,000 Btu/kWh HHV: '+spN(B.gas.mmbtuh)+' MMBtu/h · '+spN(B.gas.dthd)+' Dth/d · '+spN(B.gas.mmcfd,1)+' MMcf/d · 12–18 psig delivery</small>':'')],['Power capex',B.fac?'$'+spN(B.cost)+'M · $'+spN(B.cost/B.fac,2)+'M/MW <span class="spest">ESTIMATE</span>':'—'],['Time to power',mt(B.months)+(B.months?' <span class="spest">ESTIMATE</span>':'')],['Site',spN(r.areaAc)+' ac · '+r.H.length+' hall slots'+(fl&&fl.pct!=null?' · '+fmt(fl.pct)+'% in FEMA 100-yr floodplain':'')],['Zoning',(I.use||'<span class="muted">Zoneomics: pending</span>')+(I.maxH!==''?' · '+I.maxH+' ft max':'')+(I.cov!==''?' · '+I.cov+'% cov':'')],['Not modelled','Water, emissions permit']])}
  <div class="lbl mono" style="margin-top:14px">Top options</div><table class="lt sptbl"><thead><tr><th>Halls</th><th>IT MW</th><th>Grid</th><th>Gas</th><th>$M/MW</th><th>Months</th></tr></thead><tbody>${r.top.map((o,i)=>`<tr class="${i?'':'on'}"><td class="n">${o.n}</td><td class="n">${spN(o.it,1)}</td><td class="n">${spN(o.gridUse)}</td><td class="n">${spN(o.gasUse)}</td><td class="n">${o.fac?spN(o.cost/o.fac,2):'—'}</td><td class="n">${o.months||'—'}</td></tr>`).join('')}</tbody></table>
  <div class="lbl mono" style="margin-top:14px">Sensitivity · IT MW at −20% / +20%</div><table class="lt sptbl"><tbody>${r.sens.map(([l,a,b])=>`<tr><td>${l}</td><td class="n">${spN(a,1)}</td><td class="n">${spN(b,1)}</td></tr>`).join('')}</tbody></table>`}
+// adopted site plan from the admin-only constraint doc (cx.plan): fixed layout + figures computed offline; the live estimate stays below it
+function spAdoptHtml(s){const c=spCx(s),P=c&&c.plan;if(!P||!P.k)return '';const k=P.k,A=P.acres||{};
+ return `<div class="spbig" style="border:2px solid #F14B21;padding:10px"><div class="lbl mono">Adopted site plan · <span class="spest">APPROXIMATE</span></div><b class="mono">${spN(k.it,1)}<i> MW IT</i></b>
+ <div class="lbl mono">${spN(k.fac,1)} MW facility · ${esc(P.name||'')}</div>${kv([['Power',esc(k.power||'')],['Generation',esc(k.gen||'')],['Gas',esc(k.gas||'')],['Layout',esc(k.layout||'')],
+ ['Acres',Object.keys(A).map(x=>esc(x)+' '+spN(A[x],1)).join(' · ')],['Basis',esc(P.basis||'')]])}</div>`}
+function spAdoptFC(s){const c=spCx(s),P=c&&c.plan;return {type:'FeatureCollection',features:(P&&P.layout&&P.layout.features)||[]}}
 // ---- Site Planning test-fit (v2): option generator (web worker), zoning pass/fail with the binding rule, IFC/AASHTO
 // circulation checks, 3DEP earthwork, saved schemes in Firestore site_plans_saved (explicit Save only, one fetch per deal
 // on open, no listeners) and a 2-4 scheme compare. Every number is an ESTIMATE labelled with its source.

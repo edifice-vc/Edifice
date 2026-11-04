@@ -13,6 +13,8 @@ Output:
                                                # hand-traced easement (LineString centreline + width, or Polygon of the full
                                                # easement) replaces easement --id in the private src; hard no-build in the planner
   python3 site_constraints.py parcel SITE FILE.geojson [--src ..] [--acres ..]   # stored parcel boundary (replaces the square)
+  python3 site_constraints.py plan SITE FILE.json   # adopted site plan {gen:{type,grid_mw,uncapped}, plan:{name,k,acres,inp,layout,basis}}
+                                               # (computed offline); Site Planning shows it above the live estimate
   python3 site_constraints.py push [--apply]   # site_constraints/{id} docs {j,h,restricted,by,ts}; dry run without --apply.
                                                # 1 read per site for the hash skip; 1 write per changed site.
 Production write: needs Sahil's explicit approval before --apply.
@@ -136,6 +138,26 @@ def parcel(a, src_path=None):
     return g
 
 
+GEN_TYPES = ("recip", "fuel_cell")
+
+
+def plan(a, src_path=None):
+    """Store site-level generation settings and an adopted (offline-computed) site plan on the site."""
+    src_path = src_path or SRC
+    src = json.load(open(src_path)); c = src.get(a.site)
+    if c is None: raise SystemExit(f"plan: {a.site} not in {src_path}")
+    d = json.load(open(a.file)); g = d.get("gen") or {}; p = d.get("plan") or {}
+    if g and g.get("type") not in GEN_TYPES: raise SystemExit(f"plan: gen.type must be one of {GEN_TYPES}")
+    if p and not (isinstance(p.get("k"), dict) and p["k"].get("it") is not None): raise SystemExit("plan: plan.k.it required")
+    for f in (p.get("layout") or {}).get("features", []):
+        if f.get("geometry", {}).get("type") not in ("Polygon", "MultiPolygon"): raise SystemExit("plan: layout features must be polygons")
+    if g: c["gen"] = g
+    if p: c["plan"] = p
+    json.dump(src, open(src_path, "w"), indent=1)
+    print(f"[constraints] {a.site}: gen {g.get('type')} plan {p.get('name')!r}; run stage, then push --apply (needs Sahil's OK)")
+    return c
+
+
 def push(a):
     import edks
     from google.cloud import firestore
@@ -162,4 +184,5 @@ if __name__ == "__main__":
     t.add_argument("--approx", action="store_true", help="scaled/estimated geometry (dashed, flagged APPROXIMATE)")
     t.add_argument("--width", type=float); t.add_argument("--setback", type=float)
     q = sp.add_parser("parcel"); q.add_argument("site"); q.add_argument("file"); q.add_argument("--src"); q.add_argument("--acres", type=float)
-    a = ap.parse_args(); sys.path.insert(0, HERE); {"stage": stage, "push": push, "trace": trace, "parcel": parcel}[a.cmd](a)
+    n = sp.add_parser("plan"); n.add_argument("site"); n.add_argument("file")
+    a = ap.parse_args(); sys.path.insert(0, HERE); {"stage": stage, "push": push, "trace": trace, "parcel": parcel, "plan": plan}[a.cmd](a)

@@ -103,3 +103,46 @@ console.log(JSON.stringify({a,b:spParcel(s).length}))'''
         (d / 'l.geojson').write_text(json.dumps({'type': 'LineString', 'coordinates': [[-97, 38], [-96.99, 38]]}))
         with self.assertRaises(SystemExit):
             sc.parcel(types.SimpleNamespace(site='x', file=str(d / 'l.geojson'), src=None, acres=None), str(d / 'src.json'))
+
+
+@unittest.skipUnless(shutil.which('node'), 'node missing')
+class FuelCell(unittest.TestCase):
+    def solve(self, gen):
+        et = re.search(r'^const SP_ET=.*?\n(?=function )', TPL, re.S | re.M).group(0)
+        defs = re.search(r'^const SP_DEF=.*?\n', TPL, re.M).group(0) + re.search(r'^const SP_GEN=.*?\n', TPL, re.M).group(0)
+        src = ('const SP={sd:{sites:{}},cx:{},ly:{}};function own(x){return x}function fmt(x){return x}function spN(x){return x}\n'
+               'const SP_KV=[[345,450],[230,225],[161,150],[138,110],[115,75],[69,35]];\n' + et + defs + ''.join(fn(n) for n in [
+                   'spGenInp', 'spProj', 'spInside', 'spSegD', 'spArea', 'spSquare', 'spNB', 'spNBhit', 'spGrid', 'spPack', 'spPlantFree',
+                   'spSolve', 'spSub', 'spGridEst', 'spGridEst0', 'spGasEst', 'spGasEst0', 'spKvMW']) + '''
+const s={id:'t',lat:38,lon:-97};SP.cx.t=%s;
+const inp=Object.assign({},SP_DEF,{hallL:800,wsf:150});const r=spSolve(s,spSquare(s,144),inp);
+console.log(JSON.stringify({it:r.best.it,k:r.best.k,inst:r.best.inst,gasUse:r.best.gasUse,gas:r.best.gas||null,gen:r.gen,grid:r.grid}))''' % json.dumps(gen))
+        return json.loads(subprocess.run(['node', '-e', src], capture_output=True, text=True, check=True).stdout)
+
+    def test_fuel_cell_vs_recip(self):
+        fc = self.solve({'gen': {'type': 'fuel_cell', 'grid_mw': 50, 'uncapped': True}})
+        self.assertEqual(fc['gen'], 'fuel_cell'); self.assertEqual(fc['grid'], 50)
+        self.assertGreater(fc['it'], 0)
+        run = fc['it'] * 1.3 - 50
+        self.assertAlmostEqual(fc['gasUse'], run, 3)
+        self.assertGreaterEqual(fc['k'] * 0.325 / 1.31, run - 1e-6)           # 1.31x installed covers running load
+        self.assertLess((fc['k'] - 1) * 0.325 / 1.31, run)
+        self.assertAlmostEqual(fc['gas']['mmcfd'], run * 7000 / 1000 * 24 / 1037, 3)
+        rc = self.solve({'caps': {'grid_mw': 50, 'gas_mw': 0.6}})              # no gen setting: recip, gas capped
+        self.assertEqual(rc['gen'], 'recip'); self.assertIsNone(rc['gas'])
+        self.assertLess(rc['it'], fc['it'])
+
+    def test_plan_command(self):
+        import sys, tempfile, types
+        sys.path.insert(0, str(ROOT / 'pipeline')); import site_constraints as sc
+        d = pathlib.Path(tempfile.mkdtemp())
+        (d / 'src.json').write_text(json.dumps({'x': {'lat': 38, 'lon': -97, 'acres': 10}}))
+        sq = {'type': 'Polygon', 'coordinates': [[[-97, 38], [-96.99, 38], [-96.99, 38.01], [-97, 38]]]}
+        (d / 'p.json').write_text(json.dumps({'gen': {'type': 'fuel_cell', 'grid_mw': 50, 'uncapped': True},
+            'plan': {'name': 'A', 'k': {'it': 180}, 'layout': {'type': 'FeatureCollection', 'features': [{'type': 'Feature', 'properties': {'kind': 'hall'}, 'geometry': sq}]}}}))
+        sc.plan(types.SimpleNamespace(site='x', file=str(d / 'p.json')), str(d / 'src.json'))
+        c = json.loads((d / 'src.json').read_text())['x']
+        self.assertEqual(c['gen']['type'], 'fuel_cell'); self.assertEqual(c['plan']['k']['it'], 180)
+        (d / 'b.json').write_text(json.dumps({'gen': {'type': 'nuclear'}}))
+        with self.assertRaises(SystemExit):
+            sc.plan(types.SimpleNamespace(site='x', file=str(d / 'b.json')), str(d / 'src.json'))
