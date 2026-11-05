@@ -2112,8 +2112,19 @@ function cvEdgeSet(E,d,dn){const f=d>.7,f2=E.front2&&dn(CV_DIR[E.front2])>.7,res
  const base=d<-.7?+E.setR||0:+E.setS||0;return {kind:d<-.7?'rear':'side',s:Math.max(base,res?rb:0),h:Math.max(10,res?rb:0),row:0,ue:0,buf:res?rb:0}}
 // inward offset ring of a closed ring Q with per-edge distances D (rotated frame)
 function cvOffset(Q,D){const n=Q.length-1;if(n<3)return null;let sa=0;for(let i=0;i<n;i++)sa+=Q[i][0]*Q[i+1][1]-Q[i+1][0]*Q[i][1];const sg=sa>0?1:-1,Ls=[];
- for(let i=0;i<n;i++){const a=Q[i],b=Q[i+1],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l*sg,ny=dx/l*sg,d=D[i]||0;Ls.push([[a[0]+nx*d,a[1]+ny*d],[dx,dy]])}
- const P=[];for(let i=0;i<n;i++){const [p,u]=Ls[(i+n-1)%n],[q,v]=Ls[i],cr=u[0]*v[1]-u[1]*v[0];if(Math.abs(cr)<1e-6){P.push(q);continue}const t=((q[0]-p[0])*v[1]-(q[1]-p[1])*v[0])/cr;P.push([p[0]+u[0]*t,p[1]+u[1]*t])}P.push(P[0]);return P}
+ for(let i=0;i<n;i++){const a=Q[i],b=Q[i+1],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l*sg,ny=dx/l*sg,d=D[i]||0;Ls.push([[a[0]+nx*d,a[1]+ny*d],[dx,dy],[nx,ny,d,l,dx/l,dy/l]])}
+ // Prefer mitred ring when every corner stays inside Q. At concave reflex corners the mitre shoots
+ // outside (cul-de-sac notches) — fall back to per-edge segments with no corner join so the dashed
+ // setback never leaves the parcel. Endpoints are pulled a foot off each vertex so they don't sit on
+ // the adjacent edge (where point-in-polygon is flaky). Callers that draw should prefer R.segs.
+ const mit=[];let ok=true;for(let i=0;i<n;i++){const [p,u]=Ls[(i+n-1)%n],[q,v]=Ls[i],cr=u[0]*v[1]-u[1]*v[0];let pt;if(Math.abs(cr)<1e-6)pt=q;else{const t=((q[0]-p[0])*v[1]-(q[1]-p[1])*v[0])/cr;pt=[p[0]+u[0]*t,p[1]+u[1]*t]}
+  if(!tfIn(pt[0],pt[1],Q)){ok=false;break}mit.push(pt)}
+ const segs=[];for(let i=0;i<n;i++){const [, ,nml]=Ls[i],d=nml[2],l=nml[3],ux=nml[4],uy=nml[5];if(d<=0||l<1e-6)continue;
+  const inset=Math.min(l*.5,Math.max(1,d*0.05)),a=Q[i],b=Q[i+1];
+  const p=[a[0]+ux*inset+nml[0]*d,a[1]+uy*inset+nml[1]*d],q=[b[0]-ux*inset+nml[0]*d,b[1]-uy*inset+nml[1]*d];
+  const mx=(p[0]+q[0])/2,my=(p[1]+q[1])/2;if(tfIn(p[0],p[1],Q)&&tfIn(q[0],q[1],Q)&&tfIn(mx,my,Q))segs.push([p,q])}
+ if(ok&&mit.length>=3){mit.push(mit[0]);mit.segs=segs.length?segs:null;return mit}
+ if(!segs.length)return null;const P=[];for(const s of segs){P.push(s[0],s[1])}P.push(P[0]);P.segs=segs;return P}
 // buildable-area accounting on a lattice (rotated frame). C from tfCtx; extra: rects to deduct (pond). returns acres by category
 function cvBuildable(C,nbKind,pond){const [x0,y0,x1,y1]=C.bb,st=Math.max(8,Math.sqrt(C.A)/140),o={gross:0,row:0,road:0,setback:0,easement:0,stream:0,power:0,flood:0,bld:0,excl:0,pond:0,net:0};
  for(let y=y0+st/2;y<y1;y+=st)for(let x=x0+st/2;x<x1;x+=st){if(!tfIn(x,y,C.Q))continue;o.gross++;const e=C.edgeAt(x,y);
@@ -2221,7 +2232,7 @@ function tfSheet(r,meta,W,H){meta=meta||{};W=W||1500;H=H||960;const C=r.C,un=C.u
  CO.forEach(c=>{const mx=(c.a[0]+c.b[0])/2,my=(c.a[1]+c.b[1])/2;let an=Math.atan2(-(c.b[1]-c.a[1]),c.b[0]-c.a[0])*180/Math.PI;if(an>90)an-=180;if(an<-90)an+=180;
   const short=c.dist*sc<150;lab.push(`<text ${F} font-size="10" fill="${ink}" text-anchor="middle" transform="translate(${X(mx).toFixed(1)},${Y(my).toFixed(1)}) rotate(${an.toFixed(1)}) translate(0,-6)">${esc2(many||short?'L'+c.n:c.brg+'  '+c.dist.toFixed(2)+"'")}</text>`)});
  // setbacks: dashed ring + per-edge dimension
- if(C.setRing&&C.setRing.length>2){const S=shOpen(C.setRing.map(un));g.push(poly(S,'fill="none" stroke="#b8860b" stroke-width="1.3" stroke-dasharray="8 5"'));S.forEach(p=>PT.add(p,'Setback line corner'))}
+ if(C.setRing&&C.setRing.segs&&C.setRing.segs.length){C.setRing.segs.forEach(s=>{const S=s.map(un);g.push(poly(S,'fill="none" stroke="#b8860b" stroke-width="1.3" stroke-dasharray="8 5"'))});}else if(C.setRing&&C.setRing.length>2){const S=shOpen(C.setRing.map(un));g.push(poly(S,'fill="none" stroke="#b8860b" stroke-width="1.3" stroke-dasharray="8 5"'));S.forEach(p=>PT.add(p,'Setback line corner'))}
  if(C.rowRing&&C.rowRing.length>2)g.push(poly(C.rowRing.map(un),'fill="none" stroke="#c0392b" stroke-width="1" stroke-dasharray="3 3"'));
  C.edges.forEach(([a,b,s,h,k])=>{if(!(s>0))return;const A=un(a),B=un(b),L=shDist(A,B);if(L*sc<60)return;const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2,cx=(x0+x1)/2,cy=(y0+y1)/2;let nx=-(B[1]-A[1])/L,ny=(B[0]-A[0])/L;if(nx*(cx-mx)+ny*(cy-my)<0){nx=-nx;ny=-ny}
   const P2=[mx+nx*s,my+ny*s];lab.push(`<line x1="${X(mx)}" y1="${Y(my)}" x2="${X(P2[0])}" y2="${Y(P2[1])}" stroke="#b8860b" stroke-width=".8" marker-end="url(#ar)" marker-start="url(#ar)"/>`+txt(X(P2[0])+3,Y(P2[1])+11,Math.round(s)+"' "+String(k.kind||'').toUpperCase()+' SETBACK',`${F} font-size="9.5" fill="#8a6100"`))});
@@ -2340,8 +2351,8 @@ async function shxDem(P,X0,Y0,X1,Y1,nx){const ll0=P.b([X0,Y0]),ll1=P.b([X1,Y1]),
  return {nx,ny,X0,Y0,dx,dy,G,src:'USGS 3DEP via AWS Terrain Tiles (z15 ≈ 4 m)'}}
 async function shxLoad(s,P,R){if(SHX[s.id])return;SHX[s.id]={loading:1};try{const j=JSON.parse(localStorage.getItem(shxKey(s.id))||'null'),age=j?Date.now()-j.ts:1e15;
   // 30-day cache; a source that failed is retried after 6 h
-  if(j&&j.v===4&&j.n===R.length&&age<30*864e5&&!(j.errs&&Object.keys(j.errs).length&&age>6*36e5)){SHX[s.id]=j;return}}catch(e){}
- let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});const m=600,a=P.b([x0-m,y0-m]),b=P.b([x1+m,y1+m]),o={v:4,ts:Date.now(),n:R.length,roads:[],streams:[],streamBuf:50,tx:[],subs:[],flood:[],bld:[],bldBuf:50,topo:null,src:{},errs:{}};
+  if(j&&j.v===5&&j.n===R.length&&age<30*864e5&&!(j.errs&&Object.keys(j.errs).length&&age>6*36e5)){SHX[s.id]=j;return}}catch(e){}
+ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});const m=600,a=P.b([x0-m,y0-m]),b=P.b([x1+m,y1+m]),o={v:5,ts:Date.now(),n:R.length,roads:[],streams:[],streamBuf:50,tx:[],subs:[],flood:[],bld:[],bldBuf:50,topo:null,src:{},errs:{}};
  const bb=[a[0],a[1],b[0],b[1]].join(','),env='geometry='+bb+'&geometryType=esriGeometryEnvelope&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&f=geojson',seen=new Set(),rd=p=>[Math.round(p[0]*10)/10,Math.round(p[1]*10)/10],
   geoms=(f,want)=>{const g=f.geometry||{};return want==='line'?(g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]):(g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[])},
   tline=(f,fn)=>geoms(f,'line').forEach(L=>fn(L.map(p=>rd(P.f(p))))),ovp=async q=>(await shxAny(['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'].map(u=>['OSM',u,{method:'POST',body:'data='+encodeURIComponent(q)}]),1,25000)).j,fail=(k,e)=>{o.errs[k]=String(e.message||e).slice(0,300)};
@@ -2366,14 +2377,19 @@ async function shxLoad(s,P,R){if(SHX[s.id])return;SHX[s.id]={loading:1};try{cons
  // 4 FEMA NFHL flood hazard zones (layer 28) -> Living Atlas USA Flood Hazard (same NFHL attributes)
  (async()=>{try{const {j,src}=await shxAny([['FEMA NFHL','https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query?'+env+'&outFields=FLD_ZONE,ZONE_SUBTY,SFHA_TF,STATIC_BFE,DFIRM_ID'],['FEMA NFHL (Living Atlas)','https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_Flood_Hazard_Reduced_Set_gdb/FeatureServer/0/query?'+env+'&outFields=FLD_ZONE,ZONE_SUBTY,SFHA_TF,STATIC_BFE,DFIRM_ID']],2,25000);
   (j.features||[]).forEach(f=>{const q=f.properties||{};geoms(f,'poly').forEach(rings=>o.flood.push({zone:q.FLD_ZONE||'',sub:q.ZONE_SUBTY||'',bfe:q.STATIC_BFE>-9000?q.STATIC_BFE:null,firm:q.DFIRM_ID||'',nb:shFloodNB(q.FLD_ZONE),R:rings.map(r=>r.map(p=>rd(P.f(p))))}))});o.src.flood=src}catch(e){fail('flood',e)}})(),
- // 6 existing building footprints: OSM building=* first, then Microsoft Building Footprints (Living Atlas MSBFP2). 50 ft edge buffer applied in spNB (kind 7).
+ // 6 existing building footprints: OSM → MSBFP2 (geojson) → USA Structures / MSBFP2 via returnIdsOnly then objectIds+geometry (Esri JSON). Direct geometry+geojson often times out from the browser; ids-then-features works. 50 ft edge buffer in spNB (kind 7).
  (async()=>{const pushB=(rings,name,src)=>{if(!rings||!rings.length)return;o.bld.push({name:name||'',R:rings.map(r=>r.map(p=>rd(P.f(p)))),src})};
+  const esriRings=g=>{const out=[];(g&&g.rings||[]).forEach(r=>{if(r&&r.length>2){const ring=r.map(p=>[p[0],p[1]]);if(ring[0][0]!==ring[ring.length-1][0]||ring[0][1]!==ring[ring.length-1][1])ring.push(ring[0]);out.push(ring)}});return out.length?[out]:[]};
+  const idsThen=async(src,url)=>{const idU=url+(url.includes('?')?'&':'?')+'returnIdsOnly=true&returnGeometry=false&f=json';const idJ=await shxGet(idU);const ids=idJ.objectIds||[];if(!ids.length)return 0;const base=url.split('?')[0],q0=(url.split('?')[1]||'').replace(/(^|&)(geometry|geometryType|inSR|spatialRel|where|returnIdsOnly|returnGeometry|f)=[^&]*/g,'').replace(/^&|&$/g,'');
+   for(let i=0;i<ids.length;i+=40){const batch=ids.slice(i,i+40),u=base+'?f=json&objectIds='+batch.join(',')+'&outFields=OBJECTID,BUILD_ID,OCC_CLS,PROP_ADDR,SQFEET&returnGeometry=true&outSR=4326'+(q0?'&'+q0:'');const j=await shxGet(u);(j.features||[]).forEach(f=>{const a=f.attributes||f.properties||{};esriRings(f.geometry).forEach(rings=>pushB(rings,a.PROP_ADDR||a.OCC_CLS||'','USA'))})}
+   if(o.bld.length){o.src.bld=src;delete o.errs.bld}return o.bld.length};
   try{const d=await ovp(`[out:json][timeout:25];(way["building"](${a[1]},${a[0]},${b[1]},${b[0]});relation["building"](${a[1]},${a[0]},${b[1]},${b[0]}););out geom;`);
    (d.elements||[]).forEach(w=>{const t=w.tags||{};if(w.type==='way'&&w.geometry&&w.geometry.length>2){const ring=w.geometry.map(g=>[g.lon,g.lat]);if(ring[0][0]!==ring[ring.length-1][0]||ring[0][1]!==ring[ring.length-1][1])ring.push(ring[0]);pushB([ring],t.name||t['addr:housename']||t.ref||'','OSM')}
     else if(w.type==='relation'&&w.members){const outers=w.members.filter(m=>m.role==='outer'&&m.geometry&&m.geometry.length>2).map(m=>{const ring=m.geometry.map(g=>[g.lon,g.lat]);if(ring[0][0]!==ring[ring.length-1][0]||ring[0][1]!==ring[ring.length-1][1])ring.push(ring[0]);return ring});if(outers.length)pushB(outers,t.name||'','OSM')}});
    if(o.bld.length)o.src.bld='OSM'}catch(e){fail('bld','OSM: '+(e.message||e))}
-  if(!o.bld.length)try{const {j,src}=await shxAny([['MSBFP2','https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/MSBFP2/FeatureServer/0/query?'+env+'&outFields=']],2,25000);
-   (j.features||[]).forEach(f=>geoms(f,'poly').forEach(rings=>pushB(rings,'','MS')));if(o.bld.length){o.src.bld=src;delete o.errs.bld}else if(!o.errs.bld)fail('bld','no footprints in bbox')}catch(e){fail('bld',(o.errs.bld?o.errs.bld+'; ':'')+(e.message||e))}})(),
+  if(!o.bld.length)try{const {j,src}=await shxAny([['MSBFP2','https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/MSBFP2/FeatureServer/0/query?'+env+'&outFields=']],2,20000);
+   (j.features||[]).forEach(f=>geoms(f,'poly').forEach(rings=>pushB(rings,'','MS')));if(o.bld.length){o.src.bld=src;delete o.errs.bld}}catch(e){fail('bld','MSBFP2: '+(e.message||e))}
+  if(!o.bld.length)try{const envJ=env.replace('f=geojson','f=json');await idsThen('USA Structures','https://services2.arcgis.com/FiaPA4ga0iQKduv3/arcgis/rest/services/USA_Structures_View/FeatureServer/0/query?'+envJ);if(!o.bld.length)await idsThen('MSBFP2 ids','https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/MSBFP2/FeatureServer/0/query?'+envJ);if(!o.bld.length&&!o.errs.bld)fail('bld','no footprints in bbox')}catch(e){fail('bld',(o.errs.bld?o.errs.bld+'; ':'')+(e.message||e))}})(),
  // 5 topo: DEM grid over the parcel + 150 ft
  (async()=>{try{o.topo=await shxDem(P,x0-150,y0-150,x1+150,y1+150,Math.min(110,Math.max(40,Math.round((x1-x0)/30))));o.src.topo=o.topo.src}catch(e){fail('topo',e)}})()]);
  SHX[s.id]=o;try{localStorage.setItem(shxKey(s.id),JSON.stringify(o))}catch(e){try{const o2=Object.assign({},o,{topo:null});localStorage.setItem(shxKey(s.id),JSON.stringify(o2))}catch(e2){}}if(spSite()===s){if(typeof TF!=='undefined'&&TF.I)tfRun();if(typeof SP!=='undefined'&&SP.co==='land'&&SP.polySrc!=='square'&&typeof spRun==='function'){SP.G=null;spRun()}}}
@@ -2396,7 +2412,7 @@ function tfOut(s,r){const co=SP.co,Z=r&&TF.ctx.zone,E=r.E;
 function tfFeats(r){const P=TF.P,F=[],q=(R,kind,lab)=>{const [x,y,w,h]=R,c=[[x,y],[x+w,y],[x+w,y+h],[x,y+h],[x,y]].map(p=>P.b(r.C.un(p)));F.push({type:'Feature',properties:{kind,label:lab||kind},geometry:{type:'Polygon',coordinates:[c]}})};
  if(r.co==='land'){r.halls.forEach((h,i)=>{q(h.hall,'hall'+Math.min(8,r.phase[i]),'Hall '+(i+1)+' · P'+r.phase[i]);if(h.gen)q(h.gen,'yard','Gen/cooling yard')});if(r.sub)q(r.sub,'sub','Substation');if(r.park)q(r.park,'park','Parking '+r.stalls)}
  else{if(r.mu)q(r.mu,'cc','Climate-controlled · '+r.stories+' storeys');r.du.forEach(d=>q(d,'du','Drive-up'));if(r.office)q(r.office,'office','Office');r.rv.forEach(d=>q(d,'rv','RV/boat'))}
- if(r.pond)q(r.pond,'pond','Detention pond'+(r.sw?' · '+spN(r.sw.Vac,2)+' ac-ft':''));const ln=(ring,kind,lab)=>{if(ring&&ring.length>2)F.push({type:'Feature',properties:{kind,label:lab},geometry:{type:'LineString',coordinates:ring.concat([ring[0]]).map(p=>P.b(r.C.un(p)))}})};ln(r.C.setRing,'setback','Setback line');ln(r.C.rowRing,'row','ROW dedication line');ln(r.C.hardRing,'ue','Easement / buffer line');return F}
+ if(r.pond)q(r.pond,'pond','Detention pond'+(r.sw?' · '+spN(r.sw.Vac,2)+' ac-ft':''));const ln=(ring,kind,lab)=>{if(!ring)return;const segs=ring.segs;if(segs&&segs.length){for(const s of segs)F.push({type:'Feature',properties:{kind,label:lab},geometry:{type:'LineString',coordinates:s.map(p=>P.b(r.C.un(p)))}});return}if(ring.length>2)F.push({type:'Feature',properties:{kind,label:lab},geometry:{type:'LineString',coordinates:ring.concat([ring[0]]).map(p=>P.b(r.C.un(p)))}})};ln(r.C.setRing,'setback','Setback line');ln(r.C.rowRing,'row','ROW dedication line');ln(r.C.hardRing,'ue','Easement / buffer line');return F}
 const TF_PH=['#F14B21','#3fa7ff','#5ad17a','#c77dff','#ffb000','#00c2c2','#ff6fae','#a0a0a0'];
 const TF_COL={pond:'#0f5e6e',hall:'#F14B21',yard:'#7a7a7a',sub:'#ffd23f',park:'#4a4a4a',cc:'#F14B21',du:'#c9a227',office:'#ffffff',rv:'#5a5a5a'};
 function tfDraw(r){const m=SP.map;if(!m)return;const fc={type:'FeatureCollection',features:tfFeats(r)};if(!m.getSource('tf-geo')){m.addSource('tf-geo',{type:'geojson',data:fc});
