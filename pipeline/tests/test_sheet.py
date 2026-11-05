@@ -26,6 +26,15 @@ class Sheet(unittest.TestCase):
         r = self.js("const Q=sq(10),O=cvOffset(Q,[50,50,50,50]);const h=Math.sqrt(10*43560)/2;return {a:Math.abs(shArea(O)),e:(2*h-100)**2,in:O.every(p=>tfIn(p[0],p[1],Q))}")
         self.assertAlmostEqual(r['a'], r['e'], delta=r['e'] * 0.01); self.assertTrue(r['in'])
 
+    def test_offset_concave_notch_stays_inside(self):
+        # Cul-de-sac-style notch: mitres at reflex corners shoot outside Q; cvOffset must fall back to
+        # per-edge segments so every drawn sample stays inside (no chord across the notch).
+        r = self.js("""const Q=[[0,0],[400,0],[400,200],[250,200],[250,80],[150,80],[150,200],[0,200],[0,0]];
+ const O=cvOffset(Q,[40,40,40,40,40,40,40,40]);const segs=O.segs||[];
+ let dens=0,out=0;for(const s of segs){const a=s[0],b=s[1];for(let k=0;k<=8;k++){dens++;const x=a[0]+(b[0]-a[0])*k/8,y=a[1]+(b[1]-a[1])*k/8;if(!tfIn(x,y,Q))out++}}
+ return {nSeg:segs.length,out,dens,spike:segs.some(s=>s.some(p=>p[0]<-1||p[0]>401||p[1]<-1||p[1]>201))}""")
+        self.assertGreater(r['nSeg'], 4); self.assertEqual(r['out'], 0); self.assertFalse(r['spike'])
+
     def test_band_and_crossing(self):
         r = self.js("const B=shBand([0,0],[100,0],30);const X=shCross(sq(10),[[[-1000,0],[1000,0]]]);return {w:Math.abs(B[0][1]-B[3][1]),n:X.length}")
         self.assertEqual(r['w'], 60); self.assertEqual(r['n'], 2)

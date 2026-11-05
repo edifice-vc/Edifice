@@ -81,8 +81,19 @@ function cvEdgeSet(E,d,dn){const f=d>.7,f2=E.front2&&dn(CV_DIR[E.front2])>.7,res
  const base=d<-.7?+E.setR||0:+E.setS||0;return {kind:d<-.7?'rear':'side',s:Math.max(base,res?rb:0),h:Math.max(10,res?rb:0),row:0,ue:0,buf:res?rb:0}}
 // inward offset ring of a closed ring Q with per-edge distances D (rotated frame)
 function cvOffset(Q,D){const n=Q.length-1;if(n<3)return null;let sa=0;for(let i=0;i<n;i++)sa+=Q[i][0]*Q[i+1][1]-Q[i+1][0]*Q[i][1];const sg=sa>0?1:-1,Ls=[];
- for(let i=0;i<n;i++){const a=Q[i],b=Q[i+1],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l*sg,ny=dx/l*sg,d=D[i]||0;Ls.push([[a[0]+nx*d,a[1]+ny*d],[dx,dy]])}
- const P=[];for(let i=0;i<n;i++){const [p,u]=Ls[(i+n-1)%n],[q,v]=Ls[i],cr=u[0]*v[1]-u[1]*v[0];if(Math.abs(cr)<1e-6){P.push(q);continue}const t=((q[0]-p[0])*v[1]-(q[1]-p[1])*v[0])/cr;P.push([p[0]+u[0]*t,p[1]+u[1]*t])}P.push(P[0]);return P}
+ for(let i=0;i<n;i++){const a=Q[i],b=Q[i+1],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,nx=-dy/l*sg,ny=dx/l*sg,d=D[i]||0;Ls.push([[a[0]+nx*d,a[1]+ny*d],[dx,dy],[nx,ny,d,l,dx/l,dy/l]])}
+ // Prefer mitred ring when every corner stays inside Q. At concave reflex corners the mitre shoots
+ // outside (cul-de-sac notches) — fall back to per-edge segments with no corner join so the dashed
+ // setback never leaves the parcel. Endpoints are pulled a foot off each vertex so they don't sit on
+ // the adjacent edge (where point-in-polygon is flaky). Callers that draw should prefer R.segs.
+ const mit=[];let ok=true;for(let i=0;i<n;i++){const [p,u]=Ls[(i+n-1)%n],[q,v]=Ls[i],cr=u[0]*v[1]-u[1]*v[0];let pt;if(Math.abs(cr)<1e-6)pt=q;else{const t=((q[0]-p[0])*v[1]-(q[1]-p[1])*v[0])/cr;pt=[p[0]+u[0]*t,p[1]+u[1]*t]}
+  if(!tfIn(pt[0],pt[1],Q)){ok=false;break}mit.push(pt)}
+ const segs=[];for(let i=0;i<n;i++){const [, ,nml]=Ls[i],d=nml[2],l=nml[3],ux=nml[4],uy=nml[5];if(d<=0||l<1e-6)continue;
+  const inset=Math.min(l*.5,Math.max(1,d*0.05)),a=Q[i],b=Q[i+1];
+  const p=[a[0]+ux*inset+nml[0]*d,a[1]+uy*inset+nml[1]*d],q=[b[0]-ux*inset+nml[0]*d,b[1]-uy*inset+nml[1]*d];
+  const mx=(p[0]+q[0])/2,my=(p[1]+q[1])/2;if(tfIn(p[0],p[1],Q)&&tfIn(q[0],q[1],Q)&&tfIn(mx,my,Q))segs.push([p,q])}
+ if(ok&&mit.length>=3){mit.push(mit[0]);mit.segs=segs.length?segs:null;return mit}
+ if(!segs.length)return null;const P=[];for(const s of segs){P.push(s[0],s[1])}P.push(P[0]);P.segs=segs;return P}
 // buildable-area accounting on a lattice (rotated frame). C from tfCtx; extra: rects to deduct (pond). returns acres by category
 function cvBuildable(C,nbKind,pond){const [x0,y0,x1,y1]=C.bb,st=Math.max(8,Math.sqrt(C.A)/140),o={gross:0,row:0,road:0,setback:0,easement:0,stream:0,power:0,flood:0,bld:0,excl:0,pond:0,net:0};
  for(let y=y0+st/2;y<y1;y+=st)for(let x=x0+st/2;x<x1;x+=st){if(!tfIn(x,y,C.Q))continue;o.gross++;const e=C.edgeAt(x,y);

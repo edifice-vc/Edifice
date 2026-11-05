@@ -71,9 +71,11 @@ console.log(JSON.stringify({
 
 class SourceWiring(unittest.TestCase):
     def test_shx_loads_buildings(self):
-        self.assertIn('v===4', UI)
+        self.assertIn('v===5', UI)
         self.assertIn('bldBuf:50', UI)
         self.assertIn('MSBFP2', UI)
+        self.assertIn('USA_Structures_View', UI)
+        self.assertIn('returnIdsOnly', UI)
         self.assertIn('way["building"]', UI)
         self.assertIn("Existing buildings + 50 ft buffer", UI)
 
