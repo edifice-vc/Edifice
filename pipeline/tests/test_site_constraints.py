@@ -82,14 +82,14 @@ class StoredParcel(unittest.TestCase):
     @unittest.skipUnless(shutil.which('node'), 'node missing')
     def test_parcel_replaces_square(self):
         et = re.search(r'^const SP_ET=.*?\n(?=function )', TPL, re.S | re.M).group(0)
-        src = 'const SP={sd:{sites:{}},cx:{}};\n' + et + fn('spParcel') + '''
+        src = 'const SP={sd:{sites:{}},cx:{}};\n' + et + fn('spParcelParts') + fn('spParcel') + '''
 const s={id:'t'};
 const a=spParcel(s);SP.cx.t={parcel:{type:'Polygon',coordinates:[[[-97,38],[-96.99,38],[-96.99,38.01],[-97,38.01],[-97,38]]]}};
 console.log(JSON.stringify({a,b:spParcel(s).length}))'''
         r = json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
         self.assertIsNone(r['a']); self.assertEqual(r['b'], 5)
         self.assertIn("SP.polySrc='parcel'", TPL)            # loaded parcel replaces the square, not a drawn boundary
-        self.assertIn("SP.polySrc==='square'){const R=spParcel(s)", TPL)
+        self.assertIn("SP.polySrc==='square')spSetParcel(s)", TPL)
 
     def test_parcel_command(self):
         import sys, tempfile, types
