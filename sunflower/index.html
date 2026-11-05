@@ -1328,6 +1328,10 @@ function spNB(s,inp){const c=spCx(s),P=spProj(+s.lat,+s.lon),segs=[],polys=[];
   (g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[]).forEach(r=>{const RR=r.map(R=>R.map(P.f));polys.push([RR,1]);if(sb>0)RR.forEach(R=>{for(let i=1;i<R.length;i++)segs.push([R[i-1][0],R[i-1][1],R[i][0],R[i][1],sb])})})});
  const addP=(g,k)=>{if(!g)return;(g.type==='Polygon'?[g.coordinates]:g.type==='MultiPolygon'?g.coordinates:[]).forEach(r=>polys.push([r.map(R=>R.map(P.f)),k]))};
  if(c)(c.exclusions||[]).forEach(x=>addP(x.geometry||x,3));
+ // MultiPolygon inter-parcel gaps (and any stored gap polys) = road ROW + setback, kind 4
+ const parts=typeof spParcelParts==='function'?spParcelParts(s):null;
+ if(parts&&parts.length>1)spGapPolys(parts,P).forEach(ring=>polys.push([[ring],4]));
+ if(c)(c.gap_polys||[]).forEach(x=>addP(x.geometry||x,4));
  const d=SP.sd&&SP.sd.sites&&SP.sd.sites[s.id];if(d&&d.geo&&(inp?inp.flood:1)!=0){addP(d.geo.sfha,2);addP(d.geo.floodway,2)}
  // public roads (OSM, ROW/2 + front setback) and NHD streams (+ buffer), fetched in the browser: kinds 4 and 5
  const X=typeof SHX!=='undefined'&&SHX[s.id];if(X&&X.roads){const sf=+((typeof TF!=='undefined'&&TF.I&&TF.I.setF)||(inp&&inp.set)||50);X.roads.forEach(o=>{const L=o.L;for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],o.row/2+sf,4,o.row,o.name])});(X.streams||[]).forEach(L=>{for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],X.streamBuf||50,5,0,'stream'])});(X.tx||[]).forEach(o=>{const L=o.L,w=o.row||100;for(let i=1;i<L.length;i++)segs.push([L[i-1][0],L[i-1][1],L[i][0],L[i][1],w/2,6,w,(o.kv?o.kv+' kV':'transmission')])});(X.flood||[]).forEach(f=>{if(f.nb)polys.push([f.R,2])})}
@@ -1360,20 +1364,47 @@ function spGasEst0(s){const g=s.gasline||{},L=s.gas||{};let mw=0,why='No mapped 
  return {mw:Math.round(mw),mi,why,lat:mi==null?0:2.5*mi}}
 // local feet projection around a pin
 function spProj(lat,lon){const kx=364000*Math.cos(lat*Math.PI/180),ky=364000;return {f:(p)=>[(p[0]-lon)*kx,(p[1]-lat)*ky],b:(q)=>[lon+q[0]/kx,lat+q[1]/ky]}}
-// stored parcel boundary from the admin-only constraint doc (site_constraints/{id}.parcel: GeoJSON Polygon, lon/lat); outer ring only
-// boundary: site_constraints parcel first, else the admin-only parcels doc deal polygon (only accuracy-passing docs are uploaded)
-function spParcel(s){const c=spCx(s),pd=typeof SP!=='undefined'&&SP.pd&&SP.pd[s.id],g=(c&&c.parcel)||(pd&&pd.deal&&pd.deal.g);if(!g)return null;const R=g.type==='Polygon'?g.coordinates[0]:g.type==='MultiPolygon'?g.coordinates[0][0]:null;return R&&R.length>3?R.map(p=>[+p[0],+p[1]]):null}
+// stored parcel boundary: site_constraints parcel first, else parcels doc deal.g (accuracy-passing only).
+// MultiPolygon = disconnected lots; NEVER bridge a gap — each outer ring is its own pack area.
+function spParcelParts(s){const c=spCx(s),pd=typeof SP!=='undefined'&&SP.pd&&SP.pd[s.id],g=(c&&c.parcel)||(pd&&pd.deal&&pd.deal.g);if(!g)return null;
+ const map=R=>R.map(p=>[+p[0],+p[1]]),out=[];
+ if(g.type==='Polygon'){const R=g.coordinates[0];if(R&&R.length>3)out.push(map(R))}
+ else if(g.type==='MultiPolygon')g.coordinates.forEach(poly=>{const R=poly[0];if(R&&R.length>3)out.push(map(R))});
+ return out.length?out:null}
+function spParcel(s){const ps=spParcelParts(s);return ps?ps[0]:null}
+// apply parcel parts to SP: single ring -> SP.poly; MultiPolygon -> SP.polys (all) + SP.poly (first, for legacy callers)
+function spSetParcel(s){const ps=spParcelParts(s);if(!ps)return false;SP.poly=ps[0];SP.polys=ps.length>1?ps:null;SP.polySrc='parcel';return true}
+// inter-part gap polygons in local ft (kind 4 = road ROW): convex-hull of each nearby pair minus the two parts
+function spGapPolys(parts,P){if(!parts||parts.length<2)return [];const R=parts.map(r=>r.map(P.f)),out=[];
+ // convex hull (Andrew monotone chain) of facing vertices — covers the full road corridor, not a closest-point patch
+ const cross=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+ const hull=pts=>{const p=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);if(p.length<3)return p;
+  const lo=[],up=[];for(const q of p){while(lo.length>=2&&cross(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q)}
+  for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>=2&&cross(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q)}
+  lo.pop();up.pop();return lo.concat(up)};
+ const dPtSeg=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;let t=l?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/l:0;t=Math.max(0,Math.min(1,t));return Math.hypot(p[0]-(a[0]+t*dx),p[1]-(a[1]+t*dy))};
+ const dPtPoly=(p,Q)=>{let m=1e18;for(let i=1;i<Q.length;i++)m=Math.min(m,dPtSeg(p,Q[i-1],Q[i]));return m};
+ for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const A=R[i],B=R[j];
+  let d=1e18;for(const p of A)d=Math.min(d,dPtPoly(p,B));for(const p of B)d=Math.min(d,dPtPoly(p,A));
+  if(d>200||d<1)continue; // only road-scale gaps (~ROW width)
+  const near=[],lim=d+80; // facing shores + a little margin
+  for(const p of A)if(dPtPoly(p,B)<=lim)near.push(p);
+  for(const p of B)if(dPtPoly(p,A)<=lim)near.push(p);
+  if(near.length<3)continue;
+  const H=hull(near);if(H.length<3)continue;H.push(H[0]);out.push(H)}
+ return out}
 function spSquare(s,ac){const h=Math.sqrt((ac||100)*43560)/2,P=spProj(+s.lat,+s.lon);return [[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]].map(P.b)}
 function spInside(x,y,R){let c=false;for(let i=0,j=R.length-1;i<R.length;j=i++){const [a,b]=R[i],[e,f]=R[j];if((b>y)!==(f>y)&&x<(e-a)*(y-b)/(f-b)+a)c=!c}return c}
 function spSegD(x,y,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;let t=l?((x-a[0])*dx+(y-a[1])*dy)/l:0;t=Math.max(0,Math.min(1,t));const X=a[0]+t*dx-x,Y=a[1]+t*dy-y;return Math.sqrt(X*X+Y*Y)}
 function spArea(R){let a=0;for(let i=0,j=R.length-1;i<R.length;j=i++)a+=(R[j][0]+R[i][0])*(R[j][1]-R[i][1]);return Math.abs(a/2)}
 // rasterise the boundary into 50 ft cells; mark easement cells (within 150 ft of a mapped line or pipeline) and edge distance
-function spGrid(poly,inp,s){const P=spProj(+s.lat,+s.lon),R=poly.map(P.f),C=50;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)});
+function spGrid(poly,inp,s){const P=spProj(+s.lat,+s.lon),parts=((SP.polys&&SP.polys.length&&poly===SP.poly)?SP.polys:[poly]).map(r=>r.map(P.f)),C=50;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;parts.forEach(R=>R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}));
  const nx=Math.ceil((x1-x0)/C),ny=Math.ceil((y1-y0)/C),N=nx*ny,inn=new Uint8Array(N),dE=new Float32Array(N),bad=new Uint8Array(N),nb=new Uint8Array(N),NB=spNB(s,inp),lseg=[];
  const segs=[];['lines','gas'].forEach(k=>{const G=SP.ly[k];if(!G)return;G.features.forEach(f=>{const g=f.geometry;if(!g)return;(g.type==='LineString'?[g.coordinates]:g.type==='MultiLineString'?g.coordinates:[]).forEach(L=>{for(let i=1;i<L.length;i++){const a=P.f(L[i-1]),b=P.f(L[i]);if(Math.max(a[0],b[0])<x0-500||Math.min(a[0],b[0])>x1+500||Math.max(a[1],b[1])<y0-500||Math.min(a[1],b[1])>y1+500)continue;segs.push([a,b]);if(k==='lines')lseg.push([a,b])}})})});
- let area=0;for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const x=x0+(i+.5)*C,y=y0+(j+.5)*C,k=j*nx+i;if(!spInside(x,y,R))continue;inn[k]=1;area+=C*C;let d=1e9;for(let q=1;q<R.length;q++)d=Math.min(d,spSegD(x,y,R[q-1],R[q]));dE[k]=d;const h=spNBhit(x,y,NB);if(h){nb[k]=h;bad[k]=1}else for(const [a,b] of segs)if(spSegD(x,y,a,b)<inp.ease){bad[k]=1;break}}
+ let area=0;for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const x=x0+(i+.5)*C,y=y0+(j+.5)*C,k=j*nx+i;let hit=-1;for(let p=0;p<parts.length;p++)if(spInside(x,y,parts[p])){hit=p;break}if(hit<0)continue;inn[k]=1;area+=C*C;const R=parts[hit];let d=1e9;for(let q=1;q<R.length;q++)d=Math.min(d,spSegD(x,y,R[q-1],R[q]));dE[k]=d;const h=spNBhit(x,y,NB);if(h){nb[k]=h;bad[k]=1}else for(const [a,b] of segs)if(spSegD(x,y,a,b)<inp.ease){bad[k]=1;break}}
  const ac=f=>{let c=0;for(let k=0;k<N;k++)if(inn[k]&&f(k))c++;return c*C*C/43560};
- return {nx,ny,C,inn,dE,bad,x0,y0,P,areaAc:spArea(R)/43560,easeAc:ac(k=>bad[k]&&!nb[k]),nb,lseg,nbE:ac(k=>nb[k]===1),nbF:ac(k=>nb[k]===2),nbX:ac(k=>nb[k]===3),nbR:ac(k=>nb[k]===4),nbS:ac(k=>nb[k]===5),nbP:ac(k=>nb[k]===6),nbB:ac(k=>nb[k]===7),buildAc:ac(k=>!bad[k]),nbSegs:NB.segs.length,segs:segs.length}}
+ const areaAc=parts.reduce((a,R)=>a+spArea(R),0)/43560;
+ return {nx,ny,C,inn,dE,bad,x0,y0,P,areaAc,easeAc:ac(k=>bad[k]&&!nb[k]),nb,lseg,nbE:ac(k=>nb[k]===1),nbF:ac(k=>nb[k]===2),nbX:ac(k=>nb[k]===3),nbR:ac(k=>nb[k]===4),nbS:ac(k=>nb[k]===5),nbP:ac(k=>nb[k]===6),nbB:ac(k=>nb[k]===7),buildAc:ac(k=>!bad[k]),nbSegs:NB.segs.length,segs:segs.length,parts:parts.length}}
 // pack halls (both orientations, keep the better), gap between halls for roads, yards and generators
 function spPack(G,inp,set){const {nx,ny,C,inn,dE,bad}=G,nb=G.nb;const best=[];
  for(const rot of [0,1]){const w=Math.ceil((rot?inp.hallL:inp.hallW)/C),h=Math.ceil((rot?inp.hallW:inp.hallL)/C),g=Math.ceil(inp.gap/C),occ=new Uint8Array(nx*ny),H=[];
@@ -1457,11 +1488,11 @@ function stSolve(s,poly,I){const P=spProj(+s.lat,+s.lon),R=poly.map(P.f),siteSf=
  return {P,R,siteSf,set,O,best,bind,pop5,hh5,inc,spc,f,occ,exist,gap,e}}
 function stRun(s){const r=stSolve(s,SP.poly,Object.assign({},SP.inp,{_nb:spNB(s,SP.inp)}));SP.res=r;stOut(s,r);stDraw(s,r);if(SP.map&&SP.map.getSource('sp-cxl')){const c=spCx(s);['sp-nb','sp-bld','sp-sub'].forEach(k=>SP.map.getSource(k).setData({type:'FeatureCollection',features:[]}));SP.map.getSource('sp-cxl').setData({type:'FeatureCollection',features:(c&&c.easements||[]).map(e=>({type:'Feature',properties:{approx:!!e.approx,t:(e.label||'Easement')+(e.approx?' · APPROXIMATE':'')},geometry:e.geometry}))})}spCX(s,null);const p=spLoad(s.id);if(p)spSaveNow()}
 function stDraw(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;const L=r.best.L,P=r.P,bk=(a,b,y,h)=>[[a,y],[b,y],[b,y+h],[a,y+h],[a,y]].map(p=>P.b(stRot(p,L.t)));
- m.getSource('sp-bnd').setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[SP.poly]}}]});
+ m.getSource('sp-bnd').setData({type:'FeatureCollection',features:spBndFeats()});
  m.getSource('sp-halls').setData({type:'FeatureCollection',features:L.B.map(b=>({type:'Feature',properties:{on:b.t==='mu'},geometry:{type:'Polygon',coordinates:[bk(b.a,b.b,b.y,b.h)]}}))});
  m.getSource('sp-plant').setData({type:'FeatureCollection',features:L.resY>L.y0?[{type:'Feature',geometry:{type:'Polygon',coordinates:[bk(L.x0+r.set,L.x1-r.set,L.y0+r.set,Math.max(0,L.resY-L.y0-r.set))]}}]:[]});
- const bb=SP.poly.reduce((b,p)=>[[Math.min(b[0][0],p[0]),Math.min(b[0][1],p[1])],[Math.max(b[1][0],p[0]),Math.max(b[1][1],p[1])]],[[180,90],[-180,-90]]);
- if(SP.fitFor!==s.id+SP.polySrc+SP.poly.length){SP.fitFor=s.id+SP.polySrc+SP.poly.length;m.fitBounds(bb,{padding:60,duration:0,maxZoom:18})}
+ const bb=spBndBB();
+ if(SP.fitFor!==s.id+SP.polySrc+(SP.polys?SP.polys.length:SP.poly.length)){SP.fitFor=s.id+SP.polySrc+(SP.polys?SP.polys.length:SP.poly.length);m.fitBounds(bb,{padding:60,duration:0,maxZoom:18})}
  $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':'No parcel polygon on file · '+fmt(s.acres||3,1)+'-acre square around the pin'} · ${spN(r.siteSf/43560,2)} ac · ember = multi-story · gray = drive-up · green = office, parking, stormwater`;spSD(s)}
 function stOut(s,r){const B=r.best,I=SP.inp,E=' <span class="spest">PROPOSED ESTIMATE</span>',M=x=>x==null||!isFinite(x)?'—':'$'+spN(x/1e6,2)+'M',pct=x=>x==null?'—':spN(x*100,1)+'%';
  const mix=(k,n)=>ST_MIX[k].map(([l,sz,sh])=>[l,Math.round(n*sh/sz),Math.round(n*sh)]).filter(x=>x[1]>0);
@@ -1489,7 +1520,7 @@ function spShell(){const el=$('viewPlan');if(el.dataset.ok)return;el.dataset.ok=
  <section class="spx" id="spX"></section><p class="lbl mono spfoot" id="spFoot"></p>`;
  $('spSeg').addEventListener('click',e=>{const b=e.target.closest('[data-spco]');if(!b||b.dataset.spco===SP.co)return;location.hash='#plan/'+b.dataset.spco+(SP.last[b.dataset.spco]?'/'+SP.last[b.dataset.spco]:'')});
  $('spPick').onchange=e=>{location.hash='#plan/'+SP.co+'/'+e.target.value};
- $('spDraw').onclick=spDrawStart;$('spReset').onclick=()=>{const s=spSite();const R=spParcel(s);SP.poly=R||spSquare(s,s.acres||(SP.co==='storage'?3:100));SP.stL=null;SP.polySrc=R?'parcel':'square';SP.G=null;spRun()};
+ $('spDraw').onclick=spDrawStart;$('spReset').onclick=()=>{const s=spSite();if(!spSetParcel(s)){SP.poly=spSquare(s,s.acres||(SP.co==='storage'?3:100));SP.polys=null;SP.polySrc='square'}SP.stL=null;SP.G=null;spRun()};
  $('spSave').onclick=()=>spxSave();
  $('spIn').addEventListener('input',e=>{const t=e.target;if(!t.dataset.sp)return;const k=t.dataset.sp;SP.inp[k]=t.type==='number'?(t.value===''?'':+t.value):t.value;if(['ease','plantSet','flood'].includes(k))SP.G=null;SP.stL=null;clearTimeout(SP.t);SP.t=setTimeout(spRun,250)})}
 const spSite=()=>(SP.co==='storage'?SR:S).find(x=>x.id===SP.id);
@@ -1507,12 +1538,12 @@ function spShow(id,co){if(!isAdm()){location.hash='#deals';return}spShell();co=c
  ['spIn','spOut'].forEach(k=>{if(!id)$(k).innerHTML=''});
  if(!id){nt.hidden=false;nt.textContent=`No ${V} deals in Site Plan yet. Add one below.`;tfMount(null);if(SP.map)spLyrVis();return}
  SP.last[co]=id;const hh='#plan/'+co+'/'+id;if(location.hash!==hh)history.replaceState(null,'',location.pathname+hh);
- if(SP.id!==id){SP.id=id;const s=spSite(),p=spLoad(id);SP.inp=spInputs(s);SP.poly=p&&p.poly?p.poly:spSquare(s,s.acres||(co==='storage'?3:100));SP.polySrc=p&&p.poly?'drawn':'square';if(SP.polySrc==='square'){const R0=spParcel(s);if(R0){SP.poly=R0;SP.polySrc='parcel'}}SP.G=null;SP.stL=null;$('spMsg').textContent=p?'Saved plan loaded':''}
+ if(SP.id!==id){SP.id=id;const s=spSite(),p=spLoad(id);SP.inp=spInputs(s);SP.poly=p&&p.poly?p.poly:spSquare(s,s.acres||(co==='storage'?3:100));SP.polys=p&&p.polys?p.polys:null;SP.polySrc=p&&p.poly?'drawn':'square';if(SP.polySrc==='square')spSetParcel(s);SP.G=null;SP.stL=null;$('spMsg').textContent=p?'Saved plan loaded':''}
  $('spPick').value=id;spForm();spMapInit().then(()=>spCxLoad(spSite())).then(()=>{spLyrVis();spRun()})}
 // one admin-only doc read per opened deal (site_constraints/{id}); its sd record fills site data for deals outside meta/sitedata
 async function spCxLoad(s){if(!s||SP.cx[s.id]!==undefined)return;const B=window.EDKS_BK;let c=null;try{c=B&&B.siteConstraints?await B.siteConstraints(s.id):(window.EDKS_CX||{})[s.id]||null}catch(e){}
  SP.pd=SP.pd||{};try{SP.pd[s.id]=(typeof KM_PC!=='undefined'&&KM_PC.get(s.id))||(B&&B.parcels?await B.parcels(s.id):null)}catch(e){SP.pd[s.id]=null}
- SP.cx[s.id]=c||null;if(c&&c.plan&&c.plan.inp&&SP.id===s.id&&SP.co==='land'&&!spLoad(s.id)){SP.inp=Object.assign({},SP_DEF,c.plan.inp);if(typeof spForm==='function')spForm()}if(SP.id===s.id&&SP.polySrc==='square'){const R=spParcel(s);if(R){SP.poly=R;SP.polySrc='parcel'}}if(c&&c.sd){SP.sd=SP.sd||{sites:{}};SP.sd.sites=SP.sd.sites||{};if(!SP.sd.sites[s.id])SP.sd.sites[s.id]=c.sd}SP.G=null}
+ SP.cx[s.id]=c||null;if(c&&c.plan&&c.plan.inp&&SP.id===s.id&&SP.co==='land'&&!spLoad(s.id)){SP.inp=Object.assign({},SP_DEF,c.plan.inp);if(typeof spForm==='function')spForm()}if(SP.id===s.id&&SP.polySrc==='square')spSetParcel(s);if(c&&c.sd){SP.sd=SP.sd||{sites:{}};SP.sd.sites=SP.sd.sites||{};if(!SP.sd.sites[s.id])SP.sd.sites[s.id]=c.sd}SP.G=null}
 function spLyrVis(){const m=SP.map;if(!m)return;const on=SP.co!=='storage';['sp-lines','sp-gas','sp-subs','sp-subl','sp-linel'].forEach(k=>{if(m.getLayer(k))m.setLayoutProperty(k,'visibility',on?'visible':'none')})}
 function spForm(){const I=SP.inp;$('spIn').innerHTML=(SP.co==='storage'?ST_F:SP_F).map(([h,F])=>`<div class="spsec"><div class="lbl mono">${h}</div>${F.map(([k,l,u])=>`<label class="spf"><span>${l}${u&&u!=='text'?' <i>'+u+'</i>':''}</span><input class="inp mono" data-sp="${k}" type="${u==='text'?'text':'number'}" step="any" value="${esc(I[k])}" placeholder="${k==='gridOv'||k==='gasOv'?'estimate':h.startsWith('Zoning')?'Zoneomics: pending':''}"></label>`).join('')}</div>`).join('')}
 // Site data phase 1 (FEMA NFHL flood, USGS 3DEP slope): D.sitedata, built by pipeline/site_data.py and delivered with the gated data (no extra reads)
@@ -1602,12 +1633,14 @@ function spRun(){const s=spSite();if(!s)return;if(SP.co==='storage'){stRun(s);re
  if(SP.polySrc==='square'){const r=spNoB(s);SP.res=r;spOut(s,r);spDrawMap(s,r);const p=spLoad(s.id);if(p)spSaveNow();return}
  if(!SP.G)SP.G=spGrid(SP.poly,SP.inp,s);const I=spLandInp(s),r=spSolve(s,SP.poly,I,SP.G);SP.res=r;r.sens=spSens(s,SP.poly,I,SP.G);spOut(s,r);spDrawMap(s,r);
  const p=spLoad(s.id);if(p)spSaveNow()}
+function spBndFeats(){return (SP.polys&&SP.polys.length?SP.polys:[SP.poly]).filter(Boolean).map(R=>({type:'Feature',geometry:{type:'Polygon',coordinates:[R]}}))}
+function spBndBB(){const Rs=SP.polys&&SP.polys.length?SP.polys:[SP.poly];let x0=180,y0=90,x1=-180,y1=-90;Rs.forEach(R=>R.forEach(p=>{x0=Math.min(x0,p[0]);y0=Math.min(y0,p[1]);x1=Math.max(x1,p[0]);y1=Math.max(y1,p[1])}));return [[x0,y0],[x1,y1]]}
 function spDrawMap(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;
  if(r.noB){const E={type:'FeatureCollection',features:[]};['sp-bnd','sp-halls','sp-plant','sp-nb','sp-bld','sp-sub'].forEach(k=>m.getSource(k)&&m.getSource(k).setData(E));
   if(SP.fitFor!==s.id+'noB'){SP.fitFor=s.id+'noB';m.jumpTo({center:[+s.lon,+s.lat],zoom:15})}
   $('spHint').textContent=SP.draw?$('spHint').textContent:`BOUNDARY NEEDED · no parcel polygon on file for this deal (${fmt(s.acres,0)} ac listed) · no layout, halls or MW until a real boundary exists · use Draw boundary or add the county parcel`;spSD(s);return}
  const G=r.G,P=G.P;
- m.getSource('sp-bnd').setData({type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Polygon',coordinates:[SP.poly]}}]});
+ m.getSource('sp-bnd').setData({type:'FeatureCollection',features:spBndFeats()});
  const rect=(i,j,w,h)=>{const x=G.x0+i*G.C,y=G.y0+j*G.C,X=x+w*G.C,Y=y+h*G.C;return [[x,y],[X,y],[X,Y],[x,Y],[x,y]].map(P.b)};
  m.getSource('sp-halls').setData({type:'FeatureCollection',features:(spHallCap(s)!=null?[]:r.H.slice(0,r.best.n)).map(h=>({type:'Feature',properties:{on:true},geometry:{type:'Polygon',coordinates:[rect(...h)]}}))});
  // gas plant: show its footprint as a block of eligible free cells nearest the deepest interior point
@@ -1621,8 +1654,8 @@ function spDrawMap(s,r){const m=SP.map;if(!m||!m.getSource('sp-bnd'))return;
   const sb=r.sub&&r.sub.cells||[];m.getSource('sp-sub').setData({type:'FeatureCollection',features:sb.map(k=>({type:'Feature',geometry:{type:'Polygon',coordinates:[rect(k%G.nx,Math.floor(k/G.nx),1,1)]}}))});
   if(m.getSource('sp-adopt'))m.getSource('sp-adopt').setData(spAdoptFC(s));
   const c=spCx(s);m.getSource('sp-cxl').setData({type:'FeatureCollection',features:(c&&c.easements||[]).map(e=>({type:'Feature',properties:{approx:!!e.approx,t:(e.label||'Easement')+(e.approx?' · APPROXIMATE':'')},geometry:e.geometry}))})}
- const bb=SP.poly.reduce((b,p)=>[[Math.min(b[0][0],p[0]),Math.min(b[0][1],p[1])],[Math.max(b[1][0],p[0]),Math.max(b[1][1],p[1])]],[[180,90],[-180,-90]]);
- if(SP.fitFor!==s.id+SP.polySrc+SP.poly.length){SP.fitFor=s.id+SP.polySrc+SP.poly.length;m.fitBounds(bb,{padding:60,duration:0,maxZoom:16})}
+ const bb=spBndBB();
+ if(SP.fitFor!==s.id+SP.polySrc+(SP.polys?SP.polys.length:SP.poly.length)){SP.fitFor=s.id+SP.polySrc+(SP.polys?SP.polys.length:SP.poly.length);m.fitBounds(bb,{padding:60,duration:0,maxZoom:16})}
  $('spHint').textContent=SP.draw?$('spHint').textContent:`${SP.polySrc==='drawn'?'Drawn boundary':SP.polySrc==='parcel'?'Parcel boundary on file'+((x=>x?' ('+esc(x)+')':'')((spCx(s)||{}).parcel_src||(SP.pd&&SP.pd[s.id]&&('parcels doc · '+SP.pd[s.id].src)))):'No parcel polygon on file · '+fmt(s.acres,0)+'-acre square around the pin'} · ${spN(r.areaAc)} ac · ${r.slots!=null?r.slots:r.H.length} hall slots · buildable ${spN(G.buildAc,1)} ac after deductions: road/rail ROW+setback ${spN(G.nbR,1)} · transmission ROW ${spN(G.nbP,1)} · FEMA A/AE ${spN(G.nbF,1)} · streams ${spN(G.nbS,1)} · easements ${spN(G.nbE,1)} · existing buildings ${spN(G.nbB,1)} · excluded ${spN(G.nbX,1)} · line buffers ${spN(G.easeAc,1)} ac${(of=>of?' · '+of:'')(typeof spOwnerFlag==='function'?spOwnerFlag(s):'')} ${typeof SHX!=='undefined'&&SHX[s.id]&&SHX[s.id].loading?' · loading roads/power/flood/buildings…':''}`;spSD(s);spCX(s,r)}
 function spOut(s,r){if(r.noB){$('spOut').innerHTML=`<div class="spbig spnob"><div class="lbl mono">Max IT load</div><b class="mono">—<i> boundary needed</i></b><div class="lbl mono">No parcel polygon on file · land first: boundary → setbacks → roads/rail ROW → transmission → flood → streams → developable acres → capacity</div></div>
  <div class="spbind"><span class="lbl mono">Binding constraint</span><span class="spbadge">Boundary needed</span></div>
@@ -1954,7 +1987,50 @@ function tfST0(R,I,ctx,pd){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfC
  const bind=fpU>=covMax-1?'Coverage':mu&&st<(+E.stories||1)?'Height':'Setbacks / site shape';
  return {co:'storage',C,E,pond,hlim:HL,mu,du,office,rv,rvN,stories:st,nrsf,units,mix,avg,duSf,muSf,gsf:duSf+muSf*st,cov,site,bind,warn,circ,score:nrsf/1000-warn.length*2,
   k:{nrsf:Math.round(nrsf),units,cov:+(cov*100).toFixed(1),rv:rvN,gsf:Math.round(duSf+muSf*st)}}}
-function tfSolve(co,R,I,ctx){return co==='storage'?tfST(R,I,ctx):tfDC(R,I,ctx)}
+// MultiPolygon parts: each ring packs on its own (own rotation search). Halls/yards/ponds never cross the gap
+// between parts — each solver is confined to its ring, and inter-part gaps are also kind-4 no-build via spNB.
+function tfIsParts(R){return R&&R.length&&Array.isArray(R[0])&&R[0].length&&Array.isArray(R[0][0])}
+function tfSolve(co,R,I,ctx){if(tfIsParts(R))return tfSolveParts(co,R,I,ctx);return co==='storage'?tfST(R,I,ctx):tfDC(R,I,ctx)}
+function tfSolveParts(co,parts,I,ctx){ctx=ctx||{};
+ // allocate hall target across parts by area so one big strip does not starve the other
+ const areas=parts.map(tfArea),Atot=areas.reduce((a,b)=>a+b,0)||1;
+ const rs=parts.map((R,i)=>{
+  const share=Math.max(0,Math.round((+I.halls||0)*areas[i]/Atot));
+  const Ii=Object.assign({},I,{halls:co==='land'?Math.max(share,share?1:0):I.halls});
+  // per-part solve; land uses full angle search so E-W strips pick E-W halls
+  if(co==='storage')return tfST(R,Ii,ctx);
+  let r=tfDC(R,Ii,ctx);
+  // if the requested hallL does not fit this part (e.g. east exclusion ate the length), try shorter E-W halls
+  if((r.n||0)===0&&(+I.hallL||0)>0){const hw=+I.hallW||250;for(const hl of [800,600,500,Math.max(400,hw*2)]){if(hl>=+I.hallL)continue;
+   const t=tfDC(R,Object.assign({},Ii,{hallL:hl}),ctx);if((t.n||0)>(r.n||0)){r=t;r.pack=Object.assign({},r.pack,{hallL:hl})}}}
+  return r});
+ return tfMergeParts(co,rs,parts,I,ctx)}
+function tfMergeParts(co,rs,parts,I,ctx){
+ // convert every placed rect into absolute local-ft AABB (exact for 0/90°; slight pad otherwise) and merge KPIs
+ const abs=(r,rect)=>{if(!rect)return null;const [x,y,w,h]=rect,c=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(r.C.un);
+  const xs=c.map(p=>p[0]),ys=c.map(p=>p[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys)]};
+ const halls=[],phase=[],warn=[],circ=[];let sub=null,park=null,pond=null,site=0,it=0,itRaw=0,fac=0,fp=0,n=0,stalls=0;
+ const idC={rot:0,un:p=>p,Q:null,A:0,ok:()=>true,okP:()=>true,edgeAt:()=>({inRow:false,inSet:false}),edges:[],bb:[0,0,0,0],setRing:null,hardRing:null,rowRing:null};
+ rs.forEach((r,i)=>{site+=r.site||0;idC.A=site;(r.warn||[]).forEach(w=>warn.push(Object.assign({},w,{t:`Part ${i+1}: ${w.t}`})));(r.circ||[]).forEach(c=>circ.push(c));
+  if(co==='land'){(r.halls||[]).forEach((h,k)=>{halls.push({hall:abs(r,h.hall),gen:h.gen?abs(r,h.gen):null,v:h.v,part:i});phase.push((r.phase&&r.phase[k])||1)});
+   if(!sub&&r.sub)sub=abs(r,r.sub);if(!park&&r.park)park=abs(r,r.park);if(!pond&&r.pond)pond=abs(r,r.pond);
+   n+=r.n||0;it+=r.it||0;itRaw+=r.itRaw||0;fac+=r.fac||0;fp+=r.fp||0;stalls+=r.stalls||0}
+  else{/* storage merge not required for Water Well */}
+ });
+ idC.bb=(()=>{let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;parts.forEach(R=>R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}));return [x0,y0,x1,y1]})();
+ const E=(rs[0]&&rs[0].E)||I,pue=+E.pue||1.3,want=Math.max(0,Math.round(+I.halls||0));
+ const cov=site?fp/site:0,far=site?fp*(rs[0]&&rs[0].stories||1)/site:0;
+ const bind=rs.map(r=>r.bind).filter(Boolean).join(' · ')||'Land / setbacks / no-build';
+ const r0=rs[0]||{};
+ const out={co,C:idC,E,halls,sub,park,pond,stalls,n,want,needCap:r0.needCap,capIT:r0.capIT,it,itRaw,fac,hallMW:r0.hallMW,fp,cov,far,
+  height:r0.height,stories:r0.stories,hlim:r0.hlim,phase,phMW:r0.phMW||[],rows:r0.rows||[],T:r0.T,Tsum:r0.Tsum,ent:r0.ent,
+  bind,warn,circ,site,score:it-(warn.length*.5),parts:rs.length,
+  k:{it:+it.toFixed(2),fac:+fac.toFixed(2),halls:n,cov:+(cov*100).toFixed(1),far:+far.toFixed(3),stalls,itLand:+itRaw.toFixed(2)}};
+ // attach civil from first part that has it; recompute buildable as sum
+ out.build={gross:site/43560,net:rs.reduce((a,r)=>a+((r.build&&r.build.net)||0),0),row:0,road:0,setback:0,easement:0,stream:0,power:0,flood:0,bld:0,excl:0,pond:pond?pond[2]*pond[3]/43560:0};
+ out.sw=r0.sw;out.pd=r0.pd;out.grade=null;out.hgt=r0.hgt;out.pack={parts:rs.map((r,i)=>({i,n:r.n,rot:r.pack&&r.pack.rot,mode:r.pack&&r.pack.mode}))};
+ if(out.k){out.k.netAc=+out.build.net.toFixed(1);if(out.sw)out.k.detAcFt=+out.sw.Vac.toFixed(2);if(pond)out.k.pondAc=+(pond[2]*pond[3]/43560).toFixed(2)}
+ return out}
 // option generator: sweep orientation and prototype sizes; rank by the company KPI
 function tfGen(co,R,I,ctx){if(ctx&&ctx.cv&&ctx.cv.pf&&I.sw!=='off'&&!ctx.pondFix){const b=tfSolve(co,R,I,ctx);ctx=Object.assign({},ctx,{pondFix:b.pd})}const O=[],seen=new Set(),rots=[0,15,30,45,60,75,90,105,120,135,150,165];
  const vs=co==='storage'?[{mode:'hy'},{mode:'du'},{mode:'mu'},{mode:'hy',stories:Math.max(1,(+I.stories||3)-1)}]:[{},{hallW:200,hallL:800},{hallW:300,hallL:1200},{hallW:250,hallL:600}];
@@ -2300,8 +2376,11 @@ const TF_SL={land:[['Program',[['halls','Data halls',0,40,1],['hallMW','IT MW / 
 const TF_SEL={land:[['cool','Cooling',['air','liquid','hybrid']],['subPos','Substation',['auto','N','S','E','W','NE','NW','SE','SW']],['front','Front faces',['S','N','E','W']],['mwBasis','Target MW basis',[['fac','Facility (grid) MW'],['it','IT MW']]],['swPh','Detention phasing',[['up','Full pond in phase 1'],['phase','Grow per phase']]],['front2','Corner side street',[['','none'],'S','N','E','W']],['resSide','Residential side',[['','none'],'S','N','E','W']],['sw','Detention',[['on','Size + place pond'],['off','Off']]],['swRule','Release rule',[['pre','Post ≤ pre (10 + 100-yr)'],['pre10','Post ≤ pre 10-yr (100-yr to 10-yr pre)'],['apwa','APWA 5600 0.2/0.6/3.0 cfs/ac']]]],storage:[['mode','Layout',[['hy','Hybrid'],['du','All drive-up'],['mu','All climate-controlled']]],['front','Front faces',['S','N','E','W']],['front2','Corner side street',[['','none'],'S','N','E','W']],['resSide','Residential side',[['','none'],'S','N','E','W']],['sw','Detention',[['on','Size + place pond'],['off','Off']]],['swRule','Release rule',[['pre','Post ≤ pre (10 + 100-yr)'],['pre10','Post ≤ pre 10-yr (100-yr to 10-yr pre)'],['apwa','APWA 5600 0.2/0.6/3.0 cfs/ac']]]]};
 const TF_KPI={land:[['it','IT MW',1],['fac','Facility MW',1],['halls','Halls',0],['cov','Coverage %',1],['far','FAR',3],['stalls','Parking',0],['netAc','Net buildable ac',1],['detAcFt','Detention ac-ft',2],['pondAc','Pond ac',2]],storage:[['nrsf','Net rentable sf',0],['units','Units',0],['cov','Coverage %',1],['gsf','Gross sf',0],['rv','RV/boat',0],['netAc','Net buildable ac',1],['detAcFt','Detention ac-ft',2],['pondAc','Pond ac',2]]};
 const tfK=(s)=>'edks_tf_'+SP.co+'_'+s.id;
-function tfCtxFor(s){const P=spProj(+s.lat,+s.lon),R=SP.poly.map(P.f),N=spNB(s,SP.inp),ge=SP.co==='storage'?null:spGridEst(s);
- return {P,R,ctx:{gridMW:ge?(SP.inp.gridOv!==''&&SP.inp.gridOv!=null?+SP.inp.gridOv:ge.mw):null,gridWhy:ge?(ge.cap?'site cap':'estimate'):'',nb:(x,y)=>spNBhit(x,y,N)>0,nbKind:(x,y)=>spNBhit(x,y,N),zone:tfZone(SPX.zn[s.id],SP.co),cv:cvCtx(s,P,R),faa:cvFAAfor(s,P,R),lowPt:cvLow(s)}}}
+function tfCtxFor(s){const P=spProj(+s.lat,+s.lon),partsLon=SP.polys&&SP.polys.length?SP.polys:[SP.poly],parts=partsLon.map(R=>R.map(P.f));
+ // single ring for DEM/SHX extent = bbox of all parts (never a bridged outline)
+ const R=parts.length===1?parts[0]:(()=>{let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;parts.forEach(r=>r.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}));return [[x0,y0],[x1,y0],[x1,y1],[x0,y1],[x0,y0]]})();
+ const N=spNB(s,SP.inp),ge=SP.co==='storage'?null:spGridEst(s);
+ return {P,R,parts,ctx:{gridMW:ge?(SP.inp.gridOv!==''&&SP.inp.gridOv!=null?+SP.inp.gridOv:ge.mw):null,gridWhy:ge?(ge.cap?'site cap':'estimate'):'',nb:(x,y)=>spNBhit(x,y,N)>0,nbKind:(x,y)=>spNBhit(x,y,N),zone:tfZone(SPX.zn[s.id],SP.co),cv:cvCtx(s,P,R),faa:cvFAAfor(s,P,R),lowPt:cvLow(s)}}}
 // ---- civil inputs: NOAA Atlas 14 from the shipped grid (CV_REF), 3DEP DEM + SSURGO HSG fetched in the browser on demand and cached in localStorage (no Firestore)
 const CVS={};
 function cvCtx(s,P,R){const c=CVS[s.id]||cvCache(s.id)||{},pf=typeof CV_REF!=='undefined'&&CV_REF.noaa?cvAtlas(+s.lat,+s.lon):null,o={pf,pfSrc:'NOAA Atlas 14 vol. 8 (PFDS, '+(CV_REF&&CV_REF.noaa?'0.5° grid, bilinear':'n/a')+')',hsg:c.hsg||null,hsgSrc:c.hsgSrc||'',dem:c.dem||null};
@@ -2395,7 +2474,10 @@ async function shxLoad(s,P,R){if(SHX[s.id])return;SHX[s.id]={loading:1};try{cons
  SHX[s.id]=o;try{localStorage.setItem(shxKey(s.id),JSON.stringify(o))}catch(e){try{const o2=Object.assign({},o,{topo:null});localStorage.setItem(shxKey(s.id),JSON.stringify(o2))}catch(e2){}}if(spSite()===s){if(typeof TF!=='undefined'&&TF.I)tfRun();if(typeof SP!=='undefined'&&SP.co==='land'&&SP.polySrc!=='square'&&typeof spRun==='function'){SP.G=null;spRun()}}}
 function shMeta(s){const c=typeof spCx==='function'?spCx(s):null,P=TF.P||spProj(+s.lat,+s.lon),X=SHX[s.id]||{};
  return {s,P,N:spNB(s,SP.inp),ext:X,polySrc:SP.polySrc,zone:TF.ctx&&TF.ctx.zone,apn:(c&&c.parcel_apn)||(s.parcels||[]).join('; ')||'',bsrc:(c&&c.parcel_src)||(SP.pd&&SP.pd[s.id]&&SP.pd[s.id].src&&('parcels doc · '+SP.pd[s.id].src))||(SP.polySrc==='drawn'?'drawn in app':'parcel GIS')}}
-function tfRun(){const s=spSite();if(!s||!TF.I)return;const {P,R,ctx}=tfCtxFor(s);shxLoad(s,P,R);const noB=SP.polySrc==='square',r=tfSolve(SP.co,R,noB?Object.assign({},TF.I,{halls:0}):TF.I,ctx);if(noB)tfStrip(r);TF.r=r;TF.sid=s.id;TF.P=P;TF.ctx=ctx;try{localStorage.setItem(tfK(s),JSON.stringify(TF.I))}catch(e){}tfOut(s,r);tfDraw(r);if(SP.co==='land'&&!noB&&typeof spRun==='function'&&SP.hallCap!==(r.halls||[]).length)spRun()}
+function tfRun(){const s=spSite();if(!s||!TF.I)return;const {P,R,parts,ctx}=tfCtxFor(s);shxLoad(s,P,R);const noB=SP.polySrc==='square';
+ // MultiPolygon: pack each part separately (E-W halls on E-W strips); single Polygon: one solve
+ const arg=(!noB&&parts&&parts.length>1)?parts:R;
+ const r=tfSolve(SP.co,arg,noB?Object.assign({},TF.I,{halls:0}):TF.I,ctx);if(noB)tfStrip(r);TF.r=r;TF.sid=s.id;TF.P=P;TF.ctx=ctx;try{localStorage.setItem(tfK(s),JSON.stringify(TF.I))}catch(e){}tfOut(s,r);tfDraw(r);if(SP.co==='land'&&!noB&&typeof spRun==='function'&&SP.hallCap!==(r.halls||[]).length)spRun()}
 // no real parcel polygon: land analysis only, never a building layout
 function tfStrip(r){r.boundaryNeeded=true;r.pond=null;if(r.co==='land'){r.halls=[];r.sub=null;r.park=null;r.n=0;if(r.k){r.k.it=0;r.k.fac=0}}else{r.mu=null;r.du=[];r.office=null;r.rv=[];if(r.k)for(const k in r.k)if(typeof r.k[k]==='number'&&k!=='site')r.k[k]=0}r.bind='Boundary needed';r.warn=(r.warn||[]).concat([{k:'boundary',t:'BOUNDARY NEEDED: no parcel polygon on file; no buildings placed'}])}
 function tfFmt(v,d){return v==null?'—':spN(v,d)}
@@ -2445,7 +2527,7 @@ function tfCmpR(){const el=$('tfCmp');if(!el)return;const s=spSite();if(!TF.cmp.
  el.innerHTML=`<div class="tfcmp">${TF.cmp.slice(0,3).map(i=>{const o=TF.opts[i];if(!o)return '';const r=tfSolve(SP.co,R,o.p,ctx);return `<div><div class="lbl mono">Option ${i+1}</div>${tfSvg(r,300,180)}${TF_KPI[SP.co].map(([k,l,d])=>`<div class="lbl mono">${l} <b>${tfFmt(r.k[k],d)}</b></div>`).join('')}</div>`}).join('')}</div>`}
 function tfDl(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 function tfDxf(r){const L=['0','SECTION','2','ENTITIES'],poly=(pts,layer)=>{L.push('0','LWPOLYLINE','8',layer,'90',String(pts.length),'70','1');pts.forEach(p=>L.push('10',p[0].toFixed(2),'20',p[1].toFixed(2)))},q=(R,ly)=>{const [x,y,w,h]=R;poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(r.C.un),ly)};
- poly(tfCtxFor(spSite()).R.slice(0,-1),'BOUNDARY');const rg=(Rg,ly)=>{if(Rg&&Rg.length>2)poly(Rg.map(r.C.un),ly)};rg(r.C.setRing,'SETBACK');rg(r.C.rowRing,'ROW');rg(r.C.hardRing,'EASEMENT-BUFFER');if(r.pond)q(r.pond,'DETENTION');if(r.co==='land'){r.halls.forEach((h,i)=>{q(h.hall,'HALL-P'+r.phase[i]);if(h.gen)q(h.gen,'YARD')});if(r.sub)q(r.sub,'SUBSTATION');if(r.park)q(r.park,'PARKING')}else{if(r.mu)q(r.mu,'CLIMATE');r.du.forEach(d=>q(d,'DRIVEUP'));if(r.office)q(r.office,'OFFICE');r.rv.forEach(d=>q(d,'RV'))}
+ const _tc=tfCtxFor(spSite());(_tc.parts&&_tc.parts.length>1?_tc.parts:[_tc.R]).forEach(RR=>poly(RR.slice(0,-1),'BOUNDARY'));const rg=(Rg,ly)=>{if(Rg&&Rg.length>2)poly(Rg.map(r.C.un),ly)};rg(r.C.setRing,'SETBACK');rg(r.C.rowRing,'ROW');rg(r.C.hardRing,'EASEMENT-BUFFER');if(r.pond)q(r.pond,'DETENTION');if(r.co==='land'){r.halls.forEach((h,i)=>{q(h.hall,'HALL-P'+r.phase[i]);if(h.gen)q(h.gen,'YARD')});if(r.sub)q(r.sub,'SUBSTATION');if(r.park)q(r.park,'PARKING')}else{if(r.mu)q(r.mu,'CLIMATE');r.du.forEach(d=>q(d,'DRIVEUP'));if(r.office)q(r.office,'OFFICE');r.rv.forEach(d=>q(d,'RV'))}
  L.push('0','ENDSEC','0','EOF');return L.join('\n')}
 async function tfSaveScheme(){const s=spSite(),B=spxBK(),r=TF.r;if(!s||!r||!tfInList(SP.co,s.id))return;const co=SP.co,R=x=>Math.round(x*1e6)/1e6;
  const g={poly:SP.poly.map(p=>[R(p[0]),R(p[1])]),b:tfFeats(r).slice(0,60).map(f=>({t:f.properties.kind,c:f.geometry.coordinates[0].slice(0,4).flat().map(R)}))};
