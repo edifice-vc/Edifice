@@ -1856,7 +1856,7 @@ function tfEditSchemaFor(co){const o={};for(const [k,a] of Object.entries(TF_EDI
 
 // ---- TestFit-style configurator (Site Plan). Pure solvers first (tested in pipeline/tests/test_testfit.py), UI after.
 // Units: feet in a local plane (spProj). Rotated frame: rows run along x after rotating the site by -rot.
-const TF_DEF={land:{halls:8,hallW:250,hallL:1000,stories:1,storyFt:42,hallMW:12,pue:1.3,subAc:5,genAc:1.5,cool:'air',setF:100,setS:100,setR:100,lane:30,park:40,phases:2,rot:0,subPos:'auto',maxH:'',cov:'',front:'S',front2:'',rowDed:0,ueF:15,buf:10,resSide:'',resBuf:50,sw:'on',swRule:'pre',pondD:5,slope:4,imp:'',tgtMW:'',phMW:'',mwBasis:'fac',swPh:'up'},
+const TF_DEF={land:{halls:8,hallW:250,hallL:1000,stories:1,storyFt:42,hallMW:50,wsf:200,pue:1.3,subAc:5,genAc:1.5,cool:'air',setF:100,setS:100,setR:100,lane:30,park:40,phases:2,rot:0,subPos:'auto',maxH:'',cov:'',front:'S',front2:'',rowDed:0,ueF:15,buf:10,resSide:'',resBuf:50,sw:'on',swRule:'pre',pondD:5,slope:4,imp:'',tgtMW:'',phMW:'',mwBasis:'fac',swPh:'up'},
  storage:{mode:'hy',stories:3,storyFt:11,mW:120,duW:30,aisle:28,office:1200,rv:20,setF:25,setS:25,setR:25,rot:0,effDU:.92,effM:.78,mix5x5:10,mix5x10:25,mix10x10:30,mix10x15:15,mix10x20:15,mix10x30:5,maxH:'',cov:'',front:'S',front2:'',rowDed:0,ueF:15,buf:10,resSide:'',resBuf:25,sw:'on',swRule:'pre',pondD:4,slope:4,imp:''}};
 const TF_UNIT={mix5x5:25,mix5x10:50,mix10x10:100,mix10x15:150,mix10x20:200,mix10x30:300};
 const TF_COOL={air:1,liquid:.85,hybrid:.92};// cooling yard factor on generator/mech yard depth
@@ -1910,7 +1910,7 @@ function tfDC0(R,I,ctx,pd){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfC
  let pond=E._pondLast?null:tfPond(C,pd,ctx,placed);if(pd&&!pond&&!E._pondLast)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`});
  if(sub){const tgt=E.subPos&&E.subPos!=='auto'?tfCorner(C,E.subPos):ctx.linePt?tfRot(ctx.linePt,-C.rot):[C.bb[2],C.bb[1]];subR=tfPlaceNear(C,sub,sub,tgt,placed,lane);if(subR){subR.push(lane);placed.push(subR)}else warn.push({k:'sub',t:'No room for the substation'})}
  const hw=+E.hallW,hl=+E.hallL,gy=(+E.genAc||0)*43560/hl*(TF_COOL[E.cool]||1),bw=hl,bh=hw+gy,pue=+E.pue||1.3;
- const capIT=ctx.gridMW!=null&&ctx.gridMW!==''&&isFinite(ctx.gridMW)?ctx.gridMW/pue:null,hallMW=(+E.hallMW||0)*stE/st;
+ const capIT=ctx.gridMW!=null&&ctx.gridMW!==''&&isFinite(ctx.gridMW)?ctx.gridMW/pue:null,wsf=+E.wsf||((+E.hallMW||0)>0?(+E.hallMW)*1e6/((+E.hallW||hw)*(+E.hallL||hl)*Math.max(1,+E.stories||1)):200),hallMW=hw*hl*stE*wsf/1e6;
  const T=cvPhaseTargets(E),Tsum=T?T.reduce((a,b)=>a+b,0):0;
  let want=T&&hallMW>0?Math.ceil(Tsum/hallMW-1e-9):Math.max(0,Math.round(+E.halls||0));const needCap=capIT!=null&&hallMW>0?Math.ceil(capIT/hallMW-1e-9):want,tgtN=T?want:Math.min(want,needCap);
  let covN=1e9;if(E.cov!==''&&E.cov!=null)covN=Math.floor(site*(+E.cov)/100/(hw*hl));if(E.far!=null&&E.far!=='')covN=Math.min(covN,Math.floor(site*(+E.far)/(hw*hl*Math.max(1,stE))));
@@ -2103,7 +2103,11 @@ function tfParse(text,co,I){const t=' '+String(text||'').toLowerCase().replace(/
  return {ops,goal,reply:say.length?say.filter(Boolean).join(' · '):"I didn't catch an edit. Try: \"increase setbacks to 100 ft\", \"add a second hall\", \"move the substation to the NW corner\", \"switch to all drive-up\", \"make it 2 phases\"."}}
 // apply ops with schema clamping; returns new params
 function tfApplyOps(co,I,ops){const S=(typeof TF_EDIT_SCHEMA!=='undefined'?TF_EDIT_SCHEMA.keys[co]:null)||{},P=Object.assign({},I);
- for(const o of ops||[]){const d=S[o.k];if(!d)continue;let v=o.d!=null?(+P[o.k]||0)+(+o.d):o.v;if(d.length>=3){v=+v;if(!isFinite(v))continue;v=Math.max(d[1],Math.min(d[2],v));if(d[3]===1)v=Math.round(v)}else v=String(v);P[o.k]=v}return P}
+ for(const o of ops||[]){const d=S[o.k];if(!d)continue;let v=o.d!=null?(+P[o.k]||0)+(+o.d):o.v;if(d.length>=3){v=+v;if(!isFinite(v))continue;v=Math.max(d[1],Math.min(d[2],v));if(d[3]===1)v=Math.round(v)}else v=String(v);P[o.k]=v}// keep IT density and hallMW consistent: hallMW = W×L×stories×W/sf / 1e6
+ if(co==='land'){const hw=+P.hallW||250,hl=+P.hallL||1000,st=Math.max(1,+P.stories||1);
+  if(ops.some(o=>o.k==='hallMW'))P.wsf=(+P.hallMW)*1e6/(hw*hl*st);
+  else{P.wsf=+P.wsf||200;P.hallMW=hw*hl*st*P.wsf/1e6}}
+ return P}
 
 // ---- Civil layer for Site Plan (setbacks/easements/buildable area, stormwater detention, FAA Part 77 height, grading,
 // DC phasing, preliminary civil report). Pure functions; tested in pipeline/tests/test_testfit.py. PLANNING ESTIMATES ONLY.
@@ -2535,7 +2539,11 @@ async function tfSaveScheme(){const s=spSite(),B=spxBK(),r=TF.r;if(!s||!r||!tfIn
  const d={site_id:s.id,co,name:nm.slice(0,80),v:2,k:Object.assign({},r.k),bind:r.bind,zbind:'',circ:r.circ.filter(c=>!c.ok).map(c=>c.id),jur:'',p:JSON.stringify(Object.assign({},SP.inp,{tf:TF.I})).slice(0,8000),g:JSON.stringify(g).slice(0,24000),restricted:!!(typeof RIDS!=='undefined'&&RIDS.has&&RIDS.has(s.id))};
  if(!B){$('tfMsg').textContent='No Firestore connection: not saved';return}try{const id=await B.savePlan(d);const L=SPX.saved[co+'/'+s.id]||(SPX.saved[co+'/'+s.id]={list:[],st:'ok'});L.list.unshift(Object.assign({id,ts:new Date().toISOString(),by:B.email},d));$('tfMsg').textContent='Saved "'+d.name+'" (1 write)';spxSavedRender(s)}catch(e){$('tfMsg').textContent='Save failed: '+e.message}}
 function tfWire(el){const sched=()=>{cancelAnimationFrame(TF.raf);TF.raf=requestAnimationFrame(tfRun)};
- el.addEventListener('input',e=>{const t=e.target;if(t.dataset.tft&&TF.I){TF.I[t.dataset.tft]=t.value;sched();return}const k=t.dataset.tf;if(!k||!TF.I)return;TF.I[k]=t.tagName==='SELECT'?t.value:(k==='imp'&&+t.value===0?'':k==='tgtMW'&&+t.value===0?'':+t.value);el.querySelectorAll(`[data-tf="${k}"]`).forEach(x=>{if(x!==t)x.value=t.value});sched()});
+ el.addEventListener('input',e=>{const t=e.target;if(t.dataset.tft&&TF.I){TF.I[t.dataset.tft]=t.value;sched();return}const k=t.dataset.tf;if(!k||!TF.I)return;TF.I[k]=t.tagName==='SELECT'?t.value:(k==='imp'&&+t.value===0?'':k==='tgtMW'&&+t.value===0?'':+t.value);el.querySelectorAll(`[data-tf="${k}"]`).forEach(x=>{if(x!==t)x.value=t.value});
+ if(SP.co==='land'&&['hallMW','hallW','hallL','stories'].includes(k)){const hw=+TF.I.hallW||250,hl=+TF.I.hallL||1000,st=Math.max(1,+TF.I.stories||1);
+  if(k==='hallMW')TF.I.wsf=(+TF.I.hallMW)*1e6/(hw*hl*st);
+  else{TF.I.wsf=+TF.I.wsf||200;TF.I.hallMW=+(hw*hl*st*TF.I.wsf/1e6).toFixed(2);el.querySelectorAll('[data-tf="hallMW"]').forEach(x=>x.value=TF.I.hallMW)}}
+ sched()});
  el.addEventListener('change',e=>{const t=e.target;if(t.dataset.tf&&!TF.undo.length)TF.undo.push(Object.assign({},TF.I));if(t.dataset.tfc!=null){const i=+t.dataset.tfc;TF.cmp=t.checked?TF.cmp.concat(i).slice(-3):TF.cmp.filter(x=>x!==i);tfCmpR()}});
  el.addEventListener('submit',e=>{e.preventDefault();const q=$('tfQ');const v=q.value;q.value='';tfChat(v)});
  el.addEventListener('click',e=>{const id=e.target.id,s=spSite(),co=SP.co;
