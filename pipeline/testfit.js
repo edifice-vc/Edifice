@@ -131,7 +131,50 @@ function tfST0(R,I,ctx,pd){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfC
  const bind=fpU>=covMax-1?'Coverage':mu&&st<(+E.stories||1)?'Height':'Setbacks / site shape';
  return {co:'storage',C,E,pond,hlim:HL,mu,du,office,rv,rvN,stories:st,nrsf,units,mix,avg,duSf,muSf,gsf:duSf+muSf*st,cov,site,bind,warn,circ,score:nrsf/1000-warn.length*2,
   k:{nrsf:Math.round(nrsf),units,cov:+(cov*100).toFixed(1),rv:rvN,gsf:Math.round(duSf+muSf*st)}}}
-function tfSolve(co,R,I,ctx){return co==='storage'?tfST(R,I,ctx):tfDC(R,I,ctx)}
+// MultiPolygon parts: each ring packs on its own (own rotation search). Halls/yards/ponds never cross the gap
+// between parts — each solver is confined to its ring, and inter-part gaps are also kind-4 no-build via spNB.
+function tfIsParts(R){return R&&R.length&&Array.isArray(R[0])&&R[0].length&&Array.isArray(R[0][0])}
+function tfSolve(co,R,I,ctx){if(tfIsParts(R))return tfSolveParts(co,R,I,ctx);return co==='storage'?tfST(R,I,ctx):tfDC(R,I,ctx)}
+function tfSolveParts(co,parts,I,ctx){ctx=ctx||{};
+ // allocate hall target across parts by area so one big strip does not starve the other
+ const areas=parts.map(tfArea),Atot=areas.reduce((a,b)=>a+b,0)||1;
+ const rs=parts.map((R,i)=>{
+  const share=Math.max(0,Math.round((+I.halls||0)*areas[i]/Atot));
+  const Ii=Object.assign({},I,{halls:co==='land'?Math.max(share,share?1:0):I.halls});
+  // per-part solve; land uses full angle search so E-W strips pick E-W halls
+  if(co==='storage')return tfST(R,Ii,ctx);
+  let r=tfDC(R,Ii,ctx);
+  // if the requested hallL does not fit this part (e.g. east exclusion ate the length), try shorter E-W halls
+  if((r.n||0)===0&&(+I.hallL||0)>0){const hw=+I.hallW||250;for(const hl of [800,600,500,Math.max(400,hw*2)]){if(hl>=+I.hallL)continue;
+   const t=tfDC(R,Object.assign({},Ii,{hallL:hl}),ctx);if((t.n||0)>(r.n||0)){r=t;r.pack=Object.assign({},r.pack,{hallL:hl})}}}
+  return r});
+ return tfMergeParts(co,rs,parts,I,ctx)}
+function tfMergeParts(co,rs,parts,I,ctx){
+ // convert every placed rect into absolute local-ft AABB (exact for 0/90°; slight pad otherwise) and merge KPIs
+ const abs=(r,rect)=>{if(!rect)return null;const [x,y,w,h]=rect,c=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(r.C.un);
+  const xs=c.map(p=>p[0]),ys=c.map(p=>p[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys)]};
+ const halls=[],phase=[],warn=[],circ=[];let sub=null,park=null,pond=null,site=0,it=0,itRaw=0,fac=0,fp=0,n=0,stalls=0;
+ const idC={rot:0,un:p=>p,Q:null,A:0,ok:()=>true,okP:()=>true,edgeAt:()=>({inRow:false,inSet:false}),edges:[],bb:[0,0,0,0],setRing:null,hardRing:null,rowRing:null};
+ rs.forEach((r,i)=>{site+=r.site||0;idC.A=site;(r.warn||[]).forEach(w=>warn.push(Object.assign({},w,{t:`Part ${i+1}: ${w.t}`})));(r.circ||[]).forEach(c=>circ.push(c));
+  if(co==='land'){(r.halls||[]).forEach((h,k)=>{halls.push({hall:abs(r,h.hall),gen:h.gen?abs(r,h.gen):null,v:h.v,part:i});phase.push((r.phase&&r.phase[k])||1)});
+   if(!sub&&r.sub)sub=abs(r,r.sub);if(!park&&r.park)park=abs(r,r.park);if(!pond&&r.pond)pond=abs(r,r.pond);
+   n+=r.n||0;it+=r.it||0;itRaw+=r.itRaw||0;fac+=r.fac||0;fp+=r.fp||0;stalls+=r.stalls||0}
+  else{/* storage merge not required for Water Well */}
+ });
+ idC.bb=(()=>{let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;parts.forEach(R=>R.forEach(([x,y])=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y)}));return [x0,y0,x1,y1]})();
+ const E=(rs[0]&&rs[0].E)||I,pue=+E.pue||1.3,want=Math.max(0,Math.round(+I.halls||0));
+ const cov=site?fp/site:0,far=site?fp*(rs[0]&&rs[0].stories||1)/site:0;
+ const bind=rs.map(r=>r.bind).filter(Boolean).join(' · ')||'Land / setbacks / no-build';
+ const r0=rs[0]||{};
+ const out={co,C:idC,E,halls,sub,park,pond,stalls,n,want,needCap:r0.needCap,capIT:r0.capIT,it,itRaw,fac,hallMW:r0.hallMW,fp,cov,far,
+  height:r0.height,stories:r0.stories,hlim:r0.hlim,phase,phMW:r0.phMW||[],rows:r0.rows||[],T:r0.T,Tsum:r0.Tsum,ent:r0.ent,
+  bind,warn,circ,site,score:it-(warn.length*.5),parts:rs.length,
+  k:{it:+it.toFixed(2),fac:+fac.toFixed(2),halls:n,cov:+(cov*100).toFixed(1),far:+far.toFixed(3),stalls,itLand:+itRaw.toFixed(2)}};
+ // attach civil from first part that has it; recompute buildable as sum
+ out.build={gross:site/43560,net:rs.reduce((a,r)=>a+((r.build&&r.build.net)||0),0),row:0,road:0,setback:0,easement:0,stream:0,power:0,flood:0,bld:0,excl:0,pond:pond?pond[2]*pond[3]/43560:0};
+ out.sw=r0.sw;out.pd=r0.pd;out.grade=null;out.hgt=r0.hgt;out.pack={parts:rs.map((r,i)=>({i,n:r.n,rot:r.pack&&r.pack.rot,mode:r.pack&&r.pack.mode}))};
+ if(out.k){out.k.netAc=+out.build.net.toFixed(1);if(out.sw)out.k.detAcFt=+out.sw.Vac.toFixed(2);if(pond)out.k.pondAc=+(pond[2]*pond[3]/43560).toFixed(2)}
+ return out}
 // option generator: sweep orientation and prototype sizes; rank by the company KPI
 function tfGen(co,R,I,ctx){if(ctx&&ctx.cv&&ctx.cv.pf&&I.sw!=='off'&&!ctx.pondFix){const b=tfSolve(co,R,I,ctx);ctx=Object.assign({},ctx,{pondFix:b.pd})}const O=[],seen=new Set(),rots=[0,15,30,45,60,75,90,105,120,135,150,165];
  const vs=co==='storage'?[{mode:'hy'},{mode:'du'},{mode:'mu'},{mode:'hy',stories:Math.max(1,(+I.stories||3)-1)}]:[{},{hallW:200,hallL:800},{hallW:300,hallL:1200},{hallW:250,hallL:600}];

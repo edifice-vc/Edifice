@@ -64,5 +64,30 @@ class TestFit(unittest.TestCase):
         self.assertEqual(r['i'], [[], None])
         self.assertEqual((r['j']['halls'], r['j']['pue'], 'evil' in r['j'], r['j']['subPos']), (0, 2, False, 'NW'))
 
+    def test_multipolygon_road_gap_no_bridge(self):
+        """Two parcels split by a ~60 ft road gap: pack each alone; no hall/yard/pond crosses the gap."""
+        r = self.js("""
+ const gap=60,W=1300,H=600;
+ const A=[[0,0],[W,0],[W,H],[0,H],[0,0]], B=[[W+gap,0],[W+gap+W,0],[W+gap+W,H],[W+gap,H],[W+gap,0]];
+ const midX=W+gap/2;
+ const crosses=r=>{const Rs=(r.halls||[]).flatMap(h=>[h.hall,h.gen].filter(Boolean)).concat([r.sub,r.park,r.pond].filter(Boolean));
+  for(const R of Rs){const [x,y,w,h]=R;
+   if(Math.min(x,x+w)<midX-1 && Math.max(x,x+w)>midX+1)return true;
+   for(const px of [x,x+w/2,x+w])for(const py of [y,y+h/2,y+h])if(px>W+1&&px<W+gap-1&&py>0&&py<H)return true}
+  return false};
+ const I=Object.assign({},TF_DEF.land,{halls:8,hallW:250,hallL:1000,setF:50,setS:50,setR:50,sw:'off',subAc:0,genAc:0.5,park:0});
+ const r=tfSolve('land',[A,B],I,{});
+ const nL=(r.halls||[]).filter(h=>h.part===0).length, nR=(r.halls||[]).filter(h=>h.part===1).length;
+ let inGap=false;for(const h of r.halls||[]){const [x,y,w,hh]=h.hall;for(const p of [[x,y],[x+w,y],[x+w,y+hh],[x,y+hh],[x+w/2,y+hh/2]])if(p[0]>W+1&&p[0]<W+gap-1)inGap=true}
+ return {n:r.n,nL,nR,parts:r.parts,cross:crosses(r),inGap,pack:r.pack};
+""")
+        self.assertGreaterEqual(r['n'], 2, r)
+        self.assertGreaterEqual(r['nL'], 1, r)
+        self.assertGreaterEqual(r['nR'], 1, r)
+        self.assertEqual(r['parts'], 2)
+        self.assertFalse(r['cross'], r)
+        self.assertFalse(r['inGap'], r)
+
+
 if __name__ == '__main__':
     unittest.main()

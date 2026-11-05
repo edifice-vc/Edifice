@@ -4,7 +4,7 @@ import json, re, subprocess, textwrap
 from pathlib import Path
 
 L = (Path(__file__).resolve().parents[1] / 'template.html').read_text().split('\n')
-NAMES = 'SP_DEF SP_ET SP_GEN spProj spNB spNBhit spGrid spSolve spNoB spCalc spArea spCx spGasEst spGenInp spGridEst spInside spN spPack spPlantFree spSegD spSub spGridEst0 spGasEst0 spParcel'.split()
+NAMES = 'SP_DEF SP_ET SP_GEN spProj spNB spNBhit spGrid spSolve spNoB spCalc spArea spCx spGasEst spGenInp spGridEst spInside spN spPack spPlantFree spSegD spSub spGridEst0 spGasEst0 spParcel spParcelParts spGapPolys'.split()
 
 
 def fn(name):
@@ -82,3 +82,29 @@ console.log(JSON.stringify([acctTxt({email:'a@b.co',role:()=>'admin'}),
     assert out.returncode == 0, out.stderr
     assert json.loads(out.stdout) == ['a@b.co · admin', '', 'a@b.co', '']
     assert "BK.email+' · '+BK.role()" not in '\n'.join(L)
+
+def test_multipolygon_parts_gap_is_nobuild():
+    """Disconnected MultiPolygon parts pack separately; the gap corridor is kind-4 (road) no-build."""
+    h = textwrap.dedent(r"""
+const SP={cx:{},ly:{},sd:null,pd:{}},SHX={};const fmt=(v,d)=>(+v).toFixed(d);const esc=x=>String(x);
+const s={id:'tmp',lat:38.7665,lon:-97.635,acres:50};
+const P=spProj(s.lat,s.lon);
+const ft=(x,y)=>P.b([x,y]);
+const ring=(x0,y0,w,h)=>[ft(x0,y0),ft(x0+w,y0),ft(x0+w,y0+h),ft(x0,y0+h),ft(x0,y0)];
+const A=ring(-2000,-300,2000,600), B=ring(60,-300,2000,600);
+SP.pd={tmp:{deal:{g:{type:'MultiPolygon',coordinates:[[A],[B]]}}}};
+const ps=spParcelParts(s);
+const gaps=spGapPolys(ps,P);
+const N=spNB(s,Object.assign({},SP_DEF));
+const hit=spNBhit(30,0,N);
+SP.poly=ps[0];SP.polys=ps;const G=spGrid(ps[0],Object.assign({},SP_DEF),s);
+let gapInn=0;for(let j=0;j<G.ny;j++)for(let i=0;i<G.nx;i++){const x=G.x0+(i+.5)*G.C,k=j*G.nx+i;if(G.inn[k]&&x>5&&x<55)gapInn++}
+console.log(JSON.stringify({n:ps.length,gaps:gaps.length,hit,gapInn,parts:G.parts,build:G.buildAc}));
+""")
+    out = subprocess.run(['node', '-e', SRC + '\n' + h], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr + out.stdout
+    r = json.loads(out.stdout.strip().split('\n')[-1])
+    assert r['n'] == 2 and r['gaps'] >= 1, r
+    assert r['hit'] == 4, r
+    assert r['gapInn'] == 0, r
+    assert r['parts'] == 2, r
