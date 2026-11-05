@@ -59,7 +59,7 @@ class Civil(unittest.TestCase):
         self.assertEqual(r, [2, 'FAA Part 77'])
 
     def test_phasing_targets_grid_and_order(self):
-        r = self.js("""const R=sq(300),r=tfDC(R,Object.assign({},TF_DEF.land,{tgtMW:100,phases:2,mwBasis:'fac'}),{gridMW:50,cv:{pf:PF,hsg:{C:1}}});
+        r = self.js("""const R=sq(300),r=tfDC(R,Object.assign({},TF_DEF.land,{hallMW:12,wsf:48,tgtMW:100,phases:2,mwBasis:'fac'}),{gridMW:50,cv:{pf:PF,hsg:{C:1}}});
  const d=o=>Math.hypot(o.hall[0]+o.hall[2]/2-(r.sub[0]+r.sub[2]/2),o.hall[1]+o.hall[3]/2-(r.sub[1]+r.sub[3]/2));
  return {T:r.T,rows:r.rows.map(w=>[w.halls,w.grid,+w.cumFac.toFixed(1),w.det>=0]),it:r.k.it,land:r.k.itLand,ord:r.halls.map(d),warn:r.warn.map(w=>w.k),v:valid(r,R,100)}""")
         self.assertAlmostEqual(sum(r['T']), 100 / 1.3, places=3)

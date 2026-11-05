@@ -177,7 +177,11 @@ async function tfSaveScheme(){const s=spSite(),B=spxBK(),r=TF.r;if(!s||!r||!tfIn
  const d={site_id:s.id,co,name:nm.slice(0,80),v:2,k:Object.assign({},r.k),bind:r.bind,zbind:'',circ:r.circ.filter(c=>!c.ok).map(c=>c.id),jur:'',p:JSON.stringify(Object.assign({},SP.inp,{tf:TF.I})).slice(0,8000),g:JSON.stringify(g).slice(0,24000),restricted:!!(typeof RIDS!=='undefined'&&RIDS.has&&RIDS.has(s.id))};
  if(!B){$('tfMsg').textContent='No Firestore connection: not saved';return}try{const id=await B.savePlan(d);const L=SPX.saved[co+'/'+s.id]||(SPX.saved[co+'/'+s.id]={list:[],st:'ok'});L.list.unshift(Object.assign({id,ts:new Date().toISOString(),by:B.email},d));$('tfMsg').textContent='Saved "'+d.name+'" (1 write)';spxSavedRender(s)}catch(e){$('tfMsg').textContent='Save failed: '+e.message}}
 function tfWire(el){const sched=()=>{cancelAnimationFrame(TF.raf);TF.raf=requestAnimationFrame(tfRun)};
- el.addEventListener('input',e=>{const t=e.target;if(t.dataset.tft&&TF.I){TF.I[t.dataset.tft]=t.value;sched();return}const k=t.dataset.tf;if(!k||!TF.I)return;TF.I[k]=t.tagName==='SELECT'?t.value:(k==='imp'&&+t.value===0?'':k==='tgtMW'&&+t.value===0?'':+t.value);el.querySelectorAll(`[data-tf="${k}"]`).forEach(x=>{if(x!==t)x.value=t.value});sched()});
+ el.addEventListener('input',e=>{const t=e.target;if(t.dataset.tft&&TF.I){TF.I[t.dataset.tft]=t.value;sched();return}const k=t.dataset.tf;if(!k||!TF.I)return;TF.I[k]=t.tagName==='SELECT'?t.value:(k==='imp'&&+t.value===0?'':k==='tgtMW'&&+t.value===0?'':+t.value);el.querySelectorAll(`[data-tf="${k}"]`).forEach(x=>{if(x!==t)x.value=t.value});
+ if(SP.co==='land'&&['hallMW','hallW','hallL','stories'].includes(k)){const hw=+TF.I.hallW||250,hl=+TF.I.hallL||1000,st=Math.max(1,+TF.I.stories||1);
+  if(k==='hallMW')TF.I.wsf=(+TF.I.hallMW)*1e6/(hw*hl*st);
+  else{TF.I.wsf=+TF.I.wsf||200;TF.I.hallMW=+(hw*hl*st*TF.I.wsf/1e6).toFixed(2);el.querySelectorAll('[data-tf="hallMW"]').forEach(x=>x.value=TF.I.hallMW)}}
+ sched()});
  el.addEventListener('change',e=>{const t=e.target;if(t.dataset.tf&&!TF.undo.length)TF.undo.push(Object.assign({},TF.I));if(t.dataset.tfc!=null){const i=+t.dataset.tfc;TF.cmp=t.checked?TF.cmp.concat(i).slice(-3):TF.cmp.filter(x=>x!==i);tfCmpR()}});
  el.addEventListener('submit',e=>{e.preventDefault();const q=$('tfQ');const v=q.value;q.value='';tfChat(v)});
  el.addEventListener('click',e=>{const id=e.target.id,s=spSite(),co=SP.co;

@@ -42,6 +42,7 @@ jobs:
       - name: Install deps
         run: |
           pip install -r pipeline/requirements.txt
+          pip install pytest
           npm install -g staticrypt@3
           # pdftotext for PDF ordinances/agendas; non-fatal (PDF citations are then marked "not re-verified")
           command -v pdftotext || { sudo apt-get update -q && sudo apt-get install -y -q poppler-utils; } || echo "poppler-utils unavailable"
@@ -169,7 +170,7 @@ jobs:
         run: python3 pipeline/dc_tracker.py
 
       - name: Unit tests (synthetic data only)
-        run: python3 -m unittest discover -s pipeline/tests
+        run: python3 -m pytest pipeline/tests -q
 
       # Bounded learned weights (learnings/weights); prints counts only.
       - name: Recompute learned weights

@@ -64,6 +64,19 @@ class TestFit(unittest.TestCase):
         self.assertEqual(r['i'], [[], None])
         self.assertEqual((r['j']['halls'], r['j']['pue'], 'evil' in r['j'], r['j']['subPos']), (0, 2, False, 'NW'))
 
+
+    def test_hall_mw_from_density_scales_with_length(self):
+        """IT MW = hallW × hallL × stories × W/sf / 1e6 (scales when hallL shortens)."""
+        r = self.js("""
+ const R=sq(200),I0=Object.assign({},TF_DEF.land,{halls:1,hallW:250,hallL:1000,stories:1,wsf:200,sw:'off',subAc:0,genAc:0,park:0,setF:50,setS:50,setR:50});
+ const a=tfDC(R,I0,{}),b=tfDC(R,Object.assign({},I0,{hallL:500}),{});
+ return {a:{n:a.n,mw:a.hallMW,it:a.it},b:{n:b.n,mw:b.hallMW,it:b.it},def:TF_DEF.land.hallMW};
+""")
+        self.assertAlmostEqual(r['def'], 50, places=5)
+        self.assertGreaterEqual(r['a']['n'], 1, r)
+        self.assertAlmostEqual(r['a']['mw'], 50.0, places=5)  # 250*1000*1*200/1e6
+        self.assertAlmostEqual(r['b']['mw'], 25.0, places=5)  # half length → half MW
+
     def test_multipolygon_road_gap_no_bridge(self):
         """Two parcels split by a ~60 ft road gap: pack each alone; no hall/yard/pond crosses the gap."""
         r = self.js("""
