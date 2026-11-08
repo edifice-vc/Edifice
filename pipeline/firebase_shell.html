@@ -317,6 +317,9 @@ async function boot(user, email, me0) {
     // Parcel boundaries (deal parcel + ~1/4-mile neighbours; owner/APN): ADMIN-ONLY, one doc read per deal in view.
     parcels: siteId => role !== 'admin' ? Promise.resolve(null)
       : getDoc(doc(db, 'parcels', siteId)).then(d => d.exists() ? JSON.parse(d.data().j) : null).catch(() => null),
+    // Local utility lines (water, sewer, storm, electric, fiber, easements): ADMIN-ONLY, one doc read per deal in view.
+    utilities: siteId => role !== 'admin' ? Promise.resolve(null)
+      : getDoc(doc(db, 'utilities', siteId)).then(d => d.exists() ? JSON.parse(d.data().j) : null).catch(() => null),
     siteConstraints: siteId => role !== 'admin' ? Promise.resolve(null)
       : getDoc(doc(db, 'site_constraints', siteId)).then(d => d.exists() ? JSON.parse(d.data().j) : null).catch(() => null),
     saveConstraints(siteId, obj, restricted) {

@@ -104,6 +104,9 @@ service cloud.firestore {
     // Parcel boundaries per active deal (deal parcel + ~1/4-mile neighbours, APN/owner): ADMIN-ONLY, never client-written.
     // Written only by pipeline/parcels.py (admin SDK).
     match /parcels/{id} { allow read: if admin(); allow write: if false; }
+    // Local utility lines per deal (city/county GIS within 2 mi): ADMIN-ONLY, never client-written.
+    // Written only by pipeline/local_utilities.py (admin SDK).
+    match /utilities/{id} { allow read: if admin(); allow write: if false; }
     // Public Mapbox map token (URL-restricted pk.): readable by any signed-in member, never client-written.
     match /config/mapbox { allow read: if member(); allow write: if false; }
     function senders() {
