@@ -89,6 +89,46 @@ class Cap(unittest.TestCase):
         self.assertLessEqual(len(U.record_j(one)), jlen([near]) + 8)
         self.assertLessEqual(len(U.record_j(U.fit(rec, cap=U.CAP))), U.CAP)
 
+    def test_farthest_cut_binary_searches_instead_of_per_line(self):
+        # 200 nearest-ordered mains. A linear pop would encode ~170 times; binary search encodes a handful.
+        lines = [{"t": "water", "k": "main", "mi": i / 100.0, "nm": f"w{i}",
+                  "g": {"type": "LineString", "coordinates": [[-97.0, 38.0], [-97.0 + i * 1e-5, 38.001]]}}
+                 for i in range(200)]
+        calls = {"n": 0}
+        def measure(ls):
+            calls["n"] += 1
+            return len(U.record_j({"src": "local-gis", "county": "T", "radius_m": 1, "lines": ls}))
+        cap = measure(lines[:40])
+        calls["n"] = 0
+        kept = U.shrink(lines, cap, measure)
+        self.assertLess(calls["n"], 30)          # category checks + log2(200), not one encode per dropped line
+        self.assertEqual(len(kept), 40)
+        self.assertLessEqual(measure(kept), cap)
+        self.assertEqual([f["mi"] for f in kept], [i / 100.0 for i in range(40)])
+        dropped = [f for f in lines if f not in kept]
+        self.assertGreaterEqual(min(f["mi"] for f in dropped), max(f["mi"] for f in kept))
+
+
+class Batches(unittest.TestCase):
+    def fake(self, i, nbytes):
+        # synthetic line only — no registry geometry
+        g = '{"type":"LineString","coordinates":[[0,0],[1,1]]}'
+        j = (g * (1 + nbytes // len(g)))[:nbytes]
+        return (f"s{i}", j, "h", {"src": "local-gis", "fetched_at": "2026-11-08"})
+
+    def test_batch_stays_under_8mb_and_500_writes(self):
+        # 20 docs near the 900 KB doc cap used to be one 20-write commit (~17 MB) and Firestore rejected it.
+        big = [self.fake(i, 878_000) for i in range(20)]
+        groups = U.batches(big)
+        self.assertGreater(len(groups), 1)
+        for g in groups:
+            self.assertLessEqual(len(g), U.BATCH_WRITES)
+            self.assertLessEqual(sum(U.payload_bytes(it) for it in g), U.BATCH_BYTES)
+        self.assertEqual(sum(len(g) for g in groups), 20)
+        tiny = [self.fake(i, 20) for i in range(600)]
+        groups = U.batches(tiny, max_bytes=10 ** 12, max_writes=500)
+        self.assertEqual([len(g) for g in groups], [500, 100])
+
 
 class Strips(unittest.TestCase):
     def test_widths_and_crossing(self):

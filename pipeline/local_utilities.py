@@ -15,7 +15,9 @@ City of Salina stores SIZE in hundredths of an inch, so scale 100 turns 600 into
       # keeps type/size/material/owner, caches under pipeline/private/
   python3 local_utilities.py push [--apply] [--only ID ..]
       # utilities/{id} docs {j,h,src,fetched_at}; dry run without --apply.
-      # Docs over 900 KB drop storm lines, then laterals, then the farthest remaining lines.
+      # Docs over 900 KB drop storm lines, then laterals, then the farthest remaining lines
+      # (binary search; the kept set is the nearest lines that fit).
+      # --apply commits in batches of at most ~8 MB of payload and 500 writes.
   python3 local_utilities.py discover [--county NAME]
       # stub: search ArcGIS Online for a county the registry lists as having no public source.
       # Prints candidates. Does not write the registry or fetch utility geometry.
@@ -34,6 +36,8 @@ RADIUS_M = 3218.69          # 2 miles
 SIMPLIFY_M = 2.0
 STALE_DAYS = 90
 CAP = 900_000               # bytes of the stored j string
+BATCH_BYTES = 8_000_000     # Firestore commit payload cap is 10 MB; stay under it
+BATCH_WRITES = 500          # Firestore batch write limit
 COLLECTION = "utilities"
 MI = 1609.344
 OWNER_DEFAULT = ["OWNER", "OWNERNAME", "Owner", "OwnerName", "UTILITY", "OPERATOR", "COMPANY"]
@@ -198,7 +202,11 @@ def record_j(rec):
     return json.dumps(body, separators=(",", ":"))
 
 def shrink(lines, cap, measure):
-    """Drop storm, then laterals, then the farthest remaining lines, until measure(lines) <= cap."""
+    """Drop storm, then laterals, then the farthest remaining lines, until measure(lines) <= cap.
+
+    The farthest cut is a binary search over how many of the nearest lines to keep.
+    Each probe encodes the candidate once, so a dense deal is log(n) encodings, not one per dropped line.
+    """
     lines = list(lines or [])
     storm = lambda f: f.get("t") == "storm" or f.get("k") == "storm"
     lateral = lambda f: f.get("k") == "lateral"
@@ -207,9 +215,17 @@ def shrink(lines, cap, measure):
     if measure(lines) <= cap: return lines
     lines = [f for f in lines if not lateral(f)]
     if measure(lines) <= cap: return lines
-    lines.sort(key=lambda f: -(f.get("mi") or 0))   # farthest first
-    while lines and measure(lines) > cap: lines.pop(0)
-    return lines
+    lines.sort(key=lambda f: (f.get("mi") or 0, f.get("nm") or ""))   # nearest first; a prefix is what we keep
+    lo, hi, best = 0, len(lines), []
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        chunk = lines[:mid]
+        if measure(chunk) <= cap:
+            best = chunk
+            lo = mid + 1
+        else:
+            hi = mid - 1
+    return best
 
 def fit(rec, cap=CAP):
     """Return rec with lines trimmed so the stored j string is at most cap bytes."""
@@ -217,6 +233,25 @@ def fit(rec, cap=CAP):
     out = dict(rec)
     out["lines"] = shrink(rec.get("lines") or [], cap, measure)
     return out
+
+def payload_bytes(item):
+    """Bytes of one utilities doc. item is (id, j, h, rec). j is almost the whole payload."""
+    _s, j, h, r = item
+    return len(j) + len(h or "") + len(str((r or {}).get("src") or "")) + len(str((r or {}).get("fetched_at") or "")) + 64
+
+def batches(plan, max_bytes=BATCH_BYTES, max_writes=BATCH_WRITES):
+    """Split a push plan so each Firestore commit stays under max_bytes and max_writes.
+    A single doc larger than max_bytes is its own batch (push already skips docs over the 900 KB cap)."""
+    groups, cur, size = [], [], 0
+    for item in plan or []:
+        n = payload_bytes(item)
+        if cur and (size + n > max_bytes or len(cur) >= max_writes):
+            groups.append(cur)
+            cur, size = [], 0
+        cur.append(item)
+        size += n
+    if cur: groups.append(cur)
+    return groups
 
 def doc_of(rec):
     j = record_j(rec)
@@ -348,13 +383,14 @@ def push(a):
             print(f"[utilities] {s}: still {len(j)//1024} KB after dropping storm and laterals, skipped"); continue
         plan.append((s, j, h, rec))
     print(f"[utilities] {len(ids)} reads, {len(plan)} writes planned to {COLLECTION}/ ({sum(len(p[1]) for p in plan)//1024} KB)")
+    groups = batches(plan)
+    print(f"[utilities] {len(groups)} batches, largest {max((sum(payload_bytes(i) for i in g) for g in groups), default=0)//1024} KB")
     if not a.apply: print("[utilities] dry run; pass --apply to write"); return
-    b = client.batch(); n = 0
-    for s, j, h, r in plan:
-        b.set(client.collection(COLLECTION).document(s), {"j": j, "h": h, "src": r.get("src") or "local-gis", "fetched_at": r.get("fetched_at")})
-        n += 1
-        if n % 20 == 0: b.commit(); b = client.batch()
-    if n % 20: b.commit()
+    for group in groups:
+        b = client.batch()
+        for s, j, h, r in group:
+            b.set(client.collection(COLLECTION).document(s), {"j": j, "h": h, "src": r.get("src") or "local-gis", "fetched_at": r.get("fetched_at")})
+        b.commit()
     print(f"[utilities] wrote {len(plan)} docs")
 
 def discover(a):
