@@ -12,7 +12,7 @@ CHK = (ROOT / 'pipeline' / 'jurisdiction_checklists.json').read_text()
 SRC = ('const CV_REF=' + (ROOT / 'pipeline' / 'civil_ref.json').read_text().strip() + ';\n'
        + 'const SS_CHECKLISTS=' + CHK.strip() + ';\n'
        + '\n'.join((ROOT / 'pipeline' / f).read_text() for f in ('planEditSchema.js', 'testfit.js', 'civil.js', 'sheet.js', 'sheetset.js')))
-ORDER = ['G-001', 'C-100', 'C-200', 'C-300', 'C-400', 'L-100', 'E-001', 'NZ-101', 'V-101', 'V-201']
+ORDER = ['G-001', 'C-100', 'C-200', 'C-300', 'C-400', 'L-100', 'E-001', 'NZ-101', 'V-101', 'V-201', 'OP-001']
 SECRETS = ['SYNTHOWNER', 'APN99-12345']
 TOKEN = re.compile(r'\bMW\b|generator|\bgpm\b|\bgpd\b|\bgpy\b|SYNTHOWNER|APN99-12345', re.I)
 
@@ -37,7 +37,7 @@ const side=Math.hypot(R[1][0]-R[0][0],R[1][1]-R[0][1]);
 return {sheets:out.sheets,scale:out.scale,barFt:out.barFt,half:out.half,scales:out.scales,paper:out.paper,mode:out.mode,
  summary:out.summary.map(x=>({value:x.value,tag:x.tag,assumed:x.assumed,sensitive:x.sensitive,print:x.print})),
  check:out.check.map(x=>({n:x.n,status:x.status,title:x.title})),
- registry:ssRegistry(),pens:ssPenTable(),side,
+ registry:ssRegistry().map(s=>s.no),pens:ssPenTable(),side,
  pdf:out.pdf,dxf:out.dxf.map(d=>({name:d.name,text:d.text})),info:out.info};
 ''' % (json.dumps(paper), json.dumps(mode))
     return js(body)
@@ -201,10 +201,10 @@ class SheetSet(unittest.TestCase):
             reader, streams = content_streams(pdf)
             self.assertEqual((float(reader.pages[1].mediabox[2]), float(reader.pages[1].mediabox[3])), size)
             site = streams[1]
-            scale = int(re.search(r'SCALE: 1 IN = (\d+) FT', site).group(1))
-            bar_ft = int(re.search(r'SCALE BAR (\d+) FT', site).group(1))
-            self.assertEqual(scale, pack['scale'])
-            self.assertAlmostEqual(bar_ft / scale, 2.0, places=6)
+            scale = float(re.search(r'SCALE: 1 IN = ([0-9.]+) FT', site).group(1))
+            bar_ft = float(re.search(r'SCALE BAR ([0-9.]+) FT', site).group(1))
+            self.assertAlmostEqual(scale, pack['scale'], delta=max(0.05, pack['scale'] * 0.002))
+            self.assertAlmostEqual(bar_ft / scale, 2.0, delta=0.01)
             rs = [w for layer, w, h in rects(site) if layer == 'SCALEBAR' and h >= 5]
             bar = min(rs, key=lambda w: abs(w - bar_ft * 72 / scale))
             check = min(rs, key=lambda w: abs(w - 72))
@@ -217,8 +217,51 @@ class SheetSet(unittest.TestCase):
             self.assertAlmostEqual(got, expect, delta=expect * 0.005)
         self.assertTrue(self.tab['half'])
         shown = pdf_text(self.tab['pdf'])
-        self.assertIn('1 IN = %d FT AT 11x17 (1 IN = %d FT AT ARCH D)' % (self.tab['scale'], self.tab['scales']['ARCH_D']), shown)
-        self.assertEqual(self.tab['scale'], self.tab['scales']['ARCH_D'] * 2)
+        arch = self.tab['scales']['ARCH_D']
+        printed = self.tab['scale']
+        fit = min(1224 / 2592, 792 / 1728)
+        self.assertAlmostEqual(printed, arch / fit, places=4)
+        label = '1 IN = %s FT AT 11x17 (1 IN = %s FT AT ARCH D)' % (self._scale_num(printed), self._scale_num(arch))
+        self.assertIn(label, shown)
+        self.assertIn(label, pdf_text(self.tab['pdf']))
+
+    @staticmethod
+    def _scale_num(s):
+        r = round(s * 10) / 10
+        return str(int(round(r))) if abs(r - round(r)) < 1e-6 else ('%.1f' % r)
+
+    def test_register_fills_reserved_sheets_in_order(self):
+        out = js(r'''
+ssResetRegistry();
+ssRegister({no:'NZ-101', title:'NOISE SCREENING', order:80, render:function(ctx, sh, d){
+  d.text(ctx.chrome.view.x+24, ctx.chrome.view.y+48, 'NOISE SCREENING FIXTURE', {size:12, pen:'TEXT'});
+}});
+ssRegister({no:'OP-001', title:'OPERATIONS PLAN', order:110, render:function(ctx, sh, d){
+  d.text(ctx.chrome.view.x+24, ctx.chrome.view.y+48, 'OPERATIONS FIXTURE', {size:12, pen:'TEXT'});
+}});
+ssRegister({no:'E-001', title:'SITE PHOTOMETRIC', render:function(ctx, sh, d){
+  d.text(ctx.chrome.view.x+24, ctx.chrome.view.y+48, 'PHOTOMETRIC FIXTURE', {size:12, pen:'TEXT'});
+}});
+const h=Math.sqrt(10*43560)/2, R=[[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]];
+const r=tfDC(R, Object.assign({}, TF_DEF.land, {halls:1, sw:'off'}), {});
+const out=ssExport(r, {polySrc:'square', ext:{roads:[], flood:[], places:[]}}, {paper:'ARCH_D', mode:'public', date:'2026-11-15'});
+const nos=ssRegistry().map(s=>s.no);
+let bad=false; try{ssRegister({})}catch(e){bad=true}
+ssResetRegistry();
+return {sheets:out.sheets, nos, bad, pdf:out.pdf};
+''')
+        self.assertTrue(out['bad'])
+        self.assertEqual(out['nos'], ORDER)
+        self.assertEqual(out['sheets'], ['G-001', 'C-100', 'E-001', 'NZ-101', 'OP-001'])
+        self.assertEqual(len(out['sheets']), len(set(out['sheets'])))
+        text = pdf_text(out['pdf'])
+        self.assertIn('PHOTOMETRIC FIXTURE', text)
+        self.assertIn('NOISE SCREENING FIXTURE', text)
+        self.assertIn('OPERATIONS FIXTURE', text)
+        self.assertIn('C-200', text)
+        self.assertIn('NOT IN THIS ISSUE', text)
+        self.assertLess(text.find('E-001'), text.find('NZ-101'))
+        self.assertLess(out['pdf'].find('C-100'), out['pdf'].find('PHOTOMETRIC FIXTURE'))
 
     def test_raster_scale_bar(self):
         self.assertTrue(shutil.which('pdftoppm'), 'pdftoppm missing')

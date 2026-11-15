@@ -2432,13 +2432,23 @@ function tfSheetPts(r,meta){tfSheet(r,meta);return tfSheet._last||[]}
 // Public mode is the default and drops MW, generator counts, water rates, APNs and owner names.
 // Every site-summary number carries a source tag [Z][C][F][N][T][H][O][U][A]. Unknowns print TBD, never a guess.
 // SS_CHECKLISTS is injected by render.py (the Shawnee Sec. 39.05 list). Tests inject it the same way.
+//
+// Other modules fill a reserved sheet without editing this file:
+//   ssRegister({no:'NZ-101', title:'NOISE SCREENING', order:80, render:fn})
+// fn(ctx, sheet, draw) adds geometry with draw.line / rect / poly / text / clip.
+// ctx: r, meta, mode, paper, scale (printed ft per inch), scales.ARCH_D, extent,
+//   map {X, Y, ppf} (local feet to paper points), chrome.view, cfg, date, summary, check, ext.
+// Paper y is up. Return nothing to keep what you drew, or {ops} to replace the page.
+// A sheet with no render stays on the G-001 index and is not exported.
+// ssResetRegistry() clears registrations (tests).
 
 const SS_PAPER = {
   ARCH_D: {id: 'ARCH_D', w: 2592, h: 1728, label: 'ARCH D', inch: '36 x 24'},
   ARCH_E: {id: 'ARCH_E', w: 3456, h: 2592, label: 'ARCH E', inch: '48 x 36'},
   TABLOID: {id: 'TABLOID', w: 1224, h: 792, label: '11x17', inch: '17 x 11'}
 };
-const SS_SCALES = [50, 100, 200, 300, 400, 500, 600];
+// Standard engineering scales, smallest first, then coarser scales if the site still does not fit.
+const SS_SCALES = [20, 30, 40, 50, 60, 100, 200, 300, 400, 500, 600, 800, 1000, 1500, 2000, 3000];
 // One pen table for the PDF and the DXF. Layer names and linetypes are the contract the tests check.
 const SS_PENS = {
   PAGE: {layer: 'PAGE', lw: 0, rgb: [1, 1, 1], ltype: 'CONTINUOUS', aci: 7},
@@ -2467,23 +2477,40 @@ const SS_LTYPES = {
   DASHED: {desc: 'Dashed', pat: [0.5, -0.25]},
   DASHDOT: {desc: 'Dash dot', pat: [0.5, -0.15, 0, -0.15]}
 };
-const SS_REGISTRY = [
-  {no: 'G-001', title: 'COVER AND SHEET INDEX', issue: 1},
-  {no: 'C-100', title: 'SITE PLAN', issue: 1},
-  {no: 'C-200', title: 'GRADING PLAN', issue: 0},
-  {no: 'C-300', title: 'UTILITY PLAN', issue: 0},
-  {no: 'C-400', title: 'PHASING PLAN', issue: 0},
-  {no: 'L-100', title: 'LANDSCAPE PLAN', issue: 0},
-  {no: 'E-001', title: 'SITE PHOTOMETRIC', issue: 0},
-  {no: 'NZ-101', title: 'NOISE SCREENING', issue: 0},
-  {no: 'V-101', title: 'LINE OF SIGHT', issue: 0},
-  {no: 'V-201', title: 'MASSING VIEWS', issue: 0}
+const SS_BASE = [
+  {no: 'G-001', title: 'COVER AND SHEET INDEX', order: 10, draw: 'cover'},
+  {no: 'C-100', title: 'SITE PLAN', order: 20, draw: 'site'},
+  {no: 'C-200', title: 'GRADING PLAN', order: 30},
+  {no: 'C-300', title: 'UTILITY PLAN', order: 40},
+  {no: 'C-400', title: 'PHASING PLAN', order: 50},
+  {no: 'L-100', title: 'LANDSCAPE PLAN', order: 60},
+  {no: 'E-001', title: 'SITE PHOTOMETRIC', order: 70},
+  {no: 'NZ-101', title: 'NOISE SCREENING', order: 80},
+  {no: 'V-101', title: 'LINE OF SIGHT', order: 90},
+  {no: 'V-201', title: 'MASSING VIEWS', order: 100},
+  {no: 'OP-001', title: 'OPERATIONS PLAN', order: 110}
 ];
+let SS_EXTRA = [];
 const SS_TAGS = /^[ZCFNTHOUA]$/;
 const SS_HIDE = {mw: 1, gen: 1, water: 1, owner: 1, apn: 1};
 
 function ssPaper(id) {return SS_PAPER[id] || SS_PAPER.ARCH_D}
-function ssRegistry() {return SS_REGISTRY.map(s => s.no)}
+function ssRegister(def) {
+  if (!def || !def.no) throw new Error('ssRegister needs a sheet number');
+  if (def.render != null && typeof def.render !== 'function') throw new Error('ssRegister render must be a function');
+  SS_EXTRA = SS_EXTRA.filter(s => s.no !== def.no).concat([def]);
+  return def.no;
+}
+function ssResetRegistry() {SS_EXTRA = []}
+function ssRegistry() {
+  const m = new Map(SS_BASE.map(s => [s.no, Object.assign({}, s)]));
+  SS_EXTRA.forEach(s => {
+    const prev = m.get(s.no) || {};
+    m.set(s.no, Object.assign({}, prev, s, {order: s.order != null ? s.order : (prev.order != null ? prev.order : 1000)}));
+  });
+  return [...m.values()].sort((a, b) => a.order - b.order || String(a.no).localeCompare(String(b.no)));
+}
+function ssHasDraw(sh) {return typeof sh.render === 'function' || sh.draw === 'cover' || sh.draw === 'site'}
 function ssPenTable() {return Object.keys(SS_PENS).map(id => {const p = SS_PENS[id]; return {id, layer: p.layer, ltype: p.ltype, lw: p.lw, aci: p.aci, rgb: p.rgb.slice()}})}
 function ssNum(v, d) {return v == null || !isFinite(v) ? null : (d == null ? String(Math.round(v)) : v.toFixed(d))}
 function ssAc(v) {const n = ssNum(v, 2); return n == null ? null : n + ' ac'}
@@ -2536,19 +2563,32 @@ function ssFits(extent, view, scale) {
   const ppf = 72 / scale;
   return extent.w * ppf <= view.w * 0.98 && extent.h * ppf <= view.h * 0.98;
 }
-function ssFit(extent, view) {
-  for (const s of SS_SCALES) if (ssFits(extent, view, s)) return s;
+// Smallest standard scale whose feet-per-inch covers the site in the viewport.
+function ssPickScale(wFt, hFt, wIn, hIn) {
+  const need = Math.max(wFt / Math.max(wIn, 0.1), hFt / Math.max(hIn, 0.1));
+  for (let i = 0; i < SS_SCALES.length; i++) if (SS_SCALES[i] >= need - 1e-6) return SS_SCALES[i];
   return SS_SCALES[SS_SCALES.length - 1];
 }
-// 11x17 is a half-size print of the ARCH D sheet: same ground extent, twice the feet per inch, when that scale fits.
+function ssFit(extent, view) {return ssPickScale(extent.w, extent.h, view.w / 72 * 0.98, view.h / 72 * 0.98)}
+// 11x17 is a uniform reduction of the ARCH D sheet (11/24 of the height). The printed scale is the ARCH D scale divided by that factor.
+function ssHalfFit() {const d = SS_PAPER.ARCH_D, t = SS_PAPER.TABLOID; return Math.min(t.w / d.w, t.h / d.h)}
+function ssScaleNum(s) {const r = Math.round(s * 10) / 10; return Math.abs(r - Math.round(r)) < 1e-6 ? String(Math.round(r)) : r.toFixed(1)}
 function ssScales(extent) {
   const archD = ssFit(extent, ssChrome(SS_PAPER.ARCH_D).view);
   const archE = ssFit(extent, ssChrome(SS_PAPER.ARCH_E).view);
-  const doubled = archD * 2;
+  const printed = archD / ssHalfFit();
   const tabView = ssChrome(SS_PAPER.TABLOID).view;
-  let tab = doubled, half = ssFits(extent, tabView, doubled);
-  if (!half) {tab = SS_SCALES.filter(s => s >= doubled).find(s => ssFits(extent, tabView, s)) || SS_SCALES[SS_SCALES.length - 1]; half = false}
-  return {ARCH_D: archD, ARCH_E: archE, TABLOID: tab, half};
+  let tab = printed, half = true;
+  if (!ssFits(extent, tabView, printed)) {
+    tab = SS_SCALES.find(s => s + 1e-6 >= printed && ssFits(extent, tabView, s)) || SS_SCALES[SS_SCALES.length - 1];
+    half = Math.abs(tab - printed) < 1e-3;
+  }
+  return {ARCH_D: archD, ARCH_E: archE, TABLOID: tab, half, fit: ssHalfFit()};
+}
+function ssScaleLabel(scale, scales, paperId) {
+  const n = ssScaleNum(scale);
+  if (paperId === 'TABLOID') return 'SCALE: 1 IN = ' + n + ' FT AT 11x17 (1 IN = ' + ssScaleNum(scales.ARCH_D) + ' FT AT ARCH D)';
+  return 'SCALE: 1 IN = ' + n + ' FT';
 }
 function ssMap(extent, view, scale) {
   const ppf = 72 / scale, gw = extent.w * ppf, gh = extent.h * ppf;
@@ -2845,20 +2885,18 @@ function ssViewTitle(d, paper, chrome, o) {
   const cx = chrome.view.x + chrome.view.w / 2, y = chrome.m + 28;
   d.line(cx - 70, y + 16, cx + 70, y + 16, 'TEXT');
   d.text(cx, y + 20, o.title, {size: 9, pen: 'TEXT', anchor: 'middle'});
-  const scaleLine = 'SCALE: 1 IN = ' + o.scale + ' FT';
-  d.text(cx, y + 4, scaleLine, {size: 8, pen: 'TEXT', anchor: 'middle'});
-  if (o.halfNote) d.text(cx, chrome.m + 8, o.halfNote, {size: 6.5, pen: 'TEXT', anchor: 'middle'});
+  d.text(cx, y + 4, o.scaleLabel || ('SCALE: 1 IN = ' + ssScaleNum(o.scale) + ' FT'), {size: 8, pen: 'TEXT', anchor: 'middle'});
   const nx = chrome.view.x + 18, ny = y + 8;
   d.poly([[nx, ny + 14], [nx - 6, ny], [nx + 6, ny]], 'TEXT', {fill: true, fillRgb: [0.11, 0.11, 0.11]});
   d.text(nx, ny + 16, 'N', {size: 8, pen: 'TEXT', anchor: 'middle'});
-  const barFt = o.scale * 2, bw = barFt * 72 / o.scale;
+  const barFt = Number(ssScaleNum(o.scale * 2)), bw = barFt * 72 / o.scale;
   const bx = cx - bw / 2, by = chrome.m + 36;
   d.rect(bx, by, bw, 8, 'SCALEBAR', {fill: true, fillRgb: [0, 0, 0]});
   d.line(bx + bw / 2, by + 8, bx + bw / 2, by + 14, 'SCALEBAR');
   d.text(bx, by + 16, '0', {size: 6, pen: 'TEXT'});
   d.text(bx + bw / 2, by + 16, String(barFt / 2), {size: 6, pen: 'TEXT', anchor: 'middle'});
   d.text(bx + bw, by + 16, String(barFt) + ' FT', {size: 6, pen: 'TEXT', anchor: 'end'});
-  d.text(bx + bw + 8, by + 1, 'SCALE BAR ' + barFt + ' FT', {size: 6, pen: 'TEXT'});
+  d.text(bx + bw + 8, by + 1, 'SCALE BAR ' + ssScaleNum(barFt) + ' FT', {size: 6, pen: 'TEXT'});
 }
 function ssHeadTitle(d, paper, chrome, title) {
   d.text(chrome.view.x + chrome.view.w / 2, paper.h - chrome.m - 16, title, {size: 11, pen: 'TEXT', anchor: 'middle'});
@@ -2963,7 +3001,7 @@ function ssCompose(r, meta, opts) {
   const flags = ssFlags(r, meta, paper, ext, scales);
   const check = ssChecklist(flags, opts);
   const secrets = [meta.apn, meta.owner].filter(Boolean).map(String);
-  const halfNote = paper.id !== 'TABLOID' ? '' : (scales.half ? '1 IN = ' + scale + ' FT AT 11x17 (1 IN = ' + scales.ARCH_D + ' FT AT ARCH D)' : '1 IN = ' + scale + ' FT AT 11x17. ARCH D SHEET IS 1 IN = ' + scales.ARCH_D + ' FT.');
+  const scaleLabel = ssScaleLabel(scale, scales, paper.id);
   const notes = ssSurveyNotes(r, meta);
   const assumptions = [
     'ASSUMPTIONS, each marked [A] on the summary: layout areas, setbacks where zoning did not govern,',
@@ -2986,7 +3024,7 @@ function ssCompose(r, meta, opts) {
   assumptions.forEach(t => {dc.text(left, y, t.slice(0, 150), {size: 6.5, pen: 'TEXT'}); y -= 9});
   y -= 8;
   dc.text(left, y, 'SHEET INDEX', {size: 9, pen: 'TEXT'}); y -= 14;
-  SS_REGISTRY.forEach(s => {dc.text(left, y, s.no + '   ' + s.title, {size: 7.5, pen: 'TEXT'}); dc.text(left + 280, y, s.issue ? 'IN THIS SET' : 'NOT IN THIS ISSUE', {size: 7, pen: 'TEXT'}); y -= 11});
+  ssRegistry().forEach(s => {dc.text(left, y, s.no + '   ' + s.title, {size: 7.5, pen: 'TEXT'}); dc.text(left + 280, y, ssHasDraw(s) ? 'IN THIS SET' : 'NOT IN THIS ISSUE', {size: 7, pen: 'TEXT'}); y -= 11});
   let cy = top - 52;
   const cx = left + 360;
   dc.text(cx, top - 36, 'SEC. 39.05(a) REQUIRED CONTENTS', {size: 9, pen: 'TEXT'});
@@ -3001,15 +3039,30 @@ function ssCompose(r, meta, opts) {
   ds.clip(chrome.view.x, chrome.view.y, chrome.view.w, chrome.view.h - 48);
   ssPlan(ds, r, meta, map, mode);
   ds.unclip();
-  ssViewTitle(ds, paper, chrome, {title: 'SITE PLAN', scale, halfNote});
-  ds.text(chrome.view.x, chrome.m + chrome.titleBand - 8, 'GRAPHIC SCALE MATCHES 1 IN = ' + scale + ' FT. CONFIRM THE 1.00 INCH BAR BEFORE MEASURING.', {size: 6, pen: 'TEXT'});
+  ssViewTitle(ds, paper, chrome, {title: 'SITE PLAN', scale, scaleLabel});
+  ds.text(chrome.view.x, chrome.m + chrome.titleBand - 8, 'GRAPHIC SCALE MATCHES 1 IN = ' + ssScaleNum(scale) + ' FT. CONFIRM THE 1.00 INCH BAR BEFORE MEASURING.', {size: 6, pen: 'TEXT'});
   cover.ops = ssScrub(dc.ops, mode, secrets);
   site.ops = ssScrub(ds.ops, mode, secrets);
+  const ctx = {r, meta, mode, paper, scale, scales, extent, map, chrome, cfg, date, rev, summary, check, ext, secrets, scaleLabel};
+  const pages = [];
+  ssRegistry().forEach(sh => {
+    if (typeof sh.render === 'function') pages.push(ssCustom(ctx, sh));
+    else if (sh.draw === 'cover') pages.push(cover);
+    else if (sh.draw === 'site') pages.push(site);
+  });
   const info = mode === 'admin'
     ? {title: 'ADMIN - NOT FOR DISTRIBUTION', author: 'Edifice', subject: 'Preliminary site plan set', keywords: 'admin'}
     : {title: 'Site plan set', author: 'Edifice', subject: 'Conceptual site plan - not for construction - not a survey', keywords: 'site plan'};
   ['title', 'author', 'subject', 'keywords'].forEach(k => {if (mode === 'public' && ssHits(info[k], secrets).length) info[k] = 'Site plan set'});
-  return {sheets: [cover, site], summary, check, scales, scale, paper: paper.id, mode, info, half: paper.id === 'TABLOID' && scales.half, barFt: scale * 2};
+  return {sheets: pages, summary, check, scales, scale, paper: paper.id, mode, info, half: paper.id === 'TABLOID' && scales.half, barFt: scale * 2};
+}
+function ssCustom(ctx, sh) {
+  const d = ssDraw();
+  const sheet = {no: sh.no, title: sh.title || sh.no, date: ctx.date};
+  ssSheetFrame(d, ctx.paper, ctx.chrome, sheet, ctx.cfg, ctx.rev, ctx.mode);
+  const page = sh.render(ctx, sh, d);
+  const ops = page && page.ops ? page.ops : d.ops;
+  return {no: sheet.no, title: sheet.title, date: ctx.date, w: ctx.paper.w, h: ctx.paper.h, paper: ctx.paper.id, scale: ctx.scale, ops: ssScrub(ops, ctx.mode, ctx.secrets)};
 }
 
 function ssFmt(n) {return (Math.round(n * 1000) / 1000).toFixed(3)}
