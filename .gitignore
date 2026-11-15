@@ -7,6 +7,9 @@ reports/
 snapshots/
 *.json
 !package.json
+# Published exhibit tables for the screening tests. Numbers only: no coordinates.
+!pipeline/tests/fixtures/exhibit_b_published.json
+!pipeline/tests/fixtures/exhibit_l_published.json
 !firebase/firebase.json
 .staticrypt.json
 __pycache__/

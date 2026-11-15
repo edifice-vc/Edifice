@@ -229,7 +229,7 @@ class NoiseScreen(unittest.TestCase):
 
     def test_worker_matches_sync(self):
         r = js(r"""
-          const input={units:'m', scenarios:['emergency_day'], contourMetrics:['dBA'],
+          const input={units:'m', scenarios:['typical_day'], contourMetrics:['dBA'],
             sources:[nzEquipment('transformer',{id:'t',x:0,y:0,z:3})],
             receptors:[{id:'r1',name:'House',x:60,y:20}],
             grid:{xmin:-30,ymin:-30,xmax:30,ymax:30,spacing_m:15}};
@@ -239,7 +239,7 @@ class NoiseScreen(unittest.TestCase):
           const out=await new Promise((res,rej)=>{const w=new Worker(src,{eval:true});
             w.on('message',m=>{w.terminate();m.type==='error'?rej(new Error(m.message)):res(m.output)});
             w.on('error',rej); w.postMessage({type:'screen',id:'t',input})});
-          return {a:sync.receptors[0].levels.emergency_day.dBA, b:out.receptors[0].levels.emergency_day.dBA, label:out.label};
+          return {a:sync.receptors[0].levels.typical_day.dBA, b:out.receptors[0].levels.typical_day.dBA, label:out.label};
         """, promise=True)
         self.assertEqual(r['label'], 'EDIFICE SCREENING MODEL — NOT A SOUND STUDY')
         self.assertAlmostEqual(r['a'], r['b'], places=1)

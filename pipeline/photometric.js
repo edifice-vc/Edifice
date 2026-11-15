@@ -272,6 +272,19 @@ function phSyntheticForwardIES() {
     '8000 1000 0'
   ].join('\n') + '\n';
 }
+// Rescale the candela multiplier so the integrated lumens equal a rated value.
+// This does not change the shape. It is how a published lumen number is applied
+// to a different distribution, and it is not a substitute for that fixture's IES file.
+function phScaleToLumens(ies, targetLumens) {
+  const parsed = ies && ies.vertical ? ies : phParseIES(ies);
+  const integrated = phIntegratedLumens(parsed);
+  if (!(integrated > 0) || !(targetLumens > 0)) throw new Error('cannot scale photometry to the requested lumens');
+  const copy = Object.assign({}, parsed);
+  copy.multiplier = (parsed.multiplier == null ? 1 : parsed.multiplier) * (targetLumens / integrated);
+  copy.lumensRated = targetLumens;
+  copy.scaledFromLumens = integrated;
+  return copy;
+}
 function phDefaultFixture(over) {
   over = over || {};
   const ies = over.ies || phSyntheticFullCutoffIES();
@@ -580,7 +593,7 @@ function phWorkerSource() {
     'const PH_FC_PER_LUX=' + PH_FC_PER_LUX,
     'const PH_FT=' + PH_FT
   ].join(';\n') + ';\n';
-  const fns = [phParseIES, phNumbers, phCheckAngles, phTiltFactor, phPsiInFile, phBracket, phCandela, phIntegratedLumens, phExpandHorizontal, phDirection, phIlluminance, phSyntheticFullCutoffIES, phSyntheticForwardIES, phDefaultFixture, phCalc, round4, phNormFixture, phBounds, phInRing, phSummarize, phSchedule, phPropertyLine, phSampleRing, phAssumptions, phAutoPoles, phFromPlan, phWorldRing];
+  const fns = [phParseIES, phNumbers, phCheckAngles, phTiltFactor, phPsiInFile, phBracket, phCandela, phIntegratedLumens, phExpandHorizontal, phDirection, phIlluminance, phSyntheticFullCutoffIES, phSyntheticForwardIES, phScaleToLumens, phDefaultFixture, phCalc, round4, phNormFixture, phBounds, phInRing, phSummarize, phSchedule, phPropertyLine, phSampleRing, phAssumptions, phAutoPoles, phFromPlan, phWorldRing];
   const iso = (typeof isoLines === 'function') ? [isoLines, isoSegments, isoStitch, isoFeatureCollection, round6].map(function (f) { return f.toString(); }).join('\n') : '';
   return head + iso + '\n' + fns.map(function (f) { return f.toString(); }).join('\n') + '\nonmessage=function(ev){var m=ev.data||{};if(!m||m.type!=="calc")return;try{postMessage({type:"result",id:m.id,output:phCalc(m.input)})}catch(err){postMessage({type:"error",id:m.id,message:String(err&&err.message||err)})}};';
 }

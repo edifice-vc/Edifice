@@ -355,10 +355,14 @@ function nzDefaultHeight(kind) {
   if (kind === 'transformer') return 3;
   return 4;
 }
-// Maintenance is the daytime test of one unit. Emergency is every genset, day and night.
-// Cooling, transformers and the facade stay on; a data hall does not shut down at night.
+// Operating states follow the published Exhibit B §2.1 definitions, not a fitted spectrum.
+// Typical: generators off. Maintenance: one genset, daytime, at the library Lw (their "100% load"
+// has no separate spectrum in the report). Emergency: every genset on; substation transformers off.
+// The report also says emergency generators are at 80% load. That load-versus-Lw curve is not
+// published, so no load derate is applied. Cooling and the facade stay on in every state.
 function nzDefaultDuty(kind) {
   if (kind === 'genset_enclosed') return { typical: { day: 0, night: 0 }, maintenance: { day: 1, night: 0 }, emergency: { day: 1, night: 1 } };
+  if (kind === 'transformer') return { typical: { day: 1, night: 1 }, maintenance: { day: 1, night: 1 }, emergency: { day: 0, night: 0 } };
   return { typical: { day: 1, night: 1 }, maintenance: { day: 1, night: 1 }, emergency: { day: 1, night: 1 } };
 }
 function nzDutyOf(src, name, period) {
@@ -668,6 +672,7 @@ function nzAssumptions(prep, input) {
   if (prep.model.gAssumed) rows.push({ tag: 'ASSUMED', item: 'Ground factor G', value: prep.model.G, note: 'Uniform ground, general method. 0 is hard, 1 is porous. Zones may override G.' });
   rows.push({ tag: 'METHOD', item: 'Propagation', value: 'downwind', note: 'ISO 9613-2 favourable conditions. Long-term Cmet is not applied.' });
   rows.push({ tag: 'METHOD', item: 'Directivity', value: 'Dc = 0 unless supplied', note: 'Lw is free-field sound power into 4π. Do not also add 3 dB for hemispherical radiation; ground reflection is in Agr.' });
+  rows.push({ tag: 'METHOD', item: 'Operating states', value: 'Exhibit B §2.1', note: 'Typical: generators off. Maintenance: one genset, daytime. Emergency: gensets on and substation transformers off. The stated 80% emergency load is not applied; that spectrum was not published. Day and night are the same equipment state unless a source duty says otherwise. Exhibit B has no day/night split.' });
   (input.sources || []).forEach(function (s) {
     if (s.assumed || s.tag === 'ASSUMED') rows.push({ tag: 'ASSUMED', item: (s.name || s.id || s.kind) + ' Lw', value: 'octave bands', note: s.cite || 'Default library spectrum.' });
   });
