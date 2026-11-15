@@ -1,0 +1,50 @@
+DRAFT — NOT A SURVEY. Boundary/ALTA survey by a Kansas PLS to be ordered.
+
+PUBLIC EXPORT. MW, generator counts, water volumes, parcel IDs, and owner names are withheld.
+
+Draft legal description
+
+Project: Sample Ridge [AUTO · deal record name]
+
+Location named on the deal: 1000 Sample Road, Example, KS, 66000, Example County [AUTO · deal record address]
+
+This description is computed from the Site Planning parcel outline. Courses are the bearings and distances Site Planning already computes between stored vertices. The plane is local: x east, y north, in feet, tangent at the site pin. It is not the Kansas State Plane Coordinate System, and the distances are not ground distances.
+
+Point of beginning
+
+Point of beginning: P1, the first stored vertex, at local-plane X 0.00 ft east and Y 0.00 ft north. This is not a monument and it is not a section corner. [AUTO · Site Planning parcel outline, first vertex]
+
+Calls
+
+Calls follow stored vertex order and return to P1. Bearings use Site Planning quadrant format.
+
+Course 1 (P1 to P2): N 88°43'37" E, 1,800.44 ft [AUTO · Site Planning shCourses, local east-north foot plane, screening-grade]
+
+Course 2 (P2 to P3): N 24°56'38" E, 948.47 ft [AUTO · Site Planning shCourses, local east-north foot plane, screening-grade]
+
+Course 3 (P3 to P4): N 64°58'59" W, 1,655.29 ft [AUTO · Site Planning shCourses, local east-north foot plane, screening-grade]
+
+Course 4 (P4 to P5): S 52°25'53" W, 984.07 ft [AUTO · Site Planning shCourses, local east-north foot plane, screening-grade]
+
+Course 5 (P5 to P1): S 4°34'26" E, 1,003.19 ft [AUTO · Site Planning shCourses, local east-north foot plane, screening-grade]
+
+Closure: 0.00 ft. The figure is about zero because each course is the inverse between stored vertices of one ring. It is not a field-traverse closure. [AUTO · computed from the same vertices]
+
+Area statement
+
+Local-plane area: Said outline contains 2,625,000 square feet, 60.26 acres, more or less. [AUTO · shoelace on the Site Planning outline. Not a State Plane area and not a surveyed area.]
+
+Assessor area, stated separately: 42.50 acres. Not used as the area statement above. [AUTO · deal record acres]
+
+Basis of bearings and State Plane
+
+- Basis of the calls above: Local east-north foot plane used by Site Planning (x east, y north). Not Kansas State Plane NAD 83. Not ground distance. [AUTO · Site Planning projection]
+- Kansas State Plane NAD 83 basis, grid bearings, ground distances, and State Plane area: To be ordered (survey / title commitment) [TO BE ORDERED · boundary / ALTA survey by a Kansas PLS. The signed area statement is to be on that system.]
+
+Exceptions, deeds, and title
+
+- Assessor or deed aliquot text: Synthetic aliquot only: a portion of Section 99, Township 99 South, Range 99 East. Not a real description. [AUTO · deal record PLSS or deed text. It is not a substitute for the surveyed metes and bounds.]
+- Less-and-except tracts, easements, and reservations: To be ordered (survey / title commitment) [TO BE ORDERED · GIS bands in Site Planning are not recited. Easements of record come from title work.]
+- Recorded vesting deeds: To be ordered (survey / title commitment) [TO BE ORDERED · title commitment and the register of deeds, one current deed per parcel, without unrelated tracts]
+
+DRAFT — NOT A SURVEY. Boundary/ALTA survey by a Kansas PLS to be ordered.

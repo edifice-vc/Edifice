@@ -1,0 +1,177 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 3 /Kids [7 0 R 9 0 R 11 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+6 0 obj
+<< /Length 4760 >>
+stream
+BT /F2 10 Tf 1 0 0 1 54.0 740.0 Tm (ADMIN \227 NOT FOR DISTRIBUTION.) Tj ET
+BT /F2 14 Tf 1 0 0 1 54.0 718.0 Tm (Conditional use permit application data sheet) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 692.0 Tm (Draft data sheet. The field list follows a typical Kansas county conditional-use form:) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 679.0 Tm (owner, representative, property, requested action, required documents, acknowledgment. It is) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 666.0 Tm (not the jurisdiction's official form and generating it does not file anything. Issue date) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 653.0 Tm (2026-11-15.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 631.0 Tm (Jurisdiction: Example County, KS [AUTO \267 deal record county]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 609.0 Tm (Property Owner Information) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 585.0 Tm (Every owner of record has to be confirmed by title work. A deal record often names one) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 572.0 Tm (owner. This sheet does not drop the others; it says they are to be confirmed.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 550.0 Tm (- Applicant type: TBD [TBD \267 the deal record does not say owner, applicant, or) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 537.0 Tm (representative]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 524.0 Tm (- Owner name: Sample Holdings LLC [AUTO \267 deal record owner field]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 511.0 Tm (- Owner mailing address: 1 Example Street, Example, KS 66000 [AUTO \267 deal record owner) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 498.0 Tm (mailing address]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 485.0 Tm (- Owner phone: TBD [TBD \267 deal record owner phone]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 472.0 Tm (- Owner email: TBD [TBD \267 deal record owner email]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 459.0 Tm (- Other owners of record: To be ordered \(survey / title commitment\) [TO BE ORDERED \267 title) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 446.0 Tm (commitment. Do not assume the single name above is the only owner.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 424.0 Tm (Representative Information) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 400.0 Tm (The civil or land-use representative is not stored on the deal. No name is invented.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 378.0 Tm (- Representative first name: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 365.0 Tm (- Representative last name: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 352.0 Tm (- Representative address: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 339.0 Tm (- Representative city: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 326.0 Tm (- Representative state: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 313.0 Tm (- Representative zip: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 300.0 Tm (- Representative phone: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 287.0 Tm (- Representative email: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 274.0 Tm (- Representative business: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 252.0 Tm (Property Information) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 228.0 Tm (- Property address: 1000 Sample Road, Example, KS, 66000, Example County [AUTO \267 deal) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 215.0 Tm (record address. Unplatted land often has no street number; do not invent one.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 202.0 Tm (- Parcel IDs \(all\): SYN-100-200-300; SYN-100-200-301 [AUTO \267 deal record parcels. Every id) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 189.0 Tm (is listed, not only the first.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 176.0 Tm (- Quick reference numbers \(all\): QREF-SYN-1; TBD [AUTO \267 deal record quick ref. A parcel) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 163.0 Tm (with no quick ref is marked TBD inside the list and is not copied from the parcel id.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 150.0 Tm (- Subdivision: TBD [TBD \267 not on the deal record. Do not enter NA unless the record says) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 137.0 Tm (the land is unplatted.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 124.0 Tm (- Block: TBD [TBD \267 not on the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 111.0 Tm (- Lot: TBD [TBD \267 not on the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 98.0 Tm (- Acreage on the form: 42.50 acres, assessor area [AUTO \267 deal record acres, labeled) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 85.0 Tm (assessor area]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 72.0 Tm (- Surveyed acreage: To be ordered \(survey / title commitment\) [TO BE ORDERED \267 boundary /) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  1 / 3) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 6858 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54.0 740.0 Tm (ALTA survey]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 727.0 Tm (- Existing use: pasture [AUTO \267 deal record existing use. Confirm in the field.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 714.0 Tm (- Existing structures: TBD [TBD \267 deal record structures. A survey should confirm what is) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 701.0 Tm (on the ground.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 688.0 Tm (- Unique features: Floodplain: 3.5% in the deal-record FEMA summary, zone AE.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 675.0 Tm (Screening-grade. Steep slopes are TBD unless a survey measures them. [AUTO \267 deal record) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 662.0 Tm (floodplain and, if present, Site Planning SFHA acres]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 640.0 Tm (Requested Action) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 616.0 Tm (- Requested action: Conditional use permit [AUTO \267 zoning record status: conditional]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 603.0 Tm (- Is this an amendment: TBD [TBD \267 not on the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 590.0 Tm (- Current zoning: I-2 [AUTO \267 zoning record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 577.0 Tm (- Proposed conditional use: Data center [ASSUMED \267 Site Planning program]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 564.0 Tm (- Why the current zoning is or is not the right fit: This draft does not argue that the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 551.0 Tm (zoning is a poor fit. The district and the use status are the tagged fields above. Whether) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 538.0 Tm (a conditional use is available, and whether a rezoning is unnecessary, is for the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 525.0 Tm (jurisdiction. [ASSUMED \267 drafted from the tagged zoning fields; not a staff report]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 512.0 Tm (- How long the property has been in the current zoning: TBD [TBD \267 not on the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 499.0 Tm (- Zoning and use of nearby properties: TBD [TBD \267 deal record adjoining-use note]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 486.0 Tm (- Effect on nearby properties: TBD [TBD \267 not assessed in the deal record. Concept-plan) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 473.0 Tm (setbacks are in the operations plan. They are not a compatibility finding.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 460.0 Tm (- Will the conditional use improve public health, safety, or welfare: TBD [TBD \267 the deal) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 447.0 Tm (record does not support a yes or no. Traffic, stormwater, noise, and lighting studies are) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 434.0 Tm (to be ordered.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 412.0 Tm (Required Documents) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 388.0 Tm (Checked means the file is in this draft packet. A concept plan and these drafts are not the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 375.0 Tm (filing-grade set.) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 353.0 Tm (Item                            | Status                          | In this draft                  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 342.0 Tm (Site plan                       | To be ordered \(survey / title   | No \227 not a filed exhibit       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 331.0 Tm (                                | commitment\) [TO BE ORDERED \267    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 320.0 Tm (                                | Concept plan exists only when   |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 309.0 Tm (                                | Site Planning has an outline.   |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 298.0 Tm (                                | Filing-grade boundary,          |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 287.0 Tm (                                | easements, and right-of-way     |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 276.0 Tm (                                | need a survey and a title       |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 265.0 Tm (                                | commitment.]                    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 254.0 Tm (Legal description               | To be ordered \(survey / title   | No \227 not a filed exhibit       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 243.0 Tm (                                | commitment\) [TO BE ORDERED \267    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 232.0 Tm (                                | The draft in this packet. A     |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 221.0 Tm (                                | licensed surveyor description   |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 210.0 Tm (                                | is still to be ordered.]        |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 199.0 Tm (Operations plan                 | To be ordered [TO BE ORDERED \267  | No \227 not a filed exhibit       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 188.0 Tm (                                | The draft in this packet.]      |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 177.0 Tm (Recorded deed                   | To be ordered \(survey / title   | No \227 not a filed exhibit       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 166.0 Tm (                                | commitment\) [TO BE ORDERED \267    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 155.0 Tm (                                | Current vesting deed for every  |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 144.0 Tm (                                | parcel.]                        |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 133.0 Tm (Owner authorization             | To be ordered \(survey / title   | No \227 not a filed exhibit       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 122.0 Tm (                                | commitment\) [TO BE ORDERED \267    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 111.0 Tm (                                | Names can be pre-filled. The    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 100.0 Tm (                                | owner or an authorized officer  |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 89.0 Tm (                                | must sign. This app does not    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 78.0 Tm (                                | sign.]                          |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 67.0 Tm (Title commitment                | To be ordered \(survey / title   | No \227 not a filed exhibit       ) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  2 / 3) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+10 0 obj
+<< /Length 1728 >>
+stream
+BT /F3 8 Tf 1 0 0 1 54.0 740.0 Tm (                                | commitment\) [TO BE ORDERED \267    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 729.0 Tm (                                | Easements and exceptions of     |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 718.0 Tm (                                | record.]                        |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 707.0 Tm (Boundary / ALTA survey          | To be ordered \(survey / title   | No \227 not a filed exhibit       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 696.0 Tm (                                | commitment\) [TO BE ORDERED \267    |                                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 685.0 Tm (                                | Not in the record.]             |                                ) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 656.0 Tm (Acknowledgment) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 632.0 Tm (- Acknowledgment checkbox: TBD [TBD \267 not signed. Generating this sheet does not authorize) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 619.0 Tm (a filing.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 606.0 Tm (- Authorized signature: TBD [TBD \267 the deal app cannot sign]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 593.0 Tm (- Print name: TBD [TBD \267 not stored as a filer]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 580.0 Tm (- Signature date: TBD [TBD \267 not signed]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 558.0 Tm (Exhibit index: see the operations plan. Letters A through M in that draft are this packet's) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 545.0 Tm (index, each to be ordered.) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  3 / 3) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 10 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+12 0 obj
+<< /Title (Conditional Use Permit Application Data Sheet - Sample Ridge) /Author (Edifice deal app) /Subject (Admin draft conditional use packet. Not for distribution.) /Creator (Edifice deal app) /Keywords () >>
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000128 00000 n 
+0000000198 00000 n 
+0000000273 00000 n 
+0000000341 00000 n 
+0000005153 00000 n 
+0000005299 00000 n 
+0000012209 00000 n 
+0000012355 00000 n 
+0000014136 00000 n 
+0000014284 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R /Info 12 0 R >>
+startxref
+14513
+%%EOF

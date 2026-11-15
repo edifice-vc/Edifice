@@ -1,0 +1,442 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 8 /Kids [7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+6 0 obj
+<< /Length 4696 >>
+stream
+BT /F2 10 Tf 1 0 0 1 54.0 740.0 Tm (ADMIN \227 NOT FOR DISTRIBUTION.) Tj ET
+BT /F2 14 Tf 1 0 0 1 54.0 718.0 Tm (Operations Plan) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 692.0 Tm (Draft assembled from the deal record and from Site Planning. It is not a sealed filing.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 679.0 Tm (Fields are marked AUTO, ASSUMED, TBD, or TO BE ORDERED. A blank was not filled with a) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 666.0 Tm (guessed number.) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 644.0 Tm (Cover) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 620.0 Tm (- Project name: Sample Ridge [AUTO \267 deal record name]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 607.0 Tm (- Jurisdiction and case type: Conditional use permit \227 Example County, KS [AUTO \267 deal) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 594.0 Tm (record county]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 581.0 Tm (- Site location: 1000 Sample Road, Example, KS, 66000, Example County [AUTO \267 deal record) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 568.0 Tm (address]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 555.0 Tm (- Document title: Operations Plan [AUTO \267 this export]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 542.0 Tm (- Author, firm, and professional seal: TBD [TBD \267 the deal app does not store a preparer) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 529.0 Tm (or a seal]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 507.0 Tm (Version table) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 483.0 Tm (Version                         | Issue date                      | Comment                        ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 472.0 Tm (0.1 [AUTO \267 first draft from    | 2026-11-15 [AUTO \267 export date  | Initial draft from deal-app and) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 461.0 Tm (this export]                    | passed to the generator]        | Site Planning data. Studies,   ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 450.0 Tm (                                |                                 | survey, and title work are not ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 439.0 Tm (                                |                                 | in this packet. [AUTO \267 this   ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 428.0 Tm (                                |                                 | export]                        ) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 399.0 Tm (Change log) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 375.0 Tm (Change 1: Version 0.1. No prior filed version is stored in the deal app. Studies listed as) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 362.0 Tm (to be ordered were not in the record on this date. [AUTO \267 this export]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 340.0 Tm (There is no county comment letter in the deal record. Topics that usually arrive after) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 327.0 Tm (filing \227 phasing, load, employees, ownership, lighting, generators, density, hazardous) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 314.0 Tm (materials, and substation roles \227 are grouped after section 14 so they are not missing. That) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 301.0 Tm (group is not a response to a staff letter.) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 279.0 Tm (1. Use and Project Statement) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 255.0 Tm (The applicant asks for a conditional use permit to develop and operate a data center campus.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 242.0 Tm (The sentences below use only figures the deal app already has. Critical load is a Site) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 229.0 Tm (Planning result, not a utility commitment.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 207.0 Tm (- Request: Conditional use permit to develop and operate a data center campus. [AUTO \267) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 194.0 Tm (packet type]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 181.0 Tm (- Assessor area: 42.50 acres, assessor area [AUTO \267 deal record acres. This is not a) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 168.0 Tm (surveyed area.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 155.0 Tm (- Surveyed acres and legal description: To be ordered \(survey / title commitment\) [TO BE) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 142.0 Tm (ORDERED \267 boundary / ALTA survey by a Kansas PLS]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 129.0 Tm (- Zoning district: I-2 [AUTO \267 zoning record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 116.0 Tm (- Zoning-record treatment of the use: conditional [AUTO \267 zoning record treatment status]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 103.0 Tm (- Program: 4 data halls, 1 story, with the yards, parking, and substation yard drawn in) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 90.0 Tm (Site Planning [ASSUMED \267 Site Planning program. Building count is how many halls the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 77.0 Tm (concept plan placed.]) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  1 / 8) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+8 0 obj
+<< /Length 6191 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54.0 740.0 Tm (- On-site substation yard: An on-site substation yard is drawn in Site Planning. Who owns) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 727.0 Tm (the land and the equipment is not in the record. [ASSUMED \267 Site Planning layout]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 714.0 Tm (- Backup generation: The concept plan draws an equipment yard with halls. That yard is not) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 701.0 Tm (a generator count. [ASSUMED \267 Site Planning layout]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 688.0 Tm (- Critical load at full build-out: 200.0 MW critical \(IT\) load [ASSUMED \267 Site Planning) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 675.0 Tm (solve, critical IT load, not a utility commitment]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 662.0 Tm (- Facility load in the planning model: 260.0 MW facility load in the planning model) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 649.0 Tm ([ASSUMED \267 Site Planning solve, IT load times the planning PUE]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 636.0 Tm (- City limits: Unincorporated, nearest incorporated place Example City [AUTO \267 deal record) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 623.0 Tm (annexation status]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 610.0 Tm (- Transmission proximity: 115 kV, about 0.40 mi [AUTO \267 deal record transmission distance.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 597.0 Tm (Not a will-serve.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 584.0 Tm (- Fiber / telecom: Example Fiber [AUTO \267 deal record telecom provider]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 571.0 Tm (- Comprehensive-plan designation: TBD [TBD \267 deal record comprehensive-plan field]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 558.0 Tm (- Floodplain: 3.5% of the listed site in the deal-record FEMA summary. Zones: AE.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 545.0 Tm (Screening-grade. The flood line is not surveyed. [AUTO \267 deal record floodplain summary]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 532.0 Tm (- Adjoining zoning and uses: TBD [TBD \267 deal record adjoining-use note]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 519.0 Tm (- Staffing, hours, and traffic character: TBD [TBD \267 headcount and a traffic study are not) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 506.0 Tm (in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 493.0 Tm (- Cooling concept: air-cooled. Water use is not calculated from this label. [ASSUMED \267) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 480.0 Tm (Site Planning cooling input, until mechanical design]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 467.0 Tm (- Mitigation studies: To be ordered [TO BE ORDERED \267 noise, lighting, drainage, and) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 454.0 Tm (traffic studies]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 432.0 Tm (Compatibility with the district is not decided here. Setbacks drawn on the concept plan are) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 419.0 Tm (listed in the next section. This draft does not claim a tax, school, or welfare finding.) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 397.0 Tm (2. Site Plan Narrative) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 373.0 Tm (Site plan: The concept plan in Site Planning shows the outline, halls, yards, parking,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 360.0 Tm (substation yard, and detention if they fit. It is screening-grade. [AUTO \267 synthetic parcel) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 347.0 Tm (outline \(fixture, not a survey\)]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 325.0 Tm (Setback table. Provided distances are the concept plan, screening-grade until a survey.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 312.0 Tm (Ordinance distances are printed only when the zoning record has a number. Cardinal side is) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 299.0 Tm (the outward normal of each edge in the local east-north plane.) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 277.0 Tm (Boundary                        | Ordinance                       | Provided on the concept plan   ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 266.0 Tm (N                               | TBD [TBD \267 edges on this side   | 50 ft [AUTO \267 Site Planning    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 255.0 Tm (                                | are side/rear, not one          | concept plan, screening-grade  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 244.0 Tm (                                | ordinance class]                | until a survey]                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 233.0 Tm (E                               | 15 ft [AUTO \267 zoning record,    | 50 ft [AUTO \267 Site Planning    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 222.0 Tm (                                | side setback]                   | concept plan, screening-grade  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 211.0 Tm (                                |                                 | until a survey]                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 200.0 Tm (S                               | 25 ft [AUTO \267 zoning record,    | 80 ft [AUTO \267 Site Planning    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 189.0 Tm (                                | front setback]                  | concept plan, screening-grade  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 178.0 Tm (                                |                                 | until a survey]                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 167.0 Tm (W                               | 15 ft [AUTO \267 zoning record,    | 50 ft [AUTO \267 Site Planning    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 156.0 Tm (                                | side setback]                   | concept plan, screening-grade  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 145.0 Tm (                                |                                 | until a survey]                ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 134.0 Tm (Corner                          | TBD [TBD \267 no separate corner   | TBD [TBD \267 no separate corner  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 123.0 Tm (                                | setback is stored]              | dimension is drawn]            ) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 94.0 Tm (- Building density: 38.10% campus-wide. Footprint 1,000,000 sf divided by the Site) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 81.0 Tm (Planning outline 60.26 acres \(2,625,000 sf\). Substation yards are not in the footprint.) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  2 / 8) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 8 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+10 0 obj
+<< /Length 5337 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54.0 740.0 Tm (Assessor acres are not used in this percentage. Assessor area is 42.50 acres and is a) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 727.0 Tm (different source. [AUTO \267 calculated from Site Planning footprint and outline area.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 714.0 Tm (Surveyed area is to be ordered before this percentage is filed.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 701.0 Tm (- Height to roof: 42 ft, 1 story, from the planning storey height [ASSUMED \267 Site Planning) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 688.0 Tm (stories times storey height]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 675.0 Tm (- Ordinance height limit: 45 ft [AUTO \267 zoning record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 662.0 Tm (- Lighting concept: Full-cutoff fixtures aimed at the site. Pole height: TBD.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 649.0 Tm (Property-line illuminance: TBD. [ASSUMED \267 planning intent only; no photometric calc is in) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 636.0 Tm (the deal app]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 623.0 Tm (- Photometric plan: To be ordered [TO BE ORDERED \267 lighting study]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 610.0 Tm (- Substation role in this CUP: TBD [TBD \267 utility, voltage, land control, and whether the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 597.0 Tm (utility yard is part of the permit are not in the record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 584.0 Tm (- Parking ordinance standard: TBD [TBD \267 no data-center stall standard is stored for this) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 571.0 Tm (jurisdiction]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 558.0 Tm (- Stalls on the concept plan: 48 stalls [ASSUMED \267 Site Planning stalls-per-hall input) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 545.0 Tm (times halls placed]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 532.0 Tm (- Fence, openings, berms, and plant mix: TBD [TBD \267 fence height and type are not in Site) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 519.0 Tm (Planning]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 506.0 Tm (- Fence ordinance limit: TBD [TBD \267 not in the zoning record used here]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 493.0 Tm (- Line of sight: To be ordered [TO BE ORDERED \267 key map, sections, and) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 480.0 Tm (existing-versus-proposed views]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 458.0 Tm (3. Noise) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 434.0 Tm (- Design target: No numeric limit is on the deal record. The figure used for siting) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 421.0 Tm (conversation is the EPA 55 dBA guideline, and it is only a guideline, not an adopted local) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 408.0 Tm (limit. [ASSUMED \267 EPA guideline, labeled because the zoning record has no dBA number]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 395.0 Tm (- Existing ambient: To be ordered [TO BE ORDERED \267 acoustical survey: locations, dates,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 382.0 Tm (L90, L10, and Leq]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 369.0 Tm (- Predictive model: To be ordered [TO BE ORDERED \267 property-line model for typical) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 356.0 Tm (operation, generator testing, and outage, including any school or residence the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 343.0 Tm (jurisdiction names]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 330.0 Tm (- Substations in the model: TBD [TBD \267 no model is on file, so this draft cannot say that) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 317.0 Tm (on-site or utility substations were included]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 304.0 Tm (- Post-construction verification: A verification measurement is the planning intent. The) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 291.0 Tm (timing is TBD. [ASSUMED \267 planning intent; no protocol is in the record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 269.0 Tm (4. Utilities) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 245.0 Tm (Effect of CUP approval: Approval of the conditional use does not, by itself, authorize) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 232.0 Tm (utility construction. [ASSUMED \267 planning statement, unless counsel directs otherwise]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 210.0 Tm (- Electric provider: Example Electric Cooperative [AUTO \267 deal record electric provider]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 197.0 Tm (- Listed service or nearby transmission voltage: 115 kV on the deal record [AUTO \267 deal) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 184.0 Tm (record served voltage]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 171.0 Tm (- Electric will-serve or capacity letter: To be ordered [TO BE ORDERED \267 utility letter]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 158.0 Tm (- Water provider named on the deal: Example Rural Water District [AUTO \267 deal record water) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 145.0 Tm (provider. A name is not a commitment.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 132.0 Tm (- Wastewater provider named on the deal: TBD [TBD \267 deal record sewer provider. A name is) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 119.0 Tm (not a commitment.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 106.0 Tm (- Preferred water and wastewater path: TBD [TBD \267 the deal record does not select) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 93.0 Tm (municipal, rural-district, or on-site service]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 80.0 Tm (- On-site wells: None are drawn in Site Planning and none are named on the deal record.) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  3 / 8) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 10 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+12 0 obj
+<< /Length 4666 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54.0 740.0 Tm (This is not a permit determination. [ASSUMED \267 absence of a well in the concept plan]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 727.0 Tm (- Provider commitment: To be ordered [TO BE ORDERED \267 utility letter]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 705.0 Tm (5. Water Usage) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 681.0 Tm (Three demand figures are reported separately. Peak and maximum-day values are not) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 668.0 Tm (annualized. Volumes are omitted from a public export. No volume is invented when mechanical) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 655.0 Tm (loads are absent.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 633.0 Tm (- Peak instantaneous demand: TBD [TBD \267 Pipe sizing only. Do not annualize. Per building) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 620.0 Tm (and at build-out are both TBD until mechanical loads exist.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 607.0 Tm (- Maximum daily demand: TBD [TBD \267 Not a typical day. The driver \(humidification or) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 594.0 Tm (another use\) is TBD. Do not annualize.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 581.0 Tm (- Average annual demand: TBD [TBD \267 Average year. Do not treat peak or maximum day as a) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 568.0 Tm (year.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 555.0 Tm (- Domestic staffing basis: TBD [TBD \267 the same headcount gap as section 1. Fixture-unit) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 542.0 Tm (math is not run without a headcount.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 520.0 Tm (6. Electrical Details) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 496.0 Tm (- Transmission path and on-site distribution: TBD [TBD \267 circuit count, voltage, and) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 483.0 Tm (routing are not designed in Site Planning]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 470.0 Tm (- Building electrical block: 4 halls on the concept plan. Hall bus, redundancy, and IT per) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 457.0 Tm (hall are not a one-line. [ASSUMED \267 Site Planning hall count only]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 444.0 Tm (- Standby fuel: TBD [TBD \267 fuel type is not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 431.0 Tm (- Standby generator count: TBD [TBD \267 not in the deal record. Equipment yards are not) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 418.0 Tm (counted as generators.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 405.0 Tm (- Testing cycle and on-site fuel storage: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 383.0 Tm (7. Prototypical Building Plans) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 359.0 Tm (- Architectural and MEP prototype: To be ordered [TO BE ORDERED \267 prototype or) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 346.0 Tm (project-specific drawing set]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 333.0 Tm (- Construction method: TBD [TBD \267 modular versus site-built, and the resulting duration) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 320.0 Tm (and traffic, are not in the record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 307.0 Tm (- Cooling fluid, make-up, blowdown, and reclamation: TBD [TBD \267 reviewers ask where spent) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 294.0 Tm (fluid goes. The destination is not in the record and is not guessed.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 272.0 Tm (8. Environmental Studies) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 248.0 Tm (If a report is not in the record, this draft says it will be ordered.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 226.0 Tm (- Phase I ESA: To be ordered [TO BE ORDERED \267 Phase I environmental site assessment]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 213.0 Tm (- Biological, habitat, and wetlands: To be ordered [TO BE ORDERED \267 habitat and wetland) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 200.0 Tm (study]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 187.0 Tm (- Geotechnical: To be ordered [TO BE ORDERED \267 desktop or field geotechnical study]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 174.0 Tm (- Air quality, corrosion, and weather: To be ordered [TO BE ORDERED \267 air and weather) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 161.0 Tm (summary, if the filing uses one]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 139.0 Tm (9. Drainage Report) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 115.0 Tm (- Drainage report: To be ordered [TO BE ORDERED \267 drainage report]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 102.0 Tm (- Floodplain on the outline: 3.5% in the deal-record FEMA summary. Acres on the outline) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 89.0 Tm (were not computed. [AUTO \267 deal record floodplain summary]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 76.0 Tm (- Surveyed flood line and any no-disturbance limit: To be ordered \(survey / title) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  4 / 8) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 12 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+14 0 obj
+<< /Length 3992 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54.0 740.0 Tm (commitment\) [TO BE ORDERED \267 survey]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 727.0 Tm (- Detention concept: TBD [TBD \267 Site Planning stormwater screen, not a drainage report]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 705.0 Tm (10. Traffic Impact Assessment) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 681.0 Tm (- Traffic impact assessment: To be ordered [TO BE ORDERED \267 traffic impact assessment]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 668.0 Tm (- Trip character: Operational traffic is employees, vendors, and service vehicles.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 655.0 Tm (Construction traffic is separate. No trip count is stated. [ASSUMED \267 planning character) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 642.0 Tm (only, until a traffic study]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 620.0 Tm (11. Construction Management) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 596.0 Tm (- Construction hours: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 583.0 Tm (- Construction access routes: TBD [TBD \267 often set by public-works comments, which are not) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 570.0 Tm (in the record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 557.0 Tm (- Security during construction: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 535.0 Tm (Phasing is in supplement S2A. It is a concept-plan sequence, not a construction schedule.) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 513.0 Tm (12. Fire Safety Plans) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 489.0 Tm (Access, water supply, suppression, and fire-district coordination: TBD [TBD \267 not) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 476.0 Tm (coordinated. This draft does not commit a station, an apparatus, or a hydrant flow. Fuel) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 463.0 Tm (wording will follow the standby-fuel field, which is TBD.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 441.0 Tm (13. Emergency Response Plan) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 417.0 Tm (Site-specific emergency action plan: To be ordered [TO BE ORDERED \267 emergency action plan.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 404.0 Tm (The state spill hotline and local contacts belong in that plan; they are not copied here) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 391.0 Tm (before the plan exists.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 369.0 Tm (14. Decommissioning and Reclamation) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 345.0 Tm (- End of operations: Adaptive reuse is the planning preference. Equipment and cooling) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 332.0 Tm (fluid would be removed. This is not a promise of a reuse or of a residual value. [ASSUMED) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 319.0 Tm (\267 planning preference]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 306.0 Tm (- Financial assurance: TBD [TBD \267 mechanism to be agreed with the jurisdiction before) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 293.0 Tm (occupancy]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 271.0 Tm (Supplement) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 247.0 Tm (No county request letter is on the deal record. The sections follow the usual request order) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 234.0 Tm (so the topics are present. Dates of provider talks are not invented.) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 212.0 Tm (S1. Public Utility Connections) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 188.0 Tm (Utility path: TBD [TBD \267 preferred versus alternate path, and the timeline of provider) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 175.0 Tm (talks, are not in the record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 153.0 Tm (S1A. Municipal Water and Wastewater) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 129.0 Tm (Municipal path: Named on the deal record: water Example Rural Water District. Whether either) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 116.0 Tm (provider is municipal, and whether it will serve the site, is TBD. [AUTO \267 deal record) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 103.0 Tm (provider names]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 81.0 Tm (S1B. Other Water and Wastewater Path) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  5 / 8) Tj ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 14 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+16 0 obj
+<< /Length 5895 >>
+stream
+BT /F1 10 Tf 1 0 0 1 54.0 740.0 Tm (- Rural district or on-site path: TBD [TBD \267 not selected]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 727.0 Tm (- Alternate utility site plan: To be ordered [TO BE ORDERED \267 engineering, if a second) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 714.0 Tm (path is used]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 701.0 Tm (- Land application of effluent: TBD [TBD \267 not proposed in the deal record. Floodplain,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 688.0 Tm (wells, setbacks, livestock, pH, and fencing would be stated here only if land application) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 675.0 Tm (were proposed.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 662.0 Tm (- Off-site improvements: TBD [TBD \267 whether they serve only this site, and whether they) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 649.0 Tm (sit on applicant land, is not in the record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 627.0 Tm (S2A. Phases) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 603.0 Tm (Phasing basis: The concept plan places 2 phases. Calendar timing is not in the record. The) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 590.0 Tm (sequence is subject to demand and approvals. [ASSUMED \267 Site Planning phase rows]) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 568.0 Tm (Phase             | Buildings         | Critical load     | Facility load in  | What the concept ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 557.0 Tm (                  |                   |                   | the model         | plan includes    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 546.0 Tm (P1                | 2 halls [ASSUMED  | 100.0 MW [ASSUMED | 130.0 MW [ASSUMED | Phase 1 is the   ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 535.0 Tm (                  | \267 Site Planning   | \267 Site Planning   | \267 Site Planning   | first halls plus ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 524.0 Tm (                  | phase row]        | phase IT load]    | phase facility    | the substation   ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 513.0 Tm (                  |                   |                   | load]             | yard, parking,   ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 502.0 Tm (                  |                   |                   |                   | and detention if ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 491.0 Tm (                  |                   |                   |                   | the concept plan ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 480.0 Tm (                  |                   |                   |                   | drew them.       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 469.0 Tm (                  |                   |                   |                   | [ASSUMED \267 Site  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 458.0 Tm (                  |                   |                   |                   | Planning layout, ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 447.0 Tm (                  |                   |                   |                   | not a dated      ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 436.0 Tm (                  |                   |                   |                   | schedule]        ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 425.0 Tm (P2                | 2 halls [ASSUMED  | 100.0 MW [ASSUMED | 130.0 MW [ASSUMED | Later phase      ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 414.0 Tm (                  | \267 Site Planning   | \267 Site Planning   | \267 Site Planning   | halls. Shared    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 403.0 Tm (                  | phase row]        | phase IT load]    | phase facility    | yards stay with  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 392.0 Tm (                  |                   |                   | load]             | phase 1 unless   ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 381.0 Tm (                  |                   |                   |                   | the plan says    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 370.0 Tm (                  |                   |                   |                   | otherwise.       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 359.0 Tm (                  |                   |                   |                   | [ASSUMED \267 Site  ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 348.0 Tm (                  |                   |                   |                   | Planning layout, ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 337.0 Tm (                  |                   |                   |                   | not a dated      ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 326.0 Tm (                  |                   |                   |                   | schedule]        ) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 297.0 Tm (Calendar timing and construction hours: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 275.0 Tm (S2B. Electrical Load) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 251.0 Tm (Critical load and the planning-model facility load are the same figures as section 1 and) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 238.0 Tm (section 6. "Critical" means IT load in Site Planning. It is not total site demand from a) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 225.0 Tm (utility study.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 203.0 Tm (- Critical IT load at the concept build-out: 200.0 MW critical \(IT\) load [ASSUMED \267 Site) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 190.0 Tm (Planning solve]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 177.0 Tm (- Facility load in the planning model: 260.0 MW facility load in the planning model) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 164.0 Tm ([ASSUMED \267 Site Planning solve, IT times planning PUE. A utility study may be higher.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 142.0 Tm (S2C. Employees) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 118.0 Tm (Employees by phase and at build-out: TBD [TBD \267 same gap as section 1. Vendor and contractor) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 105.0 Tm (counts are excluded and are also TBD. Section 1, section 5, and this table use one answer:) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 92.0 Tm (headcount is not in the record.]) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  6 / 8) Tj ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 16 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+18 0 obj
+<< /Length 4243 >>
+stream
+BT /F2 12 Tf 1 0 0 1 54.0 740.0 Tm (S2D. Ownership) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 716.0 Tm (- Owner of record named on the deal: Sample Holdings LLC [AUTO \267 deal record owner field.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 703.0 Tm (Title work must confirm every owner. One name can be incomplete.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 690.0 Tm (- Owner mailing address: 1 Example Street, Example, KS 66000 [AUTO \267 deal record owner) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 677.0 Tm (mailing address]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 664.0 Tm (- Purchase contract and closing: TBD [TBD \267 not taken from the deal record for this draft]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 651.0 Tm (- Who holds the land through construction and operations: TBD [TBD \267 not in the deal) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 638.0 Tm (record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 616.0 Tm (S2E. Tenants) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 592.0 Tm (Building operator and IT tenant: TBD [TBD \267 no tenant is identified in the deal record. Who) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 579.0 Tm (operates the building versus the IT equipment is TBD.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 557.0 Tm (S2F. Lighting) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 533.0 Tm (Nighttime photometric plans: To be ordered [TO BE ORDERED \267 photometric plan]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 511.0 Tm (S2G. Generators) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 487.0 Tm (Count, fuel, storage, testing, and emergency start stay consistent with sections 3 and 6. An) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 474.0 Tm (equipment yard is not a generator.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 452.0 Tm (- Count: TBD [TBD \267 same gap as section 6]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 439.0 Tm (- Fuel, storage, testing, and emergency start: TBD [TBD \267 same gap as section 6]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 417.0 Tm (S2H. Security) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 393.0 Tm (Security during construction and operations: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 371.0 Tm (S2I. Building Density) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 347.0 Tm (The coverage math is the same campus-wide figure as section 2. Substation control buildings) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 334.0 Tm (are not included because none are drawn as buildings.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 312.0 Tm (Coverage: 38.10% campus-wide. Footprint 1,000,000 sf divided by the Site Planning outline) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 299.0 Tm (60.26 acres \(2,625,000 sf\). Substation yards are not in the footprint. Assessor acres are) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 286.0 Tm (not used in this percentage. Assessor area is 42.50 acres and is a different source. [AUTO \267) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 273.0 Tm (same calculation as section 2]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 251.0 Tm (S2J. Hazardous Material) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 227.0 Tm (Quantities wait for a basis of design. The rows are listed so the question is not skipped.) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 205.0 Tm (Material                        | Quantity and storage            | Handling                       ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 194.0 Tm (Cooling fluid                   | TBD [TBD \267 basis of design]     | TBD [TBD \267 basis of design]    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 183.0 Tm (Standby fuel                    | TBD [TBD \267 basis of design]     | TBD [TBD \267 basis of design]    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 172.0 Tm (Refrigerant                     | TBD [TBD \267 basis of design]     | TBD [TBD \267 basis of design]    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 161.0 Tm (Water-treatment chemicals       | TBD [TBD \267 basis of design]     | TBD [TBD \267 basis of design]    ) Tj ET
+BT /F3 8 Tf 1 0 0 1 54.0 150.0 Tm (Batteries                       | TBD [TBD \267 basis of design]     | TBD [TBD \267 basis of design]    ) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 121.0 Tm (S3. Noise Study Scope) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 97.0 Tm (Whether substations are in the sound model: TBD [TBD \267 same gap as section 3. The acoustical) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 84.0 Tm (consultant has not been given a scope in this record.]) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  7 / 8) Tj ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 18 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+20 0 obj
+<< /Length 1734 >>
+stream
+BT /F2 12 Tf 1 0 0 1 54.0 740.0 Tm (S4. Applicant Substations) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 716.0 Tm (- Concept-plan substation yard: One on-site substation yard is drawn. [ASSUMED \267 Site) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 703.0 Tm (Planning layout]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 690.0 Tm (- Purpose, land rights, who builds, timing, operations, maintenance, and reclamation: TBD) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 677.0 Tm ([TBD \267 not in the deal record]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 655.0 Tm (S5. Utility Substation) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 631.0 Tm (- Purpose, land rights, who builds, timing, operations, maintenance, and reclamation: TBD) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 618.0 Tm ([TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 605.0 Tm (- Written utility acknowledgement that the substation is part of the conditional use: To) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 592.0 Tm (be ordered [TO BE ORDERED \267 utility letter]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 579.0 Tm (- Who owns the equipment after construction: TBD [TBD \267 not in the deal record]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 557.0 Tm (Exhibit index for this draft, separate from any other filing: A line of sight, B sound, C) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 544.0 Tm (building plans, D Phase I ESA, E habitat, F geotechnical, G air and weather, H drainage, I) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 531.0 Tm (traffic, J emergency plan, K electric will-serve, L photometrics, M utility-substation) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 518.0 Tm (letter. Each one is to be ordered. Letters are not reused from another case.) Tj ET
+BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  ADMIN \227 NOT FOR DISTRIBUTION  8 / 8) Tj ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 20 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
+endobj
+22 0 obj
+<< /Title (Operations Plan - Sample Ridge) /Author (Edifice deal app) /Subject (Admin draft conditional use packet. Not for distribution.) /Creator (Edifice deal app) /Keywords () >>
+endobj
+xref
+0 23
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000163 00000 n 
+0000000233 00000 n 
+0000000308 00000 n 
+0000000376 00000 n 
+0000005124 00000 n 
+0000005270 00000 n 
+0000011513 00000 n 
+0000011659 00000 n 
+0000017049 00000 n 
+0000017197 00000 n 
+0000021916 00000 n 
+0000022064 00000 n 
+0000026109 00000 n 
+0000026257 00000 n 
+0000032205 00000 n 
+0000032353 00000 n 
+0000036649 00000 n 
+0000036797 00000 n 
+0000038584 00000 n 
+0000038732 00000 n 
+trailer
+<< /Size 23 /Root 1 0 R /Info 22 0 R >>
+startxref
+38931
+%%EOF
