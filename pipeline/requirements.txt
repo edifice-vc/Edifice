@@ -4,3 +4,4 @@ shapely>=2.0
 pyproj>=3.6
 pyyaml>=6.0
 jsonschema>=4.18
+pypdf>=4.0
