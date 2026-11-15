@@ -23,7 +23,7 @@ BT /F1 10 Tf 1 0 0 1 54.0 692.0 Tm (Draft data sheet. The field list follows a t
 BT /F1 10 Tf 1 0 0 1 54.0 679.0 Tm (owner, representative, property, requested action, required documents, acknowledgment. It is) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 666.0 Tm (not the jurisdiction's official form and generating it does not file anything. Issue date) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 653.0 Tm (2026-11-15.) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 631.0 Tm (Jurisdiction: Example County, KS [AUTO \267 deal record county]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 631.0 Tm (Jurisdiction: Shawnee County, KS [AUTO \267 deal record county]) Tj ET
 BT /F2 12 Tf 1 0 0 1 54.0 609.0 Tm (Property Owner Information) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 585.0 Tm (Every owner of record has to be confirmed by title work. A deal record often names one) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 572.0 Tm (owner. This sheet does not drop the others; it says they are to be confirmed.) Tj ET
@@ -48,7 +48,7 @@ BT /F1 10 Tf 1 0 0 1 54.0 300.0 Tm (- Representative phone: TBD [TBD \267 not in
 BT /F1 10 Tf 1 0 0 1 54.0 287.0 Tm (- Representative email: TBD [TBD \267 not in the deal record]) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 274.0 Tm (- Representative business: TBD [TBD \267 not in the deal record]) Tj ET
 BT /F2 12 Tf 1 0 0 1 54.0 252.0 Tm (Property Information) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 228.0 Tm (- Property address: 1000 Sample Road, Example, KS, 66000, Example County [AUTO \267 deal) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 228.0 Tm (- Property address: 1000 Sample Road, Example, KS, 66000, Shawnee County [AUTO \267 deal) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 215.0 Tm (record address. Unplatted land often has no street number; do not invent one.]) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 202.0 Tm (- Parcel IDs \(all\): SYN-100-200-300; SYN-100-200-301 [AUTO \267 deal record parcels. Every id) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 189.0 Tm (is listed, not only the first.]) Tj ET

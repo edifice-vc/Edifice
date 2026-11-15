@@ -4,7 +4,7 @@ Conditional use permit application data sheet
 
 Draft data sheet. The field list follows a typical Kansas county conditional-use form: owner, representative, property, requested action, required documents, acknowledgment. It is not the jurisdiction's official form and generating it does not file anything. Issue date 2026-11-15.
 
-Jurisdiction: Example County, KS [AUTO · deal record county]
+Jurisdiction: Shawnee County, KS [AUTO · deal record county]
 
 Property Owner Information
 
@@ -33,7 +33,7 @@ The civil or land-use representative is not stored on the deal. No name is inven
 
 Property Information
 
-- Property address: 1000 Sample Road, Example, KS, 66000, Example County [AUTO · deal record address. Unplatted land often has no street number; do not invent one.]
+- Property address: 1000 Sample Road, Example, KS, 66000, Shawnee County [AUTO · deal record address. Unplatted land often has no street number; do not invent one.]
 - Parcel IDs (all): SYN-100-200-300; SYN-100-200-301 [AUTO · deal record parcels. Every id is listed, not only the first.]
 - Quick reference numbers (all): QREF-SYN-1; TBD [AUTO · deal record quick ref. A parcel with no quick ref is marked TBD inside the list and is not copied from the parcel id.]
 - Subdivision: TBD [TBD · not on the deal record. Do not enter NA unless the record says the land is unplatted.]

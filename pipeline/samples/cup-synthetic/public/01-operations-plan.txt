@@ -7,8 +7,8 @@ Draft assembled from the deal record and from Site Planning. It is not a sealed 
 Cover
 
 - Project name: Sample Ridge [AUTO · deal record name]
-- Jurisdiction and case type: Conditional use permit — Example County, KS [AUTO · deal record county]
-- Site location: 1000 Sample Road, Example, KS, 66000, Example County [AUTO · deal record address]
+- Jurisdiction and case type: Conditional use permit — Shawnee County, KS [AUTO · deal record county]
+- Site location: 1000 Sample Road, Example, KS, 66000, Shawnee County [AUTO · deal record address]
 - Document title: Operations Plan [AUTO · this export]
 - Author, firm, and professional seal: TBD [TBD · the deal app does not store a preparer or a seal]
 
@@ -56,13 +56,13 @@ Site plan: The concept plan in Site Planning shows the outline, halls, yards, pa
 Setback table. Provided distances are the concept plan, screening-grade until a survey. Ordinance distances are printed only when the zoning record has a number. Cardinal side is the outward normal of each edge in the local east-north plane.
 
 Boundary | Ordinance | Provided on the concept plan
-N | TBD [TBD · edges on this side are side/rear, not one ordinance class] | 50 ft [AUTO · Site Planning concept plan, screening-grade until a survey]
+N | TBD [TBD · edges on this side are rear/side, not one ordinance class] | 50 ft [AUTO · Site Planning concept plan, screening-grade until a survey]
 E | 15 ft [AUTO · zoning record, side setback] | 50 ft [AUTO · Site Planning concept plan, screening-grade until a survey]
 S | 25 ft [AUTO · zoning record, front setback] | 80 ft [AUTO · Site Planning concept plan, screening-grade until a survey]
-W | 15 ft [AUTO · zoning record, side setback] | 50 ft [AUTO · Site Planning concept plan, screening-grade until a survey]
+W | TBD [TBD · no edge faces this cardinal side] | TBD [TBD]
 Corner | TBD [TBD · no separate corner setback is stored] | TBD [TBD · no separate corner dimension is drawn]
 
-- Building density: 38.10% campus-wide. Footprint 1,000,000 sf divided by the Site Planning outline 60.26 acres (2,625,000 sf). Substation yards are not in the footprint. Assessor acres are not used in this percentage. Assessor area is 42.50 acres and is a different source. [AUTO · calculated from Site Planning footprint and outline area. Surveyed area is to be ordered before this percentage is filed.]
+- Building density: 37.90% campus-wide. Footprint 1,000,000 sf divided by the Site Planning outline 60.58 acres (2,638,682 sf). Substation yards are not in the footprint. Assessor acres are not used in this percentage. Assessor area is 42.50 acres and is a different source. [AUTO · calculated from Site Planning footprint and outline area. Surveyed area is to be ordered before this percentage is filed.]
 - Height to roof: 42 ft, 1 story, from the planning storey height [ASSUMED · Site Planning stories times storey height]
 - Ordinance height limit: 45 ft [AUTO · zoning record]
 - Lighting concept: Full-cutoff fixtures aimed at the site. Pole height: TBD. Property-line illuminance: TBD. [ASSUMED · planning intent only; no photometric calc is in the deal app]
@@ -230,7 +230,7 @@ S2I. Building Density
 
 The coverage math is the same campus-wide figure as section 2. Substation control buildings are not included because none are drawn as buildings.
 
-Coverage: 38.10% campus-wide. Footprint 1,000,000 sf divided by the Site Planning outline 60.26 acres (2,625,000 sf). Substation yards are not in the footprint. Assessor acres are not used in this percentage. Assessor area is 42.50 acres and is a different source. [AUTO · same calculation as section 2]
+Coverage: 37.90% campus-wide. Footprint 1,000,000 sf divided by the Site Planning outline 60.58 acres (2,638,682 sf). Substation yards are not in the footprint. Assessor acres are not used in this percentage. Assessor area is 42.50 acres and is a different source. [AUTO · same calculation as section 2]
 
 S2J. Hazardous Material
 

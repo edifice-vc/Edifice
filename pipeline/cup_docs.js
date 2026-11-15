@@ -2,8 +2,10 @@
 // Marks: [AUTO · source] filled from data on hand; [ASSUMED · basis] a labeled planning assumption;
 // [TBD] not on file; [TO BE ORDERED · what] a study, survey, title commitment, or letter still to commission.
 // Public export withholds MW, generator counts, water volumes, parcel IDs / quick refs, and owner identity.
-// Bearings and distances are Site Planning's local east-north foot inverses (shCourses). They are not a survey
-// and they are not Kansas State Plane. No other applicant's name, slogan, or exhibit lettering is used.
+// The legal description's calls are grid bearings and grid distances on Kansas State Plane NAD83,
+// North Zone (EPSG:3419) or South Zone (EPSG:3420), US survey feet, chosen from the county.
+// They are not the Site Planning local tangent plane, and they are not ground distances.
+// No other applicant's name, slogan, or exhibit lettering is used.
 const CUP_BANNER = 'DRAFT — NOT A SURVEY. Boundary/ALTA survey by a Kansas PLS to be ordered.';
 const CUP_SURVEY = 'To be ordered (survey / title commitment)';
 const CUP_WITHHELD = '[withheld — public export]';
@@ -177,6 +179,7 @@ function cupNorm(input) {
     adjoining: cupStr(s.adjoining),
     plan: plan,
     rings: cupRingsOf(plan),
+    geoRings: (plan.geoRings || []).filter(r => typeof cupLooksGeo !== 'function' || cupLooksGeo(r)),
     waterUse: input.water || {},
     generators: input.generators != null && input.generators !== '' && isFinite(+input.generators) ? +input.generators : null
   };
@@ -593,45 +596,54 @@ function cupLegal(c, F, show) {
   h1('Draft legal description');
   p(c.name ? line('l-name', 'Project', 'AUTO', c.name, 'deal record name') : line('l-name', 'Project', 'TBD', '', 'deal record name'));
   p(line('l-place', 'Location named on the deal', cupPlace(c) ? 'AUTO' : 'TBD', cupPlace(c), 'deal record address'));
-  p('This description is computed from the Site Planning parcel outline. Courses are the bearings and distances Site Planning already computes between stored vertices. The plane is local: x east, y north, in feet, tangent at the site pin. It is not the Kansas State Plane Coordinate System, and the distances are not ground distances.');
-  if (!c.rings.length || typeof shCourses !== 'function') {
+  const zone = typeof cupSpcsZone === 'function' ? cupSpcsZone(c.county) : null;
+  const geo = (c.geoRings || []).filter(r => typeof cupLooksGeo === 'function' && cupLooksGeo(r));
+  const grids = zone && typeof cupSpcsRing === 'function' && typeof shCourses === 'function' ? geo.map(r => cupSpcsRing(r, zone)).filter(Boolean) : [];
+  p(zone
+    ? 'Calls are grid bearings and grid distances on ' + zone.label + '. Vertices are the parcel outline as stored, used as NAD83 geographic positions with no datum shift. Distances are not ground distances.'
+    : 'No Kansas State Plane zone was selected, so this draft does not compute calls. The local east-north plane used elsewhere in Site Planning is not a basis of bearings.');
+  if (!grids.length || typeof shCourses !== 'function') {
+    const why = !geo.length
+      ? 'no geographic parcel outline is on file' + (c.plan && c.plan.polySrc === 'square' ? '. The acreage square drawn around the pin is not a boundary and is not described here.' : '.')
+      : !zone
+        ? 'the county on the deal record is not a Kansas North Zone or South Zone county, so no zone was assumed.'
+        : 'the outline could not be projected.';
     h2('Point of beginning');
-    p(line('pob', 'Point of beginning', 'ORDER', '', 'no parcel polygon is on file' + (c.plan && c.plan.polySrc === 'square' ? '. The acreage square drawn around the pin is not a boundary and is not described here.' : '.'), '', CUP_SURVEY));
+    p(line('pob', 'Point of beginning', 'ORDER', '', why, '', CUP_SURVEY));
     h2('Calls');
-    p(line('calls', 'Metes and bounds calls', 'ORDER', '', 'boundary / ALTA survey', '', CUP_SURVEY));
+    p(line('calls', 'Metes and bounds calls', 'ORDER', '', 'boundary / ALTA survey on the Kansas State Plane grid', '', CUP_SURVEY));
     h2('Area statement');
-    p(line('area', 'Area statement', 'ORDER', '', 'a State Plane area is not computed when no parcel outline is on file', '', CUP_SURVEY));
+    p(line('area', 'Grid area', 'ORDER', '', 'a State Plane grid area is not computed without a zone and a geographic outline', '', CUP_SURVEY));
   } else {
     let totalSf = 0;
-    c.rings.forEach((ring, i) => {
+    const src = zone.label + ', grid distance, screening-grade until a Kansas PLS signs the description';
+    grids.forEach((ring, i) => {
       const P = shOpen(ring);
       const courses = shCourses(P);
-      const suf = c.rings.length > 1 ? '-' + (i + 1) : '';
-      const part = c.rings.length > 1 ? 'Part ' + (i + 1) + '. ' : '';
+      const suf = grids.length > 1 ? '-' + (i + 1) : '';
+      const part = grids.length > 1 ? 'Part ' + (i + 1) + '. ' : '';
       h2(part + 'Point of beginning');
       const pob = P[0];
-      p(line('pob' + suf, 'Point of beginning', 'AUTO', 'P1, the first stored vertex, at local-plane X ' + cupNum(pob[0], 2) + ' ft east and Y ' + cupNum(pob[1], 2) + ' ft north. This is not a monument and it is not a section corner.', 'Site Planning parcel outline, first vertex'));
+      p(line('pob' + suf, 'Point of beginning', 'AUTO', 'P1, Easting ' + cupNum(pob[0], 2) + ' ft, Northing ' + cupNum(pob[1], 2) + ' ft, ' + zone.label + '. This is not a monument and it is not a section corner.', 'first stored vertex, projected to ' + zone.label));
       h2(part + 'Calls');
-      p('Calls follow stored vertex order and return to P1. Bearings use Site Planning quadrant format.');
+      p('Calls follow stored vertex order and return to P1. Bearings are grid bearings from grid north. Distances are grid distances in US survey feet.');
       courses.forEach(course => {
-        p(line('c' + suf + '-' + course.n, 'Course ' + course.n + ' (P' + course.from + ' to P' + course.to + ')', 'AUTO', course.brg + ', ' + cupNum(course.dist, 2) + ' ft', 'Site Planning shCourses, local east-north foot plane, screening-grade'));
+        p(line('c' + suf + '-' + course.n, 'Course ' + course.n + ' (P' + course.from + ' to P' + course.to + ')', 'AUTO', course.brg + ', ' + cupNum(course.dist, 2) + ' ft', src));
       });
-      let dx = 0, dy = 0;
-      for (let k = 0; k < P.length; k++) { const a = P[k], b = P[(k + 1) % P.length]; dx += b[0] - a[0]; dy += b[1] - a[1]; }
-      const mis = Math.hypot(dx, dy);
-      p(line('close' + suf, 'Closure', 'AUTO', cupNum(mis, 2) + ' ft. The figure is about zero because each course is the inverse between stored vertices of one ring. It is not a field-traverse closure.', 'computed from the same vertices'));
+      const mis = typeof cupCallClose === 'function' ? cupCallClose(courses) : null;
+      p(line('close' + suf, 'Closure of the printed calls', mis != null ? 'AUTO' : 'TBD', mis != null ? cupNum(mis, 2) + ' ft. Bearings are rounded to the nearest second and distances to 0.01 ft. This is the misclosure of those printed calls, not a field-traverse closure.' : '', 'sum of the printed grid courses'));
       const sf = Math.abs(shArea(ring));
       totalSf += sf;
       h2(part + 'Area statement');
-      p(line('area' + suf, 'Local-plane area', 'AUTO', 'Said outline contains ' + cupNum(Math.round(sf), 0) + ' square feet, ' + cupNum(sf / 43560, 2) + ' acres, more or less.', 'shoelace on the Site Planning outline. Not a State Plane area and not a surveyed area.'));
+      p(line('area' + suf, 'Grid area', 'AUTO', 'Said outline contains ' + cupNum(Math.round(sf), 0) + ' square feet, ' + cupNum(sf / 43560, 2) + ' acres, more or less, on the ' + zone.name + ' Zone grid.', 'shoelace of the State Plane grid coordinates. Not a surface area.'));
     });
-    if (c.rings.length > 1) p(line('area-sum', 'Sum of the part areas', 'AUTO', cupNum(Math.round(totalSf), 0) + ' square feet, ' + cupNum(totalSf / 43560, 2) + ' acres, more or less. A survey may combine or except tracts. This sum does not do that.', 'sum of the part shoelace areas'));
-    if (c.acres != null) p(line('area-asr', 'Assessor area, stated separately', 'AUTO', cupNum(c.acres, 2) + ' acres. Not used as the area statement above.', 'deal record acres'));
+    if (grids.length > 1) p(line('area-sum', 'Sum of the part grid areas', 'AUTO', cupNum(Math.round(totalSf), 0) + ' square feet, ' + cupNum(totalSf / 43560, 2) + ' acres, more or less. A survey may combine or except tracts. This sum does not do that.', 'sum of the part grid areas'));
+    if (c.acres != null) p(line('area-asr', 'Assessor area, stated separately', 'AUTO', cupNum(c.acres, 2) + ' acres. Not used as the grid area above.', 'deal record acres'));
   }
-  h2('Basis of bearings and State Plane');
+  h2('Basis of bearings and grid versus surface');
   ul([
-    line('basis', 'Basis of the calls above', 'AUTO', 'Local east-north foot plane used by Site Planning (x east, y north). Not Kansas State Plane NAD 83. Not ground distance.', 'Site Planning projection'),
-    line('sp-basis', 'Kansas State Plane NAD 83 basis, grid bearings, ground distances, and State Plane area', 'ORDER', '', 'boundary / ALTA survey by a Kansas PLS. The signed area statement is to be on that system.', '', CUP_SURVEY)
+    line('basis', 'Basis of bearings', zone && grids.length ? 'AUTO' : 'ORDER', zone && grids.length ? 'Grid bearings of the ' + zone.label + '. Lambert conformal conic, GRS 80, NAD 83. Distances in the calls are grid distances, US survey feet, not ground distances.' : '', zone && grids.length ? 'EPSG:' + zone.epsg + ', county ' + (c.county || '') : (zone ? 'zone selected but the outline was not projected' : 'county is not mapped to EPSG:3419 or EPSG:3420'), '', CUP_SURVEY),
+    line('cf', 'Combined factor, grid to surface', 'TBD', '', 'to be confirmed by a Kansas PLS. Ground distance = grid distance / combined factor. Surface distances are not stated.')
   ]);
   h2('Exceptions, deeds, and title');
   ul([
@@ -674,8 +686,11 @@ function cupFromPlan(s, r, meta, opt) {
   s = s || {}; meta = meta || {}; opt = opt || {};
   const square = meta.polySrc === 'square';
   let rings = [];
+  let geoRings = [];
   if (!square) {
-    if (opt.rings && opt.rings.length) rings = opt.rings;
+    if (opt.geoRings && opt.geoRings.length) geoRings = opt.geoRings;
+    else if (opt.rings && opt.rings.length && typeof cupLooksGeo === 'function' && cupLooksGeo(opt.rings[0])) geoRings = opt.rings;
+    if (opt.rings && opt.rings.length && !(typeof cupLooksGeo === 'function' && cupLooksGeo(opt.rings[0]))) rings = opt.rings;
     else if (r && r.C && r.C.Q && r.C.un && typeof shOpen === 'function') rings = [shOpen(r.C.Q.map(r.C.un))];
   }
   const Z = meta.zone || {};
@@ -695,8 +710,9 @@ function cupFromPlan(s, r, meta, opt) {
       floodAc: r && r.build && r.build.flood > 0.05 ? r.build.flood : null
     }),
     plan: {
-      hasBoundary: !square && rings.length > 0,
+      hasBoundary: !square && (rings.length > 0 || geoRings.length > 0),
       rings: rings,
+      geoRings: geoRings,
       polySrc: meta.polySrc || '',
       boundarySource: meta.bsrc || (meta.polySrc === 'drawn' ? 'drawn in Site Planning' : 'Site Planning parcel outline'),
       co: r && r.co || 'land',
@@ -718,13 +734,19 @@ function cupFromPlan(s, r, meta, opt) {
 }
 
 function cupSyntheticRing() { return [[0, 0], [1800, 40], [2200, 900], [700, 1600], [-80, 1000], [0, 0]]; }
+// Invented vertices around 39.05 N, 95.80 W. Not a parcel. Offsets are only to place the figure; calls use the State Plane projection.
+function cupSyntheticGeo() {
+  const lat0 = 39.05, lon0 = -95.80;
+  const fy = 1 / 364000, fx = 1 / (364000 * Math.cos(lat0 * Math.PI / 180));
+  return cupSyntheticRing().map(([x, y]) => [lon0 + x * fx, lat0 + y * fy]);
+}
 function cupSyntheticSite() {
   return {
     id: 'synthetic-sample-ridge',
     name: 'Sample Ridge',
     address: '1000 Sample Road',
     city: 'Example',
-    county: 'Example',
+    county: 'Shawnee',
     state: 'KS',
     zip: '66000',
     acres: 42.5,
@@ -744,13 +766,17 @@ function cupSyntheticSite() {
 }
 function cupSampleBuild(publicMode, extra) {
   extra = extra || {};
-  const ring = cupSyntheticRing();
+  const geo = cupSyntheticGeo();
+  const sp = cupSpcsZone('Shawnee');
+  const grid = cupSpcsRing(geo, sp);
+  const o = grid[0];
+  const ring = grid.map(p => [p[0] - o[0], p[1] - o[1]]);
   if (typeof tfDC !== 'function' || typeof tfZone !== 'function' || typeof TF_DEF === 'undefined') throw new Error('cupSampleBuild needs the Site Planning solvers');
   const zone = { district: 'I-2', setbacks_ft: { front: { v: 25 }, side: { v: 15 }, rear: { v: 20 } }, max_height_ft: { v: 45 }, treatment: { data_center: { status: 'conditional' } } };
   const I = Object.assign({}, TF_DEF.land, { halls: 4, stories: 1, setF: 80, setS: 50, setR: 60, phases: 2, sw: 'off', park: 12, cool: 'air', front: 'S', subAc: 2, genAc: 0.5 });
   const r = tfDC(ring, I, { zone: tfZone(zone, 'land'), gridMW: 400 });
   const Z = tfZone(zone, 'land');
-  return cupFromPlan(cupSyntheticSite(), r, { polySrc: 'parcel', bsrc: 'synthetic parcel outline (fixture, not a survey)', zone: Z }, { publicMode: !!publicMode, asOf: '2026-11-15', rings: [ring], water: extra.water || null, generators: extra.generators != null ? extra.generators : null });
+  return cupFromPlan(cupSyntheticSite(), r, { polySrc: 'parcel', bsrc: 'synthetic parcel outline (fixture, not a survey)', zone: Z }, { publicMode: !!publicMode, asOf: '2026-11-15', geoRings: [geo], water: extra.water || null, generators: extra.generators != null ? extra.generators : null });
 }
 
 // ---- PDF (text) and DOCX (Office Open XML). No third-party library, so this stays out of the plan-sheet exporter.

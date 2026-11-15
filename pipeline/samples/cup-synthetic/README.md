@@ -4,7 +4,7 @@ Invented site used to show the draft export. Not a filing. Not a survey. Not a r
 
 - Name: Sample Ridge
 - Place: 1000 Sample Road, Example, Example County, KS
-- Outline: a five-sided ring in a local foot plane, not a deed and not State Plane
+- Outline: five invented vertices. Calls are Kansas State Plane NAD 83, North Zone, EPSG:3419, grid feet. Not a deed.
 - `public/` withholds MW, generator counts, water volumes, parcel ids, and the owner
 - `admin/` is marked ADMIN — NOT FOR DISTRIBUTION
 

@@ -15,46 +15,47 @@ endobj
 << /Type /Font /Subtype /Type1 /BaseFont /Courier >>
 endobj
 6 0 obj
-<< /Length 3974 >>
+<< /Length 4297 >>
 stream
 BT /F2 10 Tf 1 0 0 1 54.0 740.0 Tm (DRAFT \227 NOT A SURVEY. Boundary/ALTA survey by a Kansas PLS to be ordered.) Tj ET
 BT /F2 10 Tf 1 0 0 1 54.0 718.0 Tm (PUBLIC EXPORT. MW, generator counts, water volumes, parcel IDs, and owner names are) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 705.0 Tm (withheld.) Tj ET
 BT /F2 14 Tf 1 0 0 1 54.0 683.0 Tm (Draft legal description) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 657.0 Tm (Project: Sample Ridge [AUTO \267 deal record name]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 635.0 Tm (Location named on the deal: 1000 Sample Road, Example, KS, 66000, Example County [AUTO \267) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 635.0 Tm (Location named on the deal: 1000 Sample Road, Example, KS, 66000, Shawnee County [AUTO \267) Tj ET
 BT /F1 10 Tf 1 0 0 1 54.0 622.0 Tm (deal record address]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 600.0 Tm (This description is computed from the Site Planning parcel outline. Courses are the bearings) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 587.0 Tm (and distances Site Planning already computes between stored vertices. The plane is local: x) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 574.0 Tm (east, y north, in feet, tangent at the site pin. It is not the Kansas State Plane Coordinate) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 561.0 Tm (System, and the distances are not ground distances.) Tj ET
-BT /F2 12 Tf 1 0 0 1 54.0 539.0 Tm (Point of beginning) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 515.0 Tm (Point of beginning: P1, the first stored vertex, at local-plane X 0.00 ft east and Y 0.00 ft) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 502.0 Tm (north. This is not a monument and it is not a section corner. [AUTO \267 Site Planning parcel) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 489.0 Tm (outline, first vertex]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 600.0 Tm (Calls are grid bearings and grid distances on Kansas State Plane NAD 83, North Zone,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 587.0 Tm (EPSG:3419, US survey feet. Vertices are the parcel outline as stored, used as NAD83) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 574.0 Tm (geographic positions with no datum shift. Distances are not ground distances.) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 552.0 Tm (Point of beginning) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 528.0 Tm (Point of beginning: P1, Easting 1,937,063.38 ft, Northing 268,604.77 ft, Kansas State Plane) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 515.0 Tm (NAD 83, North Zone, EPSG:3419, US survey feet. This is not a monument and it is not a) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 502.0 Tm (section corner. [AUTO \267 first stored vertex, projected to Kansas State Plane NAD 83, North) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 489.0 Tm (Zone, EPSG:3419, US survey feet]) Tj ET
 BT /F2 12 Tf 1 0 0 1 54.0 467.0 Tm (Calls) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 443.0 Tm (Calls follow stored vertex order and return to P1. Bearings use Site Planning quadrant) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 430.0 Tm (format.) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 408.0 Tm (Course 1 \(P1 to P2\): N 88\26043'37" E, 1,800.44 ft [AUTO \267 Site Planning shCourses, local) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 395.0 Tm (east-north foot plane, screening-grade]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 373.0 Tm (Course 2 \(P2 to P3\): N 24\26056'38" E, 948.47 ft [AUTO \267 Site Planning shCourses, local) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 360.0 Tm (east-north foot plane, screening-grade]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 338.0 Tm (Course 3 \(P3 to P4\): N 64\26058'59" W, 1,655.29 ft [AUTO \267 Site Planning shCourses, local) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 325.0 Tm (east-north foot plane, screening-grade]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 303.0 Tm (Course 4 \(P4 to P5\): S 52\26025'53" W, 984.07 ft [AUTO \267 Site Planning shCourses, local) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 290.0 Tm (east-north foot plane, screening-grade]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 268.0 Tm (Course 5 \(P5 to P1\): S 4\26034'26" E, 1,003.19 ft [AUTO \267 Site Planning shCourses, local) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 255.0 Tm (east-north foot plane, screening-grade]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 233.0 Tm (Closure: 0.00 ft. The figure is about zero because each course is the inverse between stored) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 220.0 Tm (vertices of one ring. It is not a field-traverse closure. [AUTO \267 computed from the same) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 207.0 Tm (vertices]) Tj ET
-BT /F2 12 Tf 1 0 0 1 54.0 185.0 Tm (Area statement) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 161.0 Tm (Local-plane area: Said outline contains 2,625,000 square feet, 60.26 acres, more or less.) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 148.0 Tm ([AUTO \267 shoelace on the Site Planning outline. Not a State Plane area and not a surveyed) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 135.0 Tm (area.]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 113.0 Tm (Assessor area, stated separately: 42.50 acres. Not used as the area statement above. [AUTO \267) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 100.0 Tm (deal record acres]) Tj ET
-BT /F2 12 Tf 1 0 0 1 54.0 78.0 Tm (Basis of bearings and State Plane) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 443.0 Tm (Calls follow stored vertex order and return to P1. Bearings are grid bearings from grid) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 430.0 Tm (north. Distances are grid distances in US survey feet.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 408.0 Tm (Course 1 \(P1 to P2\): N 87\26020'17" E, 1,808.81 ft [AUTO \267 Kansas State Plane NAD 83, North) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 395.0 Tm (Zone, EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 382.0 Tm (description]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 360.0 Tm (Course 2 \(P2 to P3\): N 23\26038'10" E, 949.71 ft [AUTO \267 Kansas State Plane NAD 83, North Zone,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 347.0 Tm (EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 334.0 Tm (description]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 312.0 Tm (Course 3 \(P3 to P4\): N 66\26027'58" W, 1,661.73 ft [AUTO \267 Kansas State Plane NAD 83, North) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 299.0 Tm (Zone, EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 286.0 Tm (description]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 264.0 Tm (Course 4 \(P4 to P5\): S 51\26008'59" W, 987.13 ft [AUTO \267 Kansas State Plane NAD 83, North Zone,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 251.0 Tm (EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 238.0 Tm (description]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 216.0 Tm (Course 5 \(P5 to P1\): S 5\26059'03" E, 1,003.81 ft [AUTO \267 Kansas State Plane NAD 83, North) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 203.0 Tm (Zone, EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 190.0 Tm (description]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 168.0 Tm (Closure of the printed calls: 0.01 ft. Bearings are rounded to the nearest second and) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 155.0 Tm (distances to 0.01 ft. This is the misclosure of those printed calls, not a field-traverse) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 142.0 Tm (closure. [AUTO \267 sum of the printed grid courses]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 120.0 Tm (Area statement) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 96.0 Tm (Grid area: Said outline contains 2,638,682 square feet, 60.58 acres, more or less, on the) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 83.0 Tm (North Zone grid. [AUTO \267 shoelace of the State Plane grid coordinates. Not a surface area.]) Tj ET
 BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  PUBLIC EXPORT  1 / 2) Tj ET
 endstream
 endobj
@@ -62,25 +63,28 @@ endobj
 << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 6 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >> >> >>
 endobj
 8 0 obj
-<< /Length 2011 >>
+<< /Length 2295 >>
 stream
-BT /F1 10 Tf 1 0 0 1 54.0 731.0 Tm (- Basis of the calls above: Local east-north foot plane used by Site Planning \(x east, y) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 718.0 Tm (north\). Not Kansas State Plane NAD 83. Not ground distance. [AUTO \267 Site Planning) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 705.0 Tm (projection]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 692.0 Tm (- Kansas State Plane NAD 83 basis, grid bearings, ground distances, and State Plane area:) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 679.0 Tm (To be ordered \(survey / title commitment\) [TO BE ORDERED \267 boundary / ALTA survey by a) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 666.0 Tm (Kansas PLS. The signed area statement is to be on that system.]) Tj ET
-BT /F2 12 Tf 1 0 0 1 54.0 644.0 Tm (Exceptions, deeds, and title) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 620.0 Tm (- Assessor or deed aliquot text: Synthetic aliquot only: a portion of Section 99, Township) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 607.0 Tm (99 South, Range 99 East. Not a real description. [AUTO \267 deal record PLSS or deed text. It) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 594.0 Tm (is not a substitute for the surveyed metes and bounds.]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 581.0 Tm (- Less-and-except tracts, easements, and reservations: To be ordered \(survey / title) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 568.0 Tm (commitment\) [TO BE ORDERED \267 GIS bands in Site Planning are not recited. Easements of) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 555.0 Tm (record come from title work.]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 542.0 Tm (- Recorded vesting deeds: To be ordered \(survey / title commitment\) [TO BE ORDERED \267 title) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 529.0 Tm (commitment and the register of deeds, one current deed per parcel, without unrelated) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 516.0 Tm (tracts]) Tj ET
-BT /F1 10 Tf 1 0 0 1 54.0 494.0 Tm (DRAFT \227 NOT A SURVEY. Boundary/ALTA survey by a Kansas PLS to be ordered.) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 740.0 Tm (Assessor area, stated separately: 42.50 acres. Not used as the grid area above. [AUTO \267 deal) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 727.0 Tm (record acres]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 705.0 Tm (Basis of bearings and grid versus surface) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 681.0 Tm (- Basis of bearings: Grid bearings of the Kansas State Plane NAD 83, North Zone,) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 668.0 Tm (EPSG:3419, US survey feet. Lambert conformal conic, GRS 80, NAD 83. Distances in the calls) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 655.0 Tm (are grid distances, US survey feet, not ground distances. [AUTO \267 EPSG:3419, county) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 642.0 Tm (Shawnee]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 629.0 Tm (- Combined factor, grid to surface: TBD [TBD \267 to be confirmed by a Kansas PLS. Ground) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 616.0 Tm (distance = grid distance / combined factor. Surface distances are not stated.]) Tj ET
+BT /F2 12 Tf 1 0 0 1 54.0 594.0 Tm (Exceptions, deeds, and title) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 570.0 Tm (- Assessor or deed aliquot text: Synthetic aliquot only: a portion of Section 99, Township) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 557.0 Tm (99 South, Range 99 East. Not a real description. [AUTO \267 deal record PLSS or deed text. It) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 544.0 Tm (is not a substitute for the surveyed metes and bounds.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 531.0 Tm (- Less-and-except tracts, easements, and reservations: To be ordered \(survey / title) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 518.0 Tm (commitment\) [TO BE ORDERED \267 GIS bands in Site Planning are not recited. Easements of) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 505.0 Tm (record come from title work.]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 492.0 Tm (- Recorded vesting deeds: To be ordered \(survey / title commitment\) [TO BE ORDERED \267 title) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 479.0 Tm (commitment and the register of deeds, one current deed per parcel, without unrelated) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 466.0 Tm (tracts]) Tj ET
+BT /F1 10 Tf 1 0 0 1 54.0 444.0 Tm (DRAFT \227 NOT A SURVEY. Boundary/ALTA survey by a Kansas PLS to be ordered.) Tj ET
 BT /F1 8 Tf 1 0 0 1 54.0 36.0 Tm (Draft. Not a sealed filing. Not a survey.  PUBLIC EXPORT  2 / 2) Tj ET
 endstream
 endobj
@@ -99,12 +103,12 @@ xref
 0000000191 00000 n 
 0000000266 00000 n 
 0000000334 00000 n 
-0000004360 00000 n 
-0000004506 00000 n 
-0000006569 00000 n 
-0000006715 00000 n 
+0000004683 00000 n 
+0000004829 00000 n 
+0000007176 00000 n 
+0000007322 00000 n 
 trailer
 << /Size 11 /Root 1 0 R /Info 10 0 R >>
 startxref
-6900
+7507
 %%EOF

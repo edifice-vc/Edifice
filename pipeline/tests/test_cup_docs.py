@@ -8,7 +8,7 @@ from io import BytesIO
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SRC = "\n".join((ROOT / "pipeline" / f).read_text() for f in (
-    "planEditSchema.js", "testfit.js", "civil.js", "sheet.js", "cup_docs.js"))
+    "planEditSchema.js", "testfit.js", "civil.js", "sheet.js", "cup_spcs.js", "cup_docs.js"))
 HERE = pathlib.Path(__file__).resolve().parent
 SAMPLES = ROOT / "pipeline" / "samples" / "cup-synthetic"
 SECRETS = (
@@ -117,9 +117,9 @@ class CupDocs(unittest.TestCase):
 
     def test_sample_admin_fills_courses_and_marks(self):
         r = node("""
-          const ring = cupSyntheticRing();
-          const courses = shCourses(shOpen(ring));
-          const sf = Math.round(Math.abs(shArea(ring)));
+          const grid = cupSpcsRing(cupSyntheticGeo(), cupSpcsZone('Shawnee'));
+          const courses = shCourses(shOpen(grid));
+          const sf = Math.round(Math.abs(shArea(grid)));
           const b = cupSampleBuild(false);
           const legal = b.docs.legal.text, ops = b.docs.operations.text, app = b.docs.application.text;
           const all = legal + '\\n' + ops + '\\n' + app;
@@ -225,6 +225,53 @@ class CupDocs(unittest.TestCase):
         self.assertNotIn("Sample Holdings", readme)
         self.assertNotIn("SYN-100", readme)
 
+    def test_state_plane_zone_and_closure(self):
+        r = node("""
+          const zones = ['Shawnee','Shawnee County','JOHNSON','Wyandotte','Sedgwick','sedgwick county','Butler','Cowley','Example','','Morris','McPherson'].map(cupSpcsZone);
+          const ids = zones.map(z => z ? z.epsg : null);
+          const n = cupSpcsFwd(cupSpcsZone('Shawnee'), -95.80, 39.05);
+          const n0 = cupSpcsFwd(cupSpcsZone('Shawnee'), -98, 39);
+          const s = cupSpcsFwd(cupSpcsZone('Sedgwick'), -97.30, 37.70);
+          const s0 = cupSpcsFwd(cupSpcsZone('Sedgwick'), -98.5, 37);
+          const quad = [[-95.80,39.05],[-95.793,39.05],[-95.793,39.055],[-95.80,39.055],[-95.80,39.05]];
+          const g = cupSpcsRing(quad, cupSpcsZone('Shawnee'));
+          const courses = shCourses(shOpen(g));
+          const close = cupCallClose(courses);
+          let dx=0, dy=0;
+          const P=shOpen(g);
+          for (let i=0;i<P.length;i++){ const a=P[i], b=P[(i+1)%P.length]; dx+=b[0]-a[0]; dy+=b[1]-a[1]; }
+          const south = [[-97.34,37.68],[-97.33,37.68],[-97.33,37.688],[-97.34,37.688],[-97.34,37.68]];
+          const gs = cupSpcsRing(south, cupSpcsZone('Sedgwick'));
+          const closeS = cupCallClose(shCourses(shOpen(gs)));
+          const ok = cupBuild({asOf:'2026-11-15', site:{name:'Zone check', county:'Shawnee'}, plan:{geoRings:[quad], polySrc:'parcel'}});
+          const bad = cupBuild({asOf:'2026-11-15', site:{name:'No zone', county:'Example'}, plan:{geoRings:[quad], polySrc:'parcel'}});
+          const legal = ok.docs.legal.text, none = bad.docs.legal.text;
+          return {ids, nE:n[0], nN:n[1], n0E:n0[0], sE:s[0], sN:s[1], s0E:s0[0], close, coord:Math.hypot(dx,dy), closeS,
+            epsg: legal.includes('EPSG:3419'), southEpsg: legal.includes('EPSG:3420'),
+            grid: /grid distance/i.test(legal), factor: /combined factor/i.test(legal),
+            local: /local east-north/.test(legal), noneCourse: (none.match(/Course /g)||[]).length,
+            noneZone: /not mapped to EPSG:3419 or EPSG:3420/.test(none),
+            problems: ok.problems.concat(bad.problems)};
+        """)
+        self.assertEqual(r["ids"], [3419, 3419, 3419, 3419, 3420, 3420, 3420, 3420, None, None, 3419, 3420])
+        self.assertAlmostEqual(r["nE"], 1937063.3766, delta=0.01)
+        self.assertAlmostEqual(r["nN"], 268604.7657, delta=0.01)
+        self.assertAlmostEqual(r["n0E"], 1312333.3333, delta=0.01)
+        self.assertAlmostEqual(r["sE"], 1659504.3165, delta=0.01)
+        self.assertAlmostEqual(r["sN"], 1690826.5804, delta=0.01)
+        self.assertAlmostEqual(r["s0E"], 1312333.3333, delta=0.01)
+        self.assertLess(r["coord"], 1e-6)
+        self.assertLess(r["close"], 0.2)
+        self.assertLess(r["closeS"], 0.2)
+        self.assertTrue(r["epsg"])
+        self.assertFalse(r["southEpsg"])
+        self.assertTrue(r["grid"])
+        self.assertTrue(r["factor"])
+        self.assertFalse(r["local"])
+        self.assertEqual(r["noneCourse"], 0)
+        self.assertTrue(r["noneZone"])
+        self.assertEqual(r["problems"], [])
+
     def test_ui_hook_and_inline_order(self):
         ui = (ROOT / "pipeline" / "testfit_ui.js").read_text()
         render = (ROOT / "pipeline" / "render.py").read_text()
@@ -232,7 +279,7 @@ class CupDocs(unittest.TestCase):
         self.assertIn("cupFromPlan", ui)
         self.assertIn("isAdm", ui)
         self.assertNotIn("sheet.js", ui[ui.find("tfCup") - 80:ui.find("tfCup") + 40])
-        i = render.find('"sheet.js", "cup_docs.js", "testfit_ui.js"')
+        i = render.find('"sheet.js", "cup_spcs.js", "cup_docs.js", "testfit_ui.js"')
         self.assertGreater(i, 0)
         # the plan-sheet file is not where this packet is implemented
         self.assertNotIn("cupPacket", (ROOT / "pipeline" / "sheet.js").read_text())
@@ -256,9 +303,12 @@ class CupDocs(unittest.TestCase):
                     self.assertIsNone(__import__("re").search(r"\d+(?:\.\d+)? MW", raw), folder + "/" + name)
                 else:
                     self.assertIn("Sample Holdings LLC", raw if "application" in name or "operations" in name else "Sample Holdings LLC")
-            legal = (base / "03-legal-description.pdf").read_bytes()
-            self.assertIn(b"NOT A SURVEY", legal)
-            self.assertIn("Kansas PLS".encode(), legal)
+            legal = (base / "03-legal-description.txt").read_text()
+            self.assertIn("NOT A SURVEY", legal)
+            self.assertIn("EPSG:3419", legal)
+            self.assertIn("grid distance", legal.lower())
+            self.assertIn("combined factor", legal.lower())
+            self.assertNotIn("local east-north", legal)
 
 
 def write_samples():
@@ -269,8 +319,6 @@ def write_samples():
       function dump(mode, built) {
         const dir = path.join(root, mode);
         fs.mkdirSync(dir, {recursive:true});
-        const zip = cupPacket(built);
-        fs.writeFileSync(path.join(dir, 'packet.zip'), Buffer.from(zip));
         ['operations','application','legal'].forEach(k => {
           const d = built.docs[k];
           fs.writeFileSync(path.join(dir, d.filename + '.pdf'), Buffer.from(cupPdf(d, built)));
@@ -287,7 +335,7 @@ def write_samples():
         '',
         '- Name: Sample Ridge',
         '- Place: 1000 Sample Road, Example, Example County, KS',
-        '- Outline: a five-sided ring in a local foot plane, not a deed and not State Plane',
+        '- Outline: five invented vertices. Calls are Kansas State Plane NAD 83, North Zone, EPSG:3419, grid feet. Not a deed.',
         '- `public/` withholds MW, generator counts, water volumes, parcel ids, and the owner',
         '- `admin/` is marked ADMIN — NOT FOR DISTRIBUTION',
         '',
