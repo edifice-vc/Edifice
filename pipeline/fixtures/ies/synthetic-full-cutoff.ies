@@ -1,0 +1,12 @@
+IESNA:LM-63-2002
+[TEST] SYNTHETIC — not manufacturer photometry. Public-domain test file.
+[MANUFAC] Edifice screening library
+[LUMCAT] SYN-FC-10000
+[LUMINAIRE] Synthetic full-cutoff area light, rotationally symmetric, I = 10000 cos^2(theta)
+[OTHER] Generated for unit tests. Not a measured photometric file and not a Compass LP1.
+TILT=NONE
+1 20944 1.0 19 1 1 1 0.5 0.5 0.1
+1.0 1.0 150
+0 5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90
+0
+10000.00 9924.04 9698.46 9330.13 8830.22 8213.94 7500.00 6710.10 5868.24 5000.00 4131.76 3289.90 2500.00 1786.06 1169.78 669.87 301.54 75.96 0.00
