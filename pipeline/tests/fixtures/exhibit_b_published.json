@@ -1,0 +1,41 @@
+{
+  "source": "Exhibit B revised 28 August 2026, sections 2.1 and 2.2. Receptor levels only. No coordinates.",
+  "software": "SoundPlan",
+  "grid_m": 15,
+  "receiver_height_m": 1.5,
+  "metric": "LAeq dBA",
+  "day_night_split": false,
+  "scenarios": {
+    "typical": "All data-center and substation equipment except the generators.",
+    "maintenance": "Typical equipment, plus one generator per building at 100% load.",
+    "emergency": "All data-center equipment, including all generators at 80% load. Substation equipment off."
+  },
+  "unpublished": [
+    "equipment sound power, octave band or overall",
+    "source coordinates and source heights",
+    "receptor coordinates",
+    "distance from any source to any receptor",
+    "distance from equipment to any contour",
+    "ground factor",
+    "barrier and building heights used by the model",
+    "sound power at 80% generator load versus 100%"
+  ],
+  "contour_distance": null,
+  "contour_note": "The maps are drawn with a 3200-foot scale bar. The report does not state a distance from equipment to any contour, and the figure was not digitized.",
+  "receptors_dBA": {
+    "A": {
+      "typical": [48, 51, 42, 52, 53],
+      "maintenance": [48, 52, 42, 52, 53],
+      "emergency": [56, 63, 51, 64, 61]
+    },
+    "B": {
+      "typical": [47, 50, 42, 50, 54],
+      "maintenance": [47, 50, 42, 51, 54],
+      "emergency": [55, 61, 51, 64, 62]
+    }
+  },
+  "measured_dBA": {
+    "L10": [64, 56, 56, 57, 62],
+    "L90": [48, 45, 45, 41, 42]
+  }
+}
