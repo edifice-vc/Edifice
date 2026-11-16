@@ -13,6 +13,8 @@ site data and the draft engine are read from Firestore after an allowed account 
 ## Rules tests
     cd firebase && npm install && npm run test:rules
 
+`site_plan_sets/{siteId}__{setId}` is the admin-only plan-set revision log (cfg, append-only `rev`, design inputs). The rules are in this repo and covered by `tests/rules.test.mjs`. They are not deployed by the app or by CI. Deploy them with `python3 pipeline/deploy_rules.py` before the Plan set "Record revision" button can write.
+
 ## Local end-to-end
     cd firebase && npx firebase emulators:start --only auth,firestore --project demo-edifice
     export FIRESTORE_EMULATOR_HOST=127.0.0.1:8080

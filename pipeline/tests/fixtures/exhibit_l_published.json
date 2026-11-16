@@ -1,0 +1,52 @@
+{
+  "source": "Exhibit L sheet E-001, luminaire schedule and calculation summary. Scale NTS. No pole coordinates.",
+  "schedule": {
+    "qty": 245,
+    "label": "LP1",
+    "arrangement": "Single",
+    "llf": 0.85,
+    "lumens": 15357,
+    "watts": 120.7,
+    "total_watts": 29571.499
+  },
+  "property_line_fc": 0.0,
+  "property_line_limit_fc": 2.0,
+  "property_line_note": "The sheet states 0.0 fc at every point on the property line.",
+  "unpublished": [
+    "IES candela distribution",
+    "mounting height",
+    "pole coordinates",
+    "pole spacing; the sheet is NTS, so spacing was not measured off the drawing",
+    "Substation_Top numeric cells; the row label is present and the value cells are blank"
+  ],
+  "summary": [
+    {"label": "Entry Guard Shack_Top", "avg": 0.97, "max": 3.9, "min": 0.0, "avgMin": null, "maxMin": null},
+    {"label": "Entry South Corner_Top", "avg": 0.78, "max": 3.1, "min": 0.0, "avgMin": null, "maxMin": null},
+    {"label": "Gravel Entry NW corner_Top", "avg": 0.98, "max": 3.9, "min": 0.0, "avgMin": null, "maxMin": null},
+    {"label": "Gravel Entry Utility Substation_Top", "avg": 0.87, "max": 4.0, "min": 0.0, "avgMin": null, "maxMin": null},
+    {"label": "Intermediate Road btw N-S_1_Top", "avg": 0.77, "max": 3.3, "min": 0.1, "avgMin": 7.7, "maxMin": 33.0},
+    {"label": "Intermediate Road btw N-S_Top", "avg": 0.93, "max": 3.6, "min": 0.2, "avgMin": 4.65, "maxMin": 18.0},
+    {"label": "Intermediate Roads Compass", "avg": 0.97, "max": 3.8, "min": 0.1, "avgMin": 9.7, "maxMin": 38.0},
+    {"label": "Substation_Top", "avg": null, "max": null, "min": null, "avgMin": null, "maxMin": null},
+    {"label": "North Intermediate Road_1&2_Top", "avg": 1.01, "max": 4.0, "min": 0.2, "avgMin": 5.05, "maxMin": 20.0},
+    {"label": "North Intermediate Road_2&3_Top", "avg": 1.0, "max": 4.0, "min": 0.2, "avgMin": 5.0, "maxMin": 20.0},
+    {"label": "North Intermediate Road_3&4_Top", "avg": 1.01, "max": 4.0, "min": 0.2, "avgMin": 5.05, "maxMin": 20.0},
+    {"label": "North Intermediate Road_4&5_Top", "avg": 1.01, "max": 4.0, "min": 0.2, "avgMin": 5.05, "maxMin": 20.0},
+    {"label": "North Intermediate Road_5&6_Top", "avg": 1.01, "max": 4.0, "min": 0.2, "avgMin": 5.05, "maxMin": 20.0},
+    {"label": "North Intermediate Road_6&7_Top", "avg": 1.01, "max": 4.0, "min": 0.2, "avgMin": 5.05, "maxMin": 20.0},
+    {"label": "North Ring road_Top", "avg": 0.84, "max": 4.1, "min": 0.1, "avgMin": 8.4, "maxMin": 41.0},
+    {"label": "South Intermediate Road_Lot 10&9_Top", "avg": 0.98, "max": 3.9, "min": 0.1, "avgMin": 9.8, "maxMin": 39.0},
+    {"label": "South Intermediate Road_Lot 9&8_Top", "avg": 0.98, "max": 3.9, "min": 0.1, "avgMin": 9.8, "maxMin": 39.0},
+    {"label": "South Ring road_Top", "avg": 0.88, "max": 4.2, "min": 0.0, "avgMin": null, "maxMin": null},
+    {"label": "Parking Lot 1", "avg": 1.18, "max": 4.0, "min": 0.2, "avgMin": 5.9, "maxMin": 20.0},
+    {"label": "Parking Lot 2", "avg": 1.15, "max": 3.9, "min": 0.2, "avgMin": 5.75, "maxMin": 19.5},
+    {"label": "Parking Lot 3", "avg": 0.94, "max": 2.8, "min": 0.2, "avgMin": 4.7, "maxMin": 14.0},
+    {"label": "Parking Lot 4", "avg": 1.02, "max": 3.5, "min": 0.2, "avgMin": 5.1, "maxMin": 17.5},
+    {"label": "Parking Lot 5", "avg": 1.14, "max": 4.0, "min": 0.2, "avgMin": 5.7, "maxMin": 20.0},
+    {"label": "Parking Lot 6", "avg": 1.09, "max": 3.9, "min": 0.2, "avgMin": 5.45, "maxMin": 19.5},
+    {"label": "Parking Lot 7", "avg": 1.07, "max": 3.6, "min": 0.2, "avgMin": 5.35, "maxMin": 18.0},
+    {"label": "Parking Lot 8", "avg": 1.44, "max": 3.8, "min": 0.3, "avgMin": 4.8, "maxMin": 12.67},
+    {"label": "Parking Lot 9", "avg": 1.38, "max": 3.9, "min": 0.3, "avgMin": 4.6, "maxMin": 13.0},
+    {"label": "Parking Lot 10", "avg": 1.49, "max": 3.9, "min": 0.3, "avgMin": 4.97, "maxMin": 13.0}
+  ]
+}

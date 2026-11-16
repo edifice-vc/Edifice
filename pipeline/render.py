@@ -81,10 +81,20 @@ def firebase_config(env_name, emulator):
         sys.exit(f"[render] {env_name} must hold the Firebase web config JSON (apiKey, authDomain, projectId, appId)")
     return {k: cfg[k] for k in FB_KEYS if cfg.get(k)}
 
+# Screening engines. Inlined after the sheet UI so the preview can wrap tfDraw.
+# sheet.js itself is not modified here.
+SCREENING_JS = ("isolines.js", "noise.js", "photometric.js", "screening_preview.js")
+
+def _read(name):
+    with open(os.path.join(HERE, name), encoding="utf-8") as f:
+        return f.read()
+
 def _testfit(tpl):
-    """Inline the Site Plan configurator. los.js / los3d.js register the line-of-sight package; three.js and geotiff.js stay lazy-loaded."""
-    ref = open(os.path.join(HERE, "civil_ref.json"), encoding="utf-8").read().strip()  # public NOAA Atlas 14 grid + FAA runways
-    js = "const CV_REF=" + ref.replace("</", "<\\/") + ";\n" + "\n".join(open(os.path.join(HERE, f), encoding="utf-8").read() for f in ("planEditSchema.js", "testfit.js", "civil.js", "sheet.js", "los.js", "los3d.js", "testfit_ui.js"))
+    """Inline the Site Plan configurator (civil_ref.json, planEditSchema.js, testfit.js, civil.js, sheet.js, sheetset.js, los.js, los3d.js, testfit_ui.js) at the template marker. Screening engines follow the sheet UI so the preview can wrap tfDraw. three.js and geotiff.js stay lazy-loaded."""
+    ref = _read("civil_ref.json").strip()  # public NOAA Atlas 14 grid + FAA runways
+    chk = _read("jurisdiction_checklists.json").strip()
+    files = ("planEditSchema.js", "testfit.js", "civil.js", "sheet.js", "sheetset.js", "los.js", "los3d.js", "testfit_ui.js") + SCREENING_JS
+    js = "const CV_REF=" + ref.replace("</", "<\\/") + ";\nconst SS_CHECKLISTS=" + chk.replace("</", "<\\/") + ";\n" + "\n".join(_read(f) for f in files)
     if tpl.count("/*__TESTFIT__*/") != 1:
         sys.exit("[render] template layout changed: cannot find the /*__TESTFIT__*/ marker")
     return tpl.replace("/*__TESTFIT__*/", js)
