@@ -100,7 +100,7 @@ class Packer(unittest.TestCase):
  best.halls.forEach(h=>{const [x,y,w,hh]=h.hall;for(let i=0;i<=6;i++)for(let j=0;j<=6;j++){const p=best.C.un([x+w*i/6,y+hh*j/6]);if(!tfIn(p[0],p[1],L))bad++}});
  const ori=new Set(best.halls.map(h=>h.v?1:0));
  const legs=new Set();tfSchemes(L,I,{}).forEach(s=>{const r=tfSolve('land',L,s.p,{});(r.halls||[]).forEach(h=>{const p=r.C.un([h.hall[0]+h.hall[2]/2,h.hall[1]+h.hall[3]/2]);legs.add(p[1]<700?'E':'N')})});
- return {n:best.n,bad,one:ori.size<=1,legs:legs.size,hw:best.halls.every(h=>Math.round(Math.min(h.hall[2],h.hall[3]))===I.hallW&&Math.round(Math.max(h.hall[2],h.hall[3]))===I.hallL)}"""
+ return {n:best.n,bad,one:ori.size<=1,legs:legs.size,hw:best.halls.every(h=>{const a=Math.round(Math.min(h.hall[2],h.hall[3])),b=Math.round(Math.max(h.hall[2],h.hall[3]));return a===I.hallW&&(b===I.hallL||((b===400||b===500)&&b<I.hallL))})}"""
         src = SRC + HELP + 'console.log(JSON.stringify((()=>{' + body + '})()))'
         r = json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
         self.assertGreater(r['n'], 0); self.assertTrue(r['one']); self.assertEqual(r['legs'], 2); self.assertEqual(r['bad'], 0); self.assertTrue(r['hw'])

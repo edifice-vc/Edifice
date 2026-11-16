@@ -50,13 +50,14 @@ const I=Object.assign({},TF_DEF.land,{halls:24,hallW:250,hallL:800,setF:50,setS:
 const tx=[{L:[[-200,2200],[3400,2180]],kv:345}];
 const a=tfDC(R,I,{tx,lowPt:[2900,180]});
 const b=tfDC(R,I,{tx,lowPt:[2900,180]});
-const halls=a.halls.filter(h=>!h.v);
+const full=a.halls.filter(h=>Math.abs(Math.max(h.hall[2],h.hall[3])-I.hallL)<2);
+const along=h=>h.v?h.hall[1]:h.hall[0], cross=h=>h.v?h.hall[0]:h.hall[1];
 const touch=(g,h)=>{if(!g||!h)return false;const x=Math.min(g[0]+g[2],h[0]+h[2])-Math.max(g[0],h[0]),y=Math.min(g[1]+g[3],h[1]+h[3])-Math.max(g[1],h[1]);return x>20&&Math.abs(g[1]+g[3]-h[1])<1.5||y>20&&Math.abs(g[0]+g[2]-h[0])<1.5};
 let bad=0; a.halls.forEach(h=>{[h.hall,h.gen,h.chill].filter(Boolean).forEach(R2=>{const [x,y,w,hh]=R2;for(const p of [[x,y],[x+w,y],[x+w,y+hh],[x,y+hh]]){const q=a.C.un(p);if(!tfIn(q[0],q[1],R))bad++;for(let i=1;i<R.length;i++)if(tfSD(q[0],q[1],R[i-1],R[i])<39)bad++}})});
-const subC=a.sub?[a.sub[0]+a.sub[2]/2,a.sub[1]+a.sub[3]/2]:null;
+const subC=a.sub?[a.C.un([a.sub[0]+a.sub[2]/2,a.sub[1]+a.sub[3]/2]),null][0]:null;
 const schemes=tfSchemes(R,Object.assign({},TF_DEF.land,{sw:'off'}),{});
 return {n:a.n,same:JSON.stringify(a.halls.map(h=>h.hall.map(v=>Math.round(v))))===JSON.stringify(b.halls.map(h=>h.hall.map(v=>Math.round(v)))),
- xs:halls.map(h=>h.hall[0]),ys:halls.map(h=>h.hall[1]),loops:a.loops.length,turn:a.turnR,fence:!!(a.fence&&(a.fence.pts||a.fence.segs)),gate:!!(a.fence&&a.fence.gate),
+ xs:full.map(along),ys:full.map(cross),loops:a.loops.length,turn:a.turnR,fence:!!(a.fence&&(a.fence.pts||a.fence.segs)),gate:!!(a.fence&&a.fence.gate),
  chill:a.halls.every(h=>h.chill&&touch(h.gen,h.chill)&&touch(h.chill,h.hall)),phases:[...new Set(a.phase)],park:!!a.park,bad,ori:[...new Set(a.halls.map(h=>h.v?1:0))],
  subNorth:subC?subC[1]>1000:false,schemes:schemes.map(s=>s.scheme),nSch:schemes.length};
 """
@@ -91,7 +92,8 @@ r.halls.forEach(h=>{const [x,y,w,hh]=h.hall;const c=r.C.un([x+w/2,y+hh/2]);legs.
 const ori=new Set(r.halls.map(h=>h.v?1:0));
 const schemes=tfSchemes(L,I,{});
 const both=new Set();schemes.forEach(s=>{const q=tfSolve('land',L,s.p,{});(q.halls||[]).forEach(h=>{const p=q.C.un([h.hall[0]+h.hall[2]/2,h.hall[1]+h.hall[3]/2]);both.add(p[1]<780?'E':'N')})});
-const xs=r.halls.map(h=>h.v?h.hall[0]:h.hall[1]);
+const full=r.halls.filter(h=>Math.max(h.hall[2],h.hall[3])>700);
+const xs=full.map(h=>h.v?h.hall[0]:h.hall[1]);
 return {n:r.n,bad,legs:[...legs],one:ori.size<=1,both:[...both],xs};
 """
         )
@@ -114,8 +116,11 @@ const open=tfDC(R,I,{});
 let hit=0; cut.halls.forEach(h=>[h.hall,h.gen,h.chill].filter(Boolean).forEach(R2=>{const [x,y,w,hh]=R2;
  for(let i=0;i<=4;i++)for(let j=0;j<=4;j++){const p=cut.C.un([x+w*i/4,y+hh*j/4]);if(ld(p[0],p[1])<99)hit++}}));
 const ori=new Set(cut.halls.map(h=>h.v?1:0));
-const xs=cut.halls.map(h=>h.v?h.hall[0]:h.hall[1]), ys=cut.halls.map(h=>h.v?h.hall[1]:h.hall[0]);
-return {cut:cut.n,open:open.n,hit,xs,ys,one:ori.size<=1,ease:cut.build.easement,loops:(cut.loops||[]).length,w:(cut.loops[0]||{}).w};
+const full=cut.halls.filter(h=>Math.max(h.hall[2],h.hall[3])>700);
+const xs=full.map(h=>h.v?h.hall[0]:h.hall[1]), ys=full.map(h=>h.v?h.hall[1]:h.hall[0]);
+const shorts=cut.halls.filter(h=>Math.max(h.hall[2],h.hall[3])<700);
+return {cut:cut.n,open:open.n,hit,xs,ys,one:ori.size<=1,ease:cut.build.easement,loops:(cut.loops||[]).length,w:(cut.loops[0]||{}).w,
+ shorts:shorts.map(h=>Math.round(Math.max(h.hall[2],h.hall[3]))), shortW:shorts.every(h=>Math.abs(Math.min(h.hall[2],h.hall[3])-I.hallW)<2)};
 """
         )
         self.assertGreater(r["open"], r["cut"], r)
@@ -124,6 +129,8 @@ return {cut:cut.n,open:open.n,hit,xs,ys,one:ori.size<=1,ease:cut.build.easement,
         self.assertGreater(r["ease"], 0)
         self.assertTrue(r["one"], r)
         self.assertTrue(grid_ok(r["xs"]) and grid_ok(r["ys"]), r)
+        self.assertTrue(r["shortW"], r)
+        self.assertTrue(all(s in (400, 500) for s in r["shorts"]), r)
         self.assertGreaterEqual(r["loops"], 1)
         self.assertGreaterEqual(r["w"] or 0, 26)
 

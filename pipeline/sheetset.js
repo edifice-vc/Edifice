@@ -115,7 +115,7 @@ function ssHits(text, secrets) {
 
 function ssChrome(paper) {
   const m = 36, tb = Math.round(paper.w * 0.115), head = 22;
-  const titleBand = paper.id === 'TABLOID' ? 48 : 62;
+  const titleBand = paper.id === 'TABLOID' ? 92 : 100;
   const summary = paper.id === 'TABLOID' ? 168 : 300;
   const view = {
     x: m + summary + 8,
@@ -179,9 +179,82 @@ function ssDraw() {
     rect(x, y, w, h, pen, opt) {ops.push({k: 'R', x, y, w, h, pen, fill: !!(opt && opt.fill), fillRgb: opt && opt.fillRgb})},
     text(x, y, s, opt) {opt = opt || {}; ops.push({k: 'T', x, y, s: s == null ? '' : String(s), size: opt.size || 8, pen: opt.pen || 'TEXT', anchor: opt.anchor || 'start', rgb: opt.rgb || null, tags: opt.tags || [], angle: opt.angle || 0, font: opt.font || ''})},
     clip(x, y, w, h) {ops.push({k: 'C', x, y, w, h})},
-    unclip() {ops.push({k: 'U'})}
+    unclip() {ops.push({k: 'U'})},
+    mark(meta) {ops.push(Object.assign({k: 'M'}, meta || {}))}
   };
   return api;
+}
+function ssHit(a, b) {return a && b && a.x < b.x2 - 0.6 && a.x2 > b.x + 0.6 && a.y < b.y2 - 0.6 && a.y2 > b.y + 0.6}
+function ssMeasure(s, size, font) {
+  const t = String(s || ''), sans = font === 'sans' || size >= 12;
+  if (!sans) return Math.max(4, t.length * size * 0.6);
+  let u = 0;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (c === ' ') u += 0.28;
+    else if (c >= '0' && c <= '9') u += 0.56;
+    else if (c >= 'a' && c <= 'z') u += 0.5;
+    else u += 0.72;
+  }
+  return Math.max(4, u * size);
+}
+function ssTextBox(op) {
+  if (!op || op.k !== 'T' || !op.s) return null;
+  const size = op.size || 8, w = ssMeasure(op.s, size, op.font), h = size;
+  const th = (op.angle || 0) * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+  let dx = 0; if (op.anchor === 'middle') dx = -w / 2; else if (op.anchor === 'end') dx = -w;
+  const pts = [[dx, -size * 0.25], [dx + w, -size * 0.25], [dx + w, h * 0.85], [dx, h * 0.85]].map(([px, py]) => [op.x + px * c - py * s, op.y + px * s + py * c]);
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), x = Math.min.apply(null, xs), y = Math.min.apply(null, ys);
+  return {x, y, w: Math.max.apply(null, xs) - x, h: Math.max.apply(null, ys) - y, x2: Math.max.apply(null, xs), y2: Math.max.apply(null, ys), s: op.s};
+}
+function ssInPoly(x, y, P) {let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) {const a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c} return c}
+function ssSegX(a, b, c, d) {const r0 = b[0] - a[0], r1 = b[1] - a[1], s0 = d[0] - c[0], s1 = d[1] - c[1], den = r0 * s1 - r1 * s0; if (Math.abs(den) < 1e-9) return false; const t = ((c[0] - a[0]) * s1 - (c[1] - a[1]) * s0) / den, u = ((c[0] - a[0]) * r1 - (c[1] - a[1]) * r0) / den; return t > 0.02 && t < 0.98 && u > 0.02 && u < 0.98}
+function ssPolyHit(poly, box) {
+  if (!poly || poly.length < 3) return false;
+  const c = [[box.x, box.y], [box.x2, box.y], [box.x2, box.y2], [box.x, box.y2]];
+  if (c.some(p => ssInPoly(p[0], p[1], poly)) || poly.some(p => p[0] > box.x && p[0] < box.x2 && p[1] > box.y && p[1] < box.y2)) return true;
+  for (let i = 0; i < poly.length; i++) for (let k = 0; k < 4; k++) if (ssSegX(poly[i], poly[(i + 1) % poly.length], c[k], c[(k + 1) % 4])) return true;
+  return false;
+}
+function ssLabelFaults(ops) {
+  const texts = [], halls = [], blocks = [];
+  (ops || []).forEach(op => {
+    if (op.k === 'T' && op.s) {const b = ssTextBox(op); if (b) texts.push(b)}
+    if (op.k === 'M' && op.kind === 'legend') blocks.push({x: op.x, y: op.y, w: op.w, h: op.h, x2: op.x + op.w, y2: op.y + op.h});
+    if (op.k === 'P' && op.pen === 'BUILDING' && op.fill && op.pts && op.pts.length > 2) halls.push(op.pts);
+  });
+  const faults = [];
+  for (let i = 0; i < texts.length; i++) for (let j = i + 1; j < texts.length; j++) if (ssHit(texts[i], texts[j])) faults.push(texts[i].s + ' | ' + texts[j].s);
+  texts.forEach(t => {
+    const cx = (t.x + t.x2) / 2, cy = (t.y + t.y2) / 2;
+    halls.forEach(poly => {if (ssPolyHit(poly, t)) faults.push('hall | ' + t.s)});
+    blocks.forEach(b => {if (ssHit(t, b) && !(cx > b.x && cx < b.x2 && cy > b.y && cy < b.y2)) faults.push('legend | ' + t.s)});
+  });
+  return faults;
+}
+function ssTryText(d, x, y, text, opt, blocked, frame) {
+  opt = opt || {};
+  const trial = {k: 'T', x, y, s: String(text), size: opt.size || 9, anchor: opt.anchor || 'start', font: opt.font || '', angle: opt.angle || 0};
+  const box = ssTextBox(trial);
+  if (!box) return false;
+  if (frame && (box.x < frame.x || box.y < frame.y || box.x2 > frame.x2 || box.y2 > frame.y2)) return false;
+  if ((blocked || []).some(b => b.pts ? ssPolyHit(b.pts, box) : ssHit(b, box))) return false;
+  d.text(x, y, text, opt);
+  blocked.push(box);
+  return true;
+}
+function ssBreak(text, size, width) {
+  const fw = 0.64, maxCh = Math.max(12, Math.floor((width - 8) / (size * fw)));
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  words.forEach(w => {
+    const next = cur ? cur + ' ' + w : w;
+    if (next.length > maxCh && cur) {lines.push(cur); cur = w;}
+    else cur = next;
+  });
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [''];
 }
 function ssScrub(ops, mode, secrets) {
   if (mode !== 'public') return ops;
@@ -475,9 +548,8 @@ function ssTitleBlock(d, paper, chrome, sheet, cfg, rev, mode) {
 }
 
 function ssFooter(d, paper, chrome) {
-  const y = 16;
-  d.text(chrome.m, y, 'Confidential  |  Edifice', {size: 7, pen: 'TEXT'});
-  d.text(paper.w / 2, y, 'CONCEPTUAL - NOT FOR CONSTRUCTION  |  NOT A SURVEY', {size: 7, pen: 'TEXT', anchor: 'middle'});
+  d.text(chrome.m + 4, chrome.m + 6, 'Confidential  |  Edifice', {size: 7, pen: 'TEXT'});
+  d.text(chrome.m + 4, chrome.m + 16, 'CONCEPTUAL - NOT FOR CONSTRUCTION  |  NOT A SURVEY', {size: 7, pen: 'TEXT'});
 }
 function ssCheckBar(d, paper) {
   const x = paper.w - 36 - 78, y = 14;
@@ -485,41 +557,45 @@ function ssCheckBar(d, paper) {
   d.text(x - 6, y, 'VERIFY SCALE: THIS BAR = 1.00 INCH WHEN PRINTED FULL SIZE', {size: 6, pen: 'TEXT', anchor: 'end'});
 }
 function ssViewTitle(d, paper, chrome, o) {
-  const cx = chrome.view.x + chrome.view.w / 2, y = chrome.m + 28;
-  d.line(cx - 70, y + 16, cx + 70, y + 16, 'TEXT');
-  d.text(cx, y + 20, o.title, {size: 9, pen: 'TEXT', anchor: 'middle'});
-  d.text(cx, y + 4, o.scaleLabel || ('SCALE: 1 IN = ' + ssScaleNum(o.scale) + ' FT'), {size: 8, pen: 'TEXT', anchor: 'middle'});
-  const nx = chrome.view.x + 18, ny = y + 8;
-  d.poly([[nx, ny + 14], [nx - 6, ny], [nx + 6, ny]], 'TEXT', {fill: true, fillRgb: [0.11, 0.11, 0.11]});
-  d.text(nx, ny + 16, 'N', {size: 8, pen: 'TEXT', anchor: 'middle'});
-  const barFt = Number(ssScaleNum(o.scale * 2)), bw = barFt * 72 / o.scale;
-  const bx = cx - bw / 2, by = chrome.m + 36;
-  d.rect(bx, by, bw, 8, 'SCALEBAR', {fill: true, fillRgb: [0, 0, 0]});
-  d.line(bx + bw / 2, by + 8, bx + bw / 2, by + 14, 'SCALEBAR');
-  d.text(bx, by + 16, '0', {size: 6, pen: 'TEXT'});
-  d.text(bx + bw / 2, by + 16, String(barFt / 2), {size: 6, pen: 'TEXT', anchor: 'middle'});
-  d.text(bx + bw, by + 16, String(barFt) + ' FT', {size: 6, pen: 'TEXT', anchor: 'end'});
-  d.text(bx + bw + 8, by + 1, 'SCALE BAR ' + ssScaleNum(barFt) + ' FT', {size: 6, pen: 'TEXT'});
+  const cx = chrome.view.x + chrome.view.w / 2;
+  const barFt = Number(ssScaleNum(o.scale * 2)), bw = Math.min(chrome.view.w * 0.36, barFt * 72 / o.scale);
+  const title = (o.no || 'C-100') + '  ' + (o.title || 'SITE PLAN');
+  const scale = o.scaleLabel || ('SCALE: 1 IN = ' + ssScaleNum(o.scale) + ' FT');
+  const titleSize = paper.id === 'TABLOID' ? 11 : 12, scaleSize = 9;
+  const yBar = chrome.m + 28;
+  d.rect(cx - bw / 2, yBar, bw, 5, 'SCALEBAR', {fill: true, fillRgb: [0, 0, 0]});
+  d.text(cx - bw / 2, yBar + 8, '0', {size: 8, pen: 'TEXT'});
+  d.text(cx, yBar + 8, String(barFt / 2), {size: 8, pen: 'TEXT', anchor: 'middle'});
+  d.text(cx + bw / 2, yBar + 8, String(barFt) + ' FT', {size: 8, pen: 'TEXT', anchor: 'end'});
+  d.text(cx + bw / 2 + 12, yBar, 'SCALE BAR ' + ssScaleNum(barFt) + ' FT', {size: 8, pen: 'TEXT'});
+  d.text(cx, yBar + 22, scale, {size: scaleSize, pen: 'TEXT', anchor: 'middle'});
+  d.text(cx, yBar + 22 + scaleSize + 6, title, {size: titleSize, pen: 'TEXT', anchor: 'middle', font: 'sans'});
+  const nx = chrome.view.x + 18, ny = yBar + 22 + scaleSize + 6;
+  d.poly([[nx, ny + 10], [nx - 4.5, ny], [nx + 4.5, ny]], 'TEXT', {fill: true, fillRgb: [0.11, 0.11, 0.11]});
+  d.text(nx, ny + 12, 'N', {size: 9, pen: 'TEXT', anchor: 'middle', font: 'sans'});
 }
 function ssHeadTitle(d, paper, chrome, title) {
   d.text(chrome.view.x + chrome.view.w / 2, paper.h - chrome.m - 16, title, {size: 12, pen: 'TEXT', anchor: 'middle', font: 'sans'});
 }
 function ssPt(paper, n) {const id = paper && paper.id; if (id === 'TABLOID') return Math.max(9, n); if (id === 'ARCH_E') return Math.max(11, n + 2); return Math.max(10, n + 1)}
 const SS_FACE = ['Gross area', 'Net developable', 'Building area', 'Building floor area', 'Paved area', 'Gravel area', 'Vegetated area', 'Height provided', 'Height limit', 'Parking stalls', 'Impervious', 'Detention storage', 'Floodplain', 'Zoning district'];
-const SS_FILL = {hall1: [0.55, 0.53, 0.49], hall2: [0.8, 0.78, 0.73], yard: [0.84, 0.74, 0.52], chill: [0.72, 0.78, 0.74], park: [0.7, 0.7, 0.68], road: [0.55, 0.53, 0.5], pond: [0.62, 0.78, 0.86], ease: [0.93, 0.74, 0.78], fence: [0.1, 0.1, 0.1]};
-function ssLegend(d, chrome, paper) {
-  const items = [['Phase 1 hall', SS_FILL.hall1], ['Phase 2 hall', SS_FILL.hall2], ['Yard', SS_FILL.yard], ['Chiller yard', SS_FILL.chill], ['Parking', SS_FILL.park], ['Ring road', SS_FILL.road], ['Detention', SS_FILL.pond], ['Easement', SS_FILL.ease], ['Fence', SS_FILL.fence]];
-  const size = ssPt(paper, 7), w = 156, h = 18 + items.length * (size + 4);
-  const x = chrome.view.x + 8, y = chrome.view.y + 8;
+const SS_FILL = {hall1: [0.55, 0.53, 0.49], hall2: [0.9, 0.89, 0.86], yard: [0.84, 0.74, 0.52], chill: [0.72, 0.78, 0.74], park: [0.7, 0.7, 0.68], road: [0.55, 0.53, 0.5], pond: [0.62, 0.78, 0.86], ease: [0.93, 0.74, 0.78], fence: [0.1, 0.1, 0.1]};
+function ssLegend(d, x, yTop, paper, mode) {
+  const items = [['Phase 1 hall', SS_FILL.hall1], ['Phase 2 hall', SS_FILL.hall2], ['Yard', SS_FILL.yard], ['Parking', SS_FILL.park], ['Ring road', SS_FILL.road], ['Detention', SS_FILL.pond], ['Easement', SS_FILL.ease], ['Fence', SS_FILL.fence]];
+  if (mode === 'admin') items.push(['GENERATOR YARD', SS_FILL.yard, ['gen']]);
+  const size = ssPt(paper, 7), w = Math.min(156, Math.max(120, (paper.id === 'TABLOID' ? 148 : 200))), row = size + 4, h = size + 12 + items.length * row;
+  const y = yTop - h;
   d.rect(x, y, w, h, 'TITLE', {fill: true, fillRgb: [0.985, 0.98, 0.965]});
+  d.mark({kind: 'legend', x, y, w, h});
   d.text(x + 6, y + h - size - 2, 'LEGEND', {size: size + 1, pen: 'TEXT', font: 'sans'});
-  items.forEach((it, i) => {const yy = y + h - (size + 8) - i * (size + 4); d.rect(x + 6, yy, 12, size, 'BUILDING', {fill: true, fillRgb: it[1]}); d.text(x + 24, yy + 1, it[0], {size, pen: 'TEXT'})});
+  items.forEach((it, i) => {const yy = y + h - size - 10 - (i + 1) * row; d.rect(x + 6, yy, 11, size - 1, 'BUILDING', {fill: true, fillRgb: it[1]}); d.text(x + 22, yy + 1, it[0], {size, pen: 'TEXT', tags: it[2] || []})});
+  return y;
 }
 
 function ssSummaryBlock(d, rows, mode, x, yTop, width, paper) {
   const face = new Set(SS_FACE);
   const shown = rows.filter(r => (mode === 'admin' || !r.sensitive) && face.has(r.label));
-  const size = ssPt(paper, 8), rowH = size * 2 + 8, cols = width > 320 ? 2 : 1;
+  const size = ssPt(paper, 8), rowH = size * 2 + 14, cols = width > 320 ? 2 : 1;
   const per = Math.ceil(shown.length / cols) || 1, cw = (width - 8) / cols;
   d.text(x, yTop, 'SITE SUMMARY', {size: size + 2, pen: 'TEXT', font: 'sans'});
   d.text(x, yTop - size - 4, 'Sec. 39.05(a)(9)', {size, pen: 'TEXT'});
@@ -529,7 +605,7 @@ function ssSummaryBlock(d, rows, mode, x, yTop, width, paper) {
     shown.slice(c * per, (c + 1) * per).forEach(r => {
       d.line(x + c * cw, y + size + 2, x + (c + 1) * cw - 8, y + size + 2, 'TITLE');
       d.text(x + c * cw + 2, y, r.label, {size, pen: 'TEXT', font: 'sans'});
-      d.text(x + (c + 1) * cw - 10, y - size - 1, r.value, {size, pen: 'TEXT', anchor: 'end'});
+      d.text(x + (c + 1) * cw - 10, y - size - 5, r.value, {size, pen: 'TEXT', anchor: 'end'});
       y -= rowH;
     });
     bottom = Math.min(bottom, y);
@@ -539,38 +615,71 @@ function ssSummaryBlock(d, rows, mode, x, yTop, width, paper) {
 
 function ssVicinity(d, ext, extent, box) {
   const roads = (ext && ext.roads) || [], places = (ext && ext.places) || [];
-  const size = Math.max(8, Math.min(11, box.w / 28));
+  const size = Math.max(8, Math.min(10, box.w / 32));
   d.rect(box.x, box.y, box.w, box.h, 'VICINITY', {fill: true, fillRgb: [0.93, 0.94, 0.9]});
-  d.text(box.x + 8, box.y + box.h - size - 2, 'VICINITY', {size: size + 1, pen: 'TEXT', font: 'sans'});
-  const note = !roads.length ? 'TIGER roads not loaded' : (places.length ? '[T] Census TIGER roads and places' : '[T] Census TIGER roads. City limits: TBD');
-  d.text(box.x + 8, box.y + 8, note.slice(0, 56), {size: Math.max(8, size - 1), pen: 'TEXT'});
-  d.text(box.x + 8, box.y + 8 + size + 2, 'NOT TO SCALE', {size: Math.max(8, size - 1), pen: 'TEXT'});
+  const blocked = [];
+  const frame = {x: box.x + 3, y: box.y + 3, x2: box.x + box.w - 3, y2: box.y + box.h - 3};
+  ssTryText(d, box.x + 6, box.y + box.h - size - 4, 'VICINITY', {size: size + 1, pen: 'TEXT', font: 'sans'}, blocked, frame);
+  ssTryText(d, box.x + box.w - 6, box.y + box.h - size - 4, 'NOT TO SCALE', {size: Math.max(8, size - 1), pen: 'TEXT', anchor: 'end'}, blocked, frame);
+  const note = !roads.length ? 'TIGER roads not loaded' : (places.length ? '[T] Census TIGER' : '[T] TIGER roads. City limits: TBD');
+  ssTryText(d, box.x + 6, box.y + 6, note, {size: Math.max(8, size - 1), pen: 'TEXT'}, blocked, frame);
+  const nx = box.x + box.w - 18, ny = box.y + box.h - size - 28;
+  d.poly([[nx, ny + 14], [nx - 5, ny], [nx + 5, ny]], 'TEXT', {fill: true, fillRgb: [0.1, 0.1, 0.1]});
+  ssTryText(d, nx, ny + 16, 'N', {size: size + 1, pen: 'TEXT', anchor: 'middle', font: 'sans'}, blocked, frame);
+  if ((roads.length + places.length + (extent.ring || []).length) < 1) {d.rect(box.x, box.y, box.w, box.h, 'VICINITY'); return}
   const pts = [];
   const push = p => {if (p && isFinite(p[0]) && isFinite(p[1])) pts.push(p)};
   roads.forEach(o => (o.L || []).forEach(push));
   places.forEach(o => (o.ring || []).forEach(push));
-  extent.ring.forEach(push);
-  const nx = box.x + box.w - 22, ny = box.y + box.h - 36;
-  d.poly([[nx, ny + 18], [nx - 7, ny], [nx + 7, ny]], 'TEXT', {fill: true, fillRgb: [0.1, 0.1, 0.1]});
-  d.text(nx, ny + 22, 'N', {size: size + 2, pen: 'TEXT', anchor: 'middle', font: 'sans'});
+  (extent.ring || []).forEach(push);
   if (pts.length < 2) {d.rect(box.x, box.y, box.w, box.h, 'VICINITY'); return}
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   pts.forEach(p => {x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1])});
   const span = Math.max(x1 - x0, y1 - y0, 400), pad = span * 0.45; x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
-  const sc = Math.min((box.w - 16) / (x1 - x0 || 1), (box.h - 36) / (y1 - y0 || 1));
-  const X = e => box.x + 8 + (e - x0) * sc, Y = n => box.y + 28 + (n - y0) * sc;
+  const mapTop = box.y + box.h - size - 18, mapBot = box.y + size + 10;
+  const sc = Math.min((box.w - 16) / (x1 - x0 || 1), Math.max(8, mapTop - mapBot) / (y1 - y0 || 1));
+  const X = e => box.x + 8 + (e - x0) * sc, Y = n => mapBot + (n - y0) * sc;
+  const mapFrame = {x: box.x + 4, y: mapBot, x2: box.x + box.w - 4, y2: mapTop};
   d.clip(box.x + 1, box.y + 1, box.w - 2, box.h - 2);
   places.forEach(o => {
     const ring = o.ring || [];
     if (ring.length > 2) d.poly(ring.map(p => [X(p[0]), Y(p[1])]), 'VICINITY', {fill: true, fillRgb: [0.86, 0.88, 0.82]});
-    if (o.name && ring.length) {let sx = 0, sy = 0; ring.forEach(p => {sx += p[0]; sy += p[1]}); d.text(X(sx / ring.length), Y(sy / ring.length), String(o.name).toUpperCase().slice(0, 22), {size, pen: 'TEXT', anchor: 'middle', font: 'sans'})}
   });
   roads.forEach(o => {
     const L = o.L || [];
     for (let i = 1; i < L.length; i++) d.poly(shBand(L[i - 1], L[i], Math.max(36, (o.row || 60) * 0.35)).map(p => [X(p[0]), Y(p[1])]), 'ROAD', {fill: true, fillRgb: [0.42, 0.42, 0.42]});
-    if (o.name && L.length > 1) {const a = L[0], b = L[L.length - 1], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; d.text(X(mx), Y(my) + size, String(o.name).toUpperCase().slice(0, 18), {size, pen: 'TEXT', anchor: 'middle'})}
   });
-  if (extent.ring.length > 2) {d.poly(extent.ring.map(p => [X(p[0]), Y(p[1])]), 'BOUNDARY', {fill: true, fillRgb: [0.96, 0.94, 0.9]}); d.poly(extent.ring.map(p => [X(p[0]), Y(p[1])]), 'BOUNDARY')}
+  if (extent.ring.length > 2) {
+    const parcel = extent.ring.map(p => [X(p[0]), Y(p[1])]);
+    d.poly(parcel, 'BOUNDARY', {fill: true, fillRgb: [0.96, 0.94, 0.9]});
+    d.poly(parcel, 'BOUNDARY');
+    blocked.push({pts: parcel});
+  }
+  roads.forEach(o => {
+    const L = o.L || [];
+    for (let i = 1; i < L.length; i++) blocked.push({pts: shBand(L[i - 1], L[i], Math.max(36, (o.row || 60) * 0.35)).map(p => [X(p[0]), Y(p[1])])});
+  });
+  places.forEach(o => {
+    const ring = o.ring || [];
+    if (!(o.name && ring.length)) return;
+    let sx = 0, sy = 0; ring.forEach(p => {sx += p[0]; sy += p[1]});
+    const name = String(o.name).toUpperCase().slice(0, 18);
+    const cx = X(sx / ring.length), cy = Y(sy / ring.length);
+    [[cx, cy], [cx, cy + size + 6], [cx, cy - size - 6]].some(([x, y]) => ssTryText(d, x, y, name, {size, pen: 'TEXT', anchor: 'middle', font: 'sans'}, blocked, mapFrame));
+  });
+  roads.forEach(o => {
+    const L = o.L || [];
+    if (!(o.name && L.length > 1)) return;
+    const a = L[0], b = L[L.length - 1];
+    let ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
+    const th = ang * Math.PI / 180, name = String(o.name).toUpperCase().slice(0, 16);
+    const base = [X((a[0] + b[0]) / 2), Y((a[1] + b[1]) / 2)];
+    for (const side of [1, -1]) {
+      const lift = size + 6;
+      if (ssTryText(d, base[0] - Math.sin(th) * lift * side, base[1] + Math.cos(th) * lift * side, name, {size, pen: 'TEXT', anchor: 'middle', angle: ang}, blocked, mapFrame)) break;
+    }
+  });
   d.unclip();
   d.rect(box.x, box.y, box.w, box.h, 'VICINITY');
 }
@@ -653,15 +762,10 @@ function ssPlan(d, r, meta, map, mode, opt) {
     const fill = o.kind === 'BUILDING' ? (phase === 1 ? SS_FILL.hall1 : SS_FILL.hall2) : o.kind === 'YARD' ? SS_FILL.yard : o.kind === 'CHILLER' ? SS_FILL.chill : o.kind === 'SUBSTATION' ? [0.93, 0.78, 0.28] : SS_FILL.park;
     const pen = o.kind === 'CHILLER' || o.kind === 'YARD' ? 'YARD' : o.kind;
     d.poly(pts, pen, {fill: true, fillRgb: fill});
-    if (!quiet && o.kind === 'BUILDING') ssHatch(d, pts, 'BUILDING', 8);
-    if (!quiet && (o.kind === 'YARD' || o.kind === 'CHILLER')) ssHatch(d, pts, 'YARD', 5);
     if (quiet) return;
     const c = ssCentroid(o.ring);
-    if (o.kind === 'SUBSTATION') {d.text(map.X(c[0]), map.Y(c[1]), 'SUBSTATION', {size: labelPt, pen: 'TEXT', anchor: 'middle', font: 'sans'}); return}
-    if (o.kind === 'YARD') {if (mode === 'admin') d.text(map.X(c[0]), map.Y(c[1]), 'GENERATOR YARD', {size: labelPt, pen: 'TEXT', anchor: 'middle', tags: ['gen']}); return}
-    if (o.kind === 'CHILLER') return;
-    if (o.kind === 'PARKING' && r.stalls != null) d.text(map.X(c[0]), map.Y(c[1]), 'PARKING  ' + Math.round(r.stalls) + ' STALLS [A]', {size: labelPt, pen: 'TEXT', anchor: 'middle'});
-    else if (o.kind === 'BUILDING') d.text(map.X(c[0]), map.Y(c[1]), o.name, {size: labelPt, pen: 'TEXT', anchor: 'middle'});
+    if (o.kind === 'SUBSTATION') calls.push({text: 'SUBSTATION', ax: map.X(c[0]), ay: map.Y(c[1]), size: labelPt});
+    else if (o.kind === 'PARKING' && r.stalls != null) calls.push({text: 'PARKING  ' + Math.round(r.stalls), ax: map.X(c[0]), ay: map.Y(c[1]), size: labelPt});
   });
   if (r.C.setRing) {const rg = r.C.setRing; if (rg.segs && rg.segs.length) ssSegs(d, rg.segs.map(s => s.map(un)), map, 'SETBACK'); else if (rg.length > 2) ssRing(d, rg.map(un), map, 'SETBACK', {open: true})}
   if (r.C.rowRing && r.C.rowRing.length > 2) ssRing(d, r.C.rowRing.map(un), map, 'ROW', {open: true});
@@ -677,36 +781,60 @@ function ssPlan(d, r, meta, map, mode, opt) {
     }
   }
   (fence && fence.segs || []).forEach(s => {if (s && s.length > 1) d.line(map.X(s[0][0]), map.Y(s[0][1]), map.X(s[1][0]), map.Y(s[1][1]), 'FENCE')});
-  if (!quiet && fence && fence.gate) calls.push({ax: map.X(fence.gate.at[0]), ay: map.Y(fence.gate.at[1]), text: 'GATE'});
   for (let i = 0; i < ring.length; i++) {const a = ring[i], b = ring[(i + 1) % ring.length]; d.line(map.X(a[0]), map.Y(a[1]), map.X(b[0]), map.Y(b[1]), 'BOUNDARY')}
   if (quiet) return;
-  shCourses(ring).forEach(c => {if (c.dist * map.ppf < 40) return; const mx = (c.a[0] + c.b[0]) / 2, my = (c.a[1] + c.b[1]) / 2; d.text(map.X(mx), map.Y(my) + 6, 'L' + c.n + '  ' + c.dist.toFixed(0) + ' FT', {size: labelPt, pen: 'TEXT', anchor: 'middle'})});
+  const frame = {x: view.x + 4, y: view.y + 4, x2: view.x + view.w - 4, y2: view.y + view.h - 4};
+  const blocked = [];
+  ssBuildings(r).forEach(o => {
+    if (o.kind === 'BUILDING' || o.kind === 'YARD' || o.kind === 'CHILLER' || o.kind === 'SUBSTATION' || o.kind === 'PARKING')
+      blocked.push({pts: o.ring.map(p => [map.X(p[0]), map.Y(p[1])])});
+  });
+  const ink = (labelPt + 6) / (map.ppf || 1);
+  for (let i = 0; i < ring.length; i++) blocked.push({pts: shBand(ring[i], ring[(i + 1) % ring.length], ink).map(p => [map.X(p[0]), map.Y(p[1])])});
+  (ext.tx || []).forEach(o => {
+    const L = o.L || [], half = (o.row || 100) / 2;
+    for (let i = 1; i < L.length; i++) blocked.push({pts: shBand(L[i - 1], L[i], half).map(p => [map.X(p[0]), map.Y(p[1])])});
+  });
+  const cen = ssCentroid(ring), cx = map.X(cen[0]), cy = map.Y(cen[1]);
   shRoadLabels(ext.roads, 450).forEach(o => {
     let ang = Math.atan2(o.b[1] - o.a[1], o.b[0] - o.a[0]) * 180 / Math.PI;
     if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
-    d.text(map.X(o.at[0]), map.Y(o.at[1]) + labelPt, o.name.toUpperCase() + (o.row ? ' (' + o.row + ' FT ROW [A])' : ''), {size: labelPt, pen: 'TEXT', anchor: 'middle', angle: ang});
+    const th = ang * Math.PI / 180;
+    const text = o.name.toUpperCase() + (o.row ? ' (' + o.row + ' FT ROW [A])' : '');
+    const base = [map.X(o.at[0]), map.Y(o.at[1])];
+    blocked.push({pts: shBand(o.a, o.b, (o.row || 60) / 2).map(p => [map.X(p[0]), map.Y(p[1])])});
+    const gap = (o.row || 60) / 2 * map.ppf + labelPt + 8;
+    const away = lift => Math.hypot(base[0] - Math.sin(th) * lift - cx, base[1] + Math.cos(th) * lift - cy);
+    const lifts = [gap, -gap, gap * 2.4, -gap * 2.4].sort((a, b) => away(b) - away(a));
+    for (let i = 0; i < lifts.length; i++) {
+      const x = base[0] - Math.sin(th) * lifts[i], y = base[1] + Math.cos(th) * lifts[i];
+      if (ssTryText(d, x, y, text, {size: labelPt, pen: 'TEXT', anchor: 'middle', angle: ang}, blocked, frame)) break;
+    }
   });
-  (r.C.edges || []).forEach(e => {if (!(e[2] > 0)) return; const A = un(e[0]), B = un(e[1]); if (shDist(A, B) * map.ppf < 36) return; const k = e[4] || {}; calls.push({ax: map.X((A[0] + B[0]) / 2), ay: map.Y((A[1] + B[1]) / 2), text: Math.round(e[2]) + ' FT ' + String(k.kind || 'SETBACK').toUpperCase()})});
-  if (r.loops && r.loops.length && r.loops[0].turn) calls.push({ax: map.X(r.loops[0].pts[0][0]), ay: map.Y(r.loops[0].pts[0][1]), text: 'FIRE LANE  TURN ' + r.loops[0].turn + ' FT [A]'});
-  // Columns sit just outside the hall cluster, in the setback / loop, so labels do not cover the buildings.
-  let hx0 = 1e9, hy0 = 1e9, hx1 = -1e9, hy1 = -1e9;
-  ssBuildings(r).forEach(o => o.ring.forEach(p => {const x = map.X(p[0]), y = map.Y(p[1]); hx0 = Math.min(hx0, x); hy0 = Math.min(hy0, y); hx1 = Math.max(hx1, x); hy1 = Math.max(hy1, y)}));
-  if (!(hx1 > hx0)) {hx0 = map.X(extent.x0); hx1 = map.X(extent.x1); hy0 = map.Y(extent.y0); hy1 = map.Y(extent.y1)}
-  const top = Math.max(hy0, hy1) + 4, bot = Math.min(hy0, hy1) - 4;
-  shPlaceCallouts(calls, {xL: hx0 - 8, xR: hx1 + 8, top: top, bot: bot, dir: -1, step: labelPt + 5, mid: (hx0 + hx1) / 2}).forEach(p => {
-    const stub = p.anchor === 'end' ? -14 : 14;
-    d.line(p.x + stub, p.y + 2, p.ax, p.ay, 'TEXT');
-    d.text(p.x, p.y, p.text, {size: labelPt, pen: 'TEXT', anchor: p.anchor, tags: (calls.find(c => c.text === p.text) || {}).tags || []});
+  (r.C.edges || []).forEach(e => {if (!(e[2] > 0)) return; const A = un(e[0]), B = un(e[1]); if (shDist(A, B) * map.ppf < 48) return; const k = e[4] || {}; calls.push({text: Math.round(e[2]) + ' FT ' + String(k.kind || 'SETBACK').toUpperCase(), ax: map.X((A[0] + B[0]) / 2), ay: map.Y((A[1] + B[1]) / 2), size: labelPt})});
+  if (fence && fence.gate) calls.push({text: 'GATE', ax: map.X(fence.gate.at[0]), ay: map.Y(fence.gate.at[1]), size: labelPt});
+  if (r.loops && r.loops.length) calls.push({text: 'FIRE LANE ' + Math.round(r.loops[0].turn || 45) + ' FT', ax: map.X(r.loops[0].pts[0][0]), ay: map.Y(r.loops[0].pts[0][1]), size: labelPt});
+  const seen = new Set();
+  const uniq = calls.filter(it => {if (!it || !it.text || seen.has(it.text)) return false; seen.add(it.text); return true});
+  const vx0 = frame.x, vy1 = frame.y2;
+  uniq.forEach(it => {
+    const size = it.size || labelPt, w = it.text.length * size * 0.62;
+    const spots = [];
+    for (let k = 0; k < 18; k++) spots.push([frame.x2 - w - 2, vy1 - 2 - k * (size + 6), 'start']);
+    for (let k = 0; k < 12; k++) spots.push([vx0 + 2, vy1 - 2 - k * (size + 6), 'start']);
+    for (let i = 0; i < spots.length; i++) {
+      if (ssTryText(d, spots[i][0], spots[i][1], it.text, {size, pen: 'TEXT', anchor: spots[i][2], font: it.text === 'SUBSTATION' ? 'sans' : ''}, blocked, frame)) break;
+    }
   });
 }
 
-function ssSheetFrame(d, paper, chrome, sheet, cfg, rev, mode) {
+function ssSheetFrame(d, paper, chrome, sheet, cfg, rev, mode, opt) {
   d.rect(chrome.m, chrome.m, paper.w - 2 * chrome.m, paper.h - 2 * chrome.m, 'BORDER');
   d.line(chrome.tbX, chrome.m, chrome.tbX, paper.h - chrome.m, 'TITLE');
   ssTitleBlock(d, paper, chrome, sheet, cfg, rev, mode);
   ssFooter(d, paper, chrome);
   ssCheckBar(d, paper);
-  ssHeadTitle(d, paper, chrome, sheet.no + '  ' + sheet.title);
+  if (!opt || !opt.skipHead) ssHeadTitle(d, paper, chrome, sheet.no + '  ' + sheet.title);
 }
 
 function ssCompose(r, meta, opts) {
@@ -738,28 +866,48 @@ function ssCompose(r, meta, opts) {
   const site = blank('C-100', 'SITE PLAN');
   const dc = ssDraw(), ds = ssDraw();
   ssSheetFrame(dc, paper, chrome, cover, cfg, rev, mode);
-  ssSheetFrame(ds, paper, chrome, site, cfg, rev, mode);
+  ssSheetFrame(ds, paper, chrome, site, cfg, rev, mode, {skipHead: true});
   const left = chrome.m + 12, right = chrome.tbX - 12, top = paper.h - chrome.m - 28;
   const gap = 12, keyW = (right - left - gap) * 0.58, vicW = (right - left - gap) - keyW, colW = vicW;
   dc.rect(left, top + 8, right - left, 4, 'TITLE', {fill: true, fillRgb: [0.945, 0.294, 0.129]});
   dc.text(left, top - 16, cfg.projectName, {size: paper.id === 'TABLOID' ? 14 : 20, pen: 'TEXT', font: 'sans'});
   dc.text(left, top - 32, (cfg.jurisdiction || 'TBD') + '   |   ' + date + '   |   ' + cfg.issuedFor, {size: 8, pen: 'TEXT'});
   dc.text(left, top - 46, 'Source tags: [Z]oning [C]ounty GIS [F]EMA [N]HD [T]IGER [H]IFLD [O]SM [U]SGS [A]ssumed. TBD means the figure is not known.', {size: 7, pen: 'TEXT'});
-  const noteLines = notes.length + assumptions.length;
-  const below = 18 + 8 * 12 + 16 + noteLines * 9 + 18 + 12 * 12 + 28;
-  const mapH = Math.max(paper.id === 'TABLOID' ? 120 : 200, Math.min(paper.id === 'TABLOID' ? 200 : 520, top - 64 - below - (chrome.m + 8)));
-  const yMap = top - 58 - mapH;
-  ssVicinity(dc, ext, extent, {x: left, y: yMap, w: vicW, h: mapH});
-  const key = {x: left + vicW + gap, y: yMap, w: keyW, h: mapH};
-  dc.rect(key.x, key.y, key.w, key.h, 'VICINITY', {fill: true, fillRgb: [0.96, 0.95, 0.93]});
-  dc.text(key.x + 8, key.y + key.h - 14, 'KEY PLAN', {size: 8, pen: 'TEXT', font: 'sans'});
-  dc.text(key.x + key.w - 8, key.y + key.h - 14, 'NOT TO SCALE', {size: 6, pen: 'TEXT', anchor: 'end'});
-  const kScale = ssPickScale(extent.w, extent.h, (key.w - 20) / 72, (key.h - 32) / 72);
-  const kMap = ssMap(extent, {x: key.x + 8, y: key.y + 8, w: key.w - 16, h: key.h - 30}, kScale);
-  dc.clip(key.x + 2, key.y + 2, key.w - 4, key.h - 22);
-  ssPlan(dc, r, meta, kMap, mode, {quiet: true, paper, view: {x: key.x + 8, y: key.y + 8, w: key.w - 16, h: key.h - 30}});
-  dc.unclip();
-  dc.rect(key.x, key.y, key.w, key.h, 'VICINITY');
+  const noteSize = ssPt(paper, 8), lead = noteSize + 4, bottom = chrome.m + 36;
+  const checkSize = ssPt(paper, 7), checkLead = checkSize + 4;
+  const checkCols = paper.id === 'TABLOID' ? 4 : 2, checkRows = Math.ceil(check.length / checkCols) || 1;
+  const checkH = 16 + checkRows * checkLead;
+  const rawNotes = notes.concat(assumptions).map(t => ({s: String(t), tags: [], keep: false}));
+  summary.filter(row => mode === 'admin' || !row.sensitive).forEach(row => rawNotes.push({s: row.print, tags: row.sensitive ? [row.sensitive] : [], keep: true}));
+  const contentW = right - left;
+  const flow = cols => {
+    const w = (contentW - (cols - 1) * 10) / cols;
+    const lines = [];
+    rawNotes.forEach(it => (it.keep ? [it.s] : ssBreak(it.s, noteSize, w)).forEach(s => lines.push({s, tags: it.tags})));
+    return {w, lines, rows: Math.ceil(lines.length / cols) || 1};
+  };
+  const wide = f => f.lines.some(l => l.s.length * noteSize * 0.62 > f.w - 6);
+  let noteCols = 2, flowed = flow(2);
+  for (let c = 3; c <= 4; c++) {const trial = flow(c); if (wide(trial)) break; noteCols = c; flowed = trial;}
+  const notesH = 18 + flowed.rows * lead;
+  const dataH = 16 + 14 + 8 * 12 + 22;
+  const room = top - 50 - dataH - notesH - checkH - bottom;
+  const mapCap = paper.id === 'TABLOID' ? 140 : 380;
+  const mapH = room >= 80 ? Math.min(mapCap, room) : (room >= 72 ? room : 0);
+  const yMap = top - 50 - mapH;
+  if (mapH >= 72) {
+    ssVicinity(dc, ext, extent, {x: left, y: yMap, w: vicW, h: mapH});
+    const key = {x: left + vicW + gap, y: yMap, w: keyW, h: mapH};
+    dc.rect(key.x, key.y, key.w, key.h, 'VICINITY', {fill: true, fillRgb: [0.96, 0.95, 0.93]});
+    dc.text(key.x + 8, key.y + key.h - 14, 'KEY PLAN', {size: 8, pen: 'TEXT', font: 'sans'});
+    dc.text(key.x + key.w - 8, key.y + key.h - 14, 'NOT TO SCALE', {size: 6, pen: 'TEXT', anchor: 'end'});
+    const kScale = ssPickScale(extent.w, extent.h, (key.w - 20) / 72, (key.h - 32) / 72);
+    const kMap = ssMap(extent, {x: key.x + 8, y: key.y + 8, w: key.w - 16, h: key.h - 30}, kScale);
+    dc.clip(key.x + 2, key.y + 2, key.w - 4, key.h - 22);
+    ssPlan(dc, r, meta, kMap, mode, {quiet: true, paper, view: {x: key.x + 8, y: key.y + 8, w: key.w - 16, h: key.h - 30}});
+    dc.unclip();
+    dc.rect(key.x, key.y, key.w, key.h, 'VICINITY');
+  }
   let y = yMap - 16;
   dc.text(left, y, 'PROJECT DATA', {size: 9, pen: 'TEXT', font: 'sans'});
   dc.text(left + colW + gap, y, 'SHEET INDEX', {size: 9, pen: 'TEXT', font: 'sans'});
@@ -779,37 +927,31 @@ function ssCompose(r, meta, opts) {
   });
   y = Math.min(y - pdata.length * 12, iy) - 8;
   dc.text(left, y, 'NOTES', {size: 9, pen: 'TEXT', font: 'sans'});
-  y -= 12;
-  const notePt = ssPt(paper, 8), floor = chrome.m + chrome.titleBand + 8;
-  const noteItems = notes.concat(assumptions).map(t => ({s: String(t), tags: []})).concat(summary.filter(row => mode === 'admin' || !row.sensitive).map(row => ({s: row.print, tags: row.sensitive ? [row.sensitive] : []})));
-  let noteCols = 2, per = Math.ceil(noteItems.length / noteCols);
-  let lead = per ? (y - floor) / per : notePt + 3;
-  if (lead < 9) {noteCols = 3; per = Math.ceil(noteItems.length / noteCols); lead = per ? (y - floor) / per : 9}
-  lead = Math.max(9, Math.min(notePt + 3, lead));
-  const noteW = (right - left - gap) / noteCols;
-  noteItems.forEach((item, i) => {
-    const col = Math.min(noteCols - 1, Math.floor(i / per)), row = i % per;
-    dc.text(left + col * (noteW + 4), y - row * lead, item.s, {size: Math.min(notePt, lead - 1), pen: 'TEXT', tags: item.tags});
+  y -= 14;
+  flowed.lines.forEach((item, i) => {
+    const col = Math.min(noteCols - 1, Math.floor(i / flowed.rows)), row = i % flowed.rows;
+    dc.text(left + col * (flowed.w + 10), y - row * lead, item.s, {size: noteSize, pen: 'TEXT', tags: item.tags});
   });
-  y -= 4;
+  y -= flowed.rows * lead + 8;
   dc.text(left, y, 'SEC. 39.05(a) REQUIRED CONTENTS', {size: 9, pen: 'TEXT', font: 'sans'});
-  y -= 12;
+  y -= checkLead;
+  const checkW = (contentW - (checkCols - 1) * 10) / checkCols;
   check.forEach((it, i) => {
-    const col = i < 12 ? 0 : 1, row = i < 12 ? i : i - 12;
-    const x = left + col * (colW + gap), yy = y - row * 11;
-    dc.text(x, yy, '(a)(' + it.n + ') ' + it.status, {size: 6.5, pen: 'TEXT'});
-    dc.text(x + 108, yy, it.title.slice(0, 54), {size: 6.5, pen: 'TEXT'});
+    const col = Math.min(checkCols - 1, Math.floor(i / checkRows)), row = i % checkRows;
+    const x = left + col * (checkW + 10), yy = y - row * checkLead;
+    const status = '(a)(' + it.n + ') ' + it.status;
+    const statusW = status.length * checkSize * 0.7 + 8;
+    const roomW = Math.max(20, checkW - statusW);
+    dc.text(x, yy, status, {size: checkSize, pen: 'TEXT'});
+    dc.text(x + statusW, yy, it.title.slice(0, Math.max(6, Math.floor(roomW / (checkSize * 0.7)))), {size: checkSize, pen: 'TEXT'});
   });
-  // site plan
-  let noteY = ssSummaryBlock(ds, summary, mode, left, top, chrome.summary - 8, paper) - 10;
-  const box = {x: left, y: chrome.m + chrome.titleBand + 8, w: Math.max(80, chrome.summary - 16), h: Math.min(200, Math.max(80, noteY - (chrome.m + chrome.titleBand + 16)))};
-  if (box.h > 56 && box.y + box.h < noteY) ssVicinity(ds, ext, extent, box);
-  ds.clip(chrome.view.x, chrome.view.y, chrome.view.w, chrome.view.h - 56);
+  // site plan. Legend sits in the left rail, under the summary and above the title band.
+  let noteY = ssSummaryBlock(ds, summary, mode, left, top, chrome.summary - 8, paper) - 12;
+  ds.clip(chrome.view.x, chrome.view.y, chrome.view.w, chrome.view.h);
   ssPlan(ds, r, meta, map, mode, {paper, view: chrome.view});
   ds.unclip();
-  ssLegend(ds, chrome, paper);
-  ssViewTitle(ds, paper, chrome, {title: 'SITE PLAN', scale, scaleLabel});
-  ds.text(chrome.view.x, chrome.m + chrome.titleBand - 8, 'GRAPHIC SCALE MATCHES 1 IN = ' + ssScaleNum(scale) + ' FT. CONFIRM THE 1.00 INCH BAR BEFORE MEASURING.', {size: 6, pen: 'TEXT'});
+  ssLegend(ds, left, noteY, paper, mode);
+  ssViewTitle(ds, paper, chrome, {no: 'C-100', title: 'SITE PLAN', scale, scaleLabel});
   cover.ops = ssScrub(dc.ops, mode, secrets);
   site.ops = ssScrub(ds.ops, mode, secrets);
   const ctx = {r, meta, mode, paper, scale, scales, extent, map, chrome, cfg, date, rev, summary, check, ext, secrets, scaleLabel};
@@ -849,6 +991,7 @@ function ssPdfContent(page) {
   page.ops.forEach(op => {
     if (op.k === 'C') {s += 'q\n' + [op.x, op.y, op.w, op.h].map(ssFmt).join(' ') + ' re\nW\nn\n'; clip++; penId = ''; return}
     if (op.k === 'U') {if (clip) {s += 'Q\n'; clip--; penId = ''} return}
+    if (op.k === 'M') return;
     penOn(op.pen);
     if (op.fillRgb) s += op.fillRgb.map(ssFmt).join(' ') + ' rg\n';
     if (op.k === 'L') s += ssFmt(op.x1) + ' ' + ssFmt(op.y1) + ' m\n' + ssFmt(op.x2) + ' ' + ssFmt(op.y2) + ' l\nS\n';
@@ -861,7 +1004,7 @@ function ssPdfContent(page) {
     } else if (op.k === 'T' && op.s) {
       const size = Math.max(6, op.size || 8), rgb = op.rgb || (SS_PENS[op.pen] || SS_PENS.TEXT).rgb;
       const face = op.font === 'sans' || size >= 12 ? '/F1' : '/F2';
-      const w = op.s.length * size * (face === '/F2' ? 0.6 : 0.5);
+      const w = ssMeasure(op.s, size, op.font);
       const th = (op.angle || 0) * Math.PI / 180, co = Math.cos(th), sn = Math.sin(th);
       let dx = 0; if (op.anchor === 'middle') dx = -w / 2; else if (op.anchor === 'end') dx = -w;
       const x = op.x + dx * co, y = op.y + dx * sn;

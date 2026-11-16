@@ -68,14 +68,14 @@ function tfCampusFill(C,spec,aisle,maxN,placed){const [x0,y0,x1,y1]=C.bb,margin=
   for(let y=y0+margin+oy;y+spec.bh<=y1-margin+0.1&&out.length<maxN;y+=pitchY)for(let x=x0+margin+ox;x+spec.bw<=x1-margin+0.1&&out.length<maxN;x+=pitchX){const r=[x,y,spec.bw,spec.bh];
    if(tfRectOK(C,r,PP,aisle)){if(spec.v)r.v=1;out.push(r);const q=r.slice();q[4]=aisle;PP.push(q)}}
   if(out.length>best.length)best=out}return best}
-// One module, one orientation. Both axes are tried; the solve keeps the grid that fits more whole halls.
-function tfCampusGrid(C,bw,bh,aisle,maxN,placed){const specs=[{bw,bh,v:0},{bw:bh,bh:bw,v:1}];let best=[];
- specs.forEach(spec=>{const first=tfCampusFill(C,spec,aisle,maxN,placed),P=placed.map(r=>r.slice());
-  first.forEach(r=>{const q=r.slice();q[4]=aisle;P.push(q)});
-  let extra=[];if(first.length&&first.length<maxN){let bx0=1e9,by0=1e9,bx1=-1e9,by1=-1e9;first.forEach(a=>{bx0=Math.min(bx0,a[0]);by0=Math.min(by0,a[1]);bx1=Math.max(bx1,a[0]+a[2]);by1=Math.max(by1,a[1]+a[3])});
-   const pad=aisle*3,raw=tfCampusFill(C,spec,aisle,maxN-first.length,P);
-   extra=raw.filter(r=>{const cx=r[0]+r[2]/2,cy=r[1]+r[3]/2;return cx<bx0-pad||cx>bx1+pad||cy<by0-pad||cy>by1+pad})}
-  const got=first.concat(extra);if(got.length>best.length)best=got});return best}
+// One orientation. Full-length halls first, then 500 ft and 400 ft remnants of the same width and direction.
+function tfCampusGrid(C,bw,bh,aisle,maxN,placed){const specs=[{bw,bh,v:0},{bw:bh,bh:bw,v:1}];let best=[],spec=specs[0];
+ specs.forEach(sp=>{const got=tfCampusFill(C,sp,aisle,maxN,placed);if(got.length>best.length){best=got;spec=sp}});
+ const P=placed.map(r=>r.slice());best.forEach(r=>{const q=r.slice();q[4]=aisle;P.push(q)});
+ const long=spec.v?spec.bh:spec.bw;
+ [500,400].filter(L=>L<long-40).forEach(L=>{if(P.length>=maxN+placed.length)return;const sp=spec.v?{bw:spec.bw,bh:L,v:1}:{bw:L,bh:spec.bh,v:0};
+  tfCampusFill(C,sp,aisle,maxN-(P.length-placed.length),P).forEach(r=>{r.short=L;const q=r.slice();q[4]=aisle;P.push(q);best.push(r)})});
+ return best}
 // Halls whose pads nearly touch stay one cluster. A wide easement or an L notch splits the rest.
 function tfClusters(blocks,gap){const n=blocks.length,p=blocks.map((_,i)=>i),find=i=>p[i]===i?i:(p[i]=find(p[i]));
  const near=(a,b)=>a[0]<b[0]+b[2]+gap&&a[0]+a[2]+gap>b[0]&&a[1]<b[1]+b[3]+gap&&a[1]+a[3]+gap>b[1];
@@ -105,8 +105,9 @@ function tfDC0(R,I,ctx,pd){ctx=ctx||{};if(!ctx.linePt&&ctx.tx){const lp=tfTxPoin
  const Z=ctx.zone||null,E=tfEff(I,Z),C=tfCtx(R,E,ctx.nb),site=C.A,warn=[],sf=+E.storyFt||42,HL=tfHLim(E,ctx.faa);
  const st=Math.max(1,Math.round(+E.stories||1)),h=st*sf;let stE=st;if(HL.lim!=null&&h>HL.lim){stE=Math.max(1,Math.floor(HL.lim/sf));warn.push({k:'height',t:`Design height ${h} ft exceeds the ${Math.round(HL.lim)} ft ${HL.why} limit${stE*sf>HL.lim?' · '+stE*sf+' ft hall needs a height variance':' · capped at '+stE+' storey'}`})}
  const placed=[],lane=+E.lane||30,sub=+E.subAc>0?Math.sqrt(+E.subAc*43560):0;let subR=null;
- let pond=E._pack&&!E._pondLast?tfPond(C,pd,ctx,placed):null;if(pd&&!pond&&E._pack&&!E._pondLast)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`});
- if(sub){const tgt=E.subPos&&E.subPos!=='auto'?tfCorner(C,E.subPos):ctx.linePt?tfRot(ctx.linePt,-C.rot):[C.bb[2],C.bb[1]];subR=tfPlaceNear(C,sub,sub,tgt,placed,lane);if(subR){subR.push(lane);placed.push(subR)}else warn.push({k:'sub',t:'No room for the substation'})}
+ let pond=pd&&!E._pondLast?tfPond(C,pd,ctx,placed):null;if(pd&&!pond&&E._pack&&!E._pondLast)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`});
+ if(sub){let tgt;if(E.subPos&&E.subPos!=='auto')tgt=tfCorner(C,E.subPos);else{const aim=ctx.linePt?tfRot(ctx.linePt,-C.rot):[C.bb[2],C.bb[1]],corners=[[C.bb[0],C.bb[1]],[C.bb[2],C.bb[1]],[C.bb[2],C.bb[3]],[C.bb[0],C.bb[3]]];tgt=corners[0];let bd=1e18;corners.forEach(c=>{const d=Math.hypot(c[0]-aim[0],c[1]-aim[1]);if(d<bd){bd=d;tgt=c}})}
+  subR=tfPlaceNear(C,sub,sub,tgt,placed,lane);if(subR){subR.push(lane);placed.push(subR)}else warn.push({k:'sub',t:'No room for the substation'})}
  const hw=+E.hallW,hl=+E.hallL,gy=(+E.genAc||0)*43560/hl*(TF_COOL[E.cool]||1),bw=hl,bh=hw+gy,pue=+E.pue||1.3;
  const capIT=ctx.gridMW!=null&&ctx.gridMW!==''&&isFinite(ctx.gridMW)?ctx.gridMW/pue:null,wsf=+E.wsf||((+E.hallMW||0)>0?(+E.hallMW)*1e6/((+E.hallW||hw)*(+E.hallL||hl)*Math.max(1,+E.stories||1)):200),hallMW=hw*hl*stE*wsf/1e6;
  const T=cvPhaseTargets(E),Tsum=T?T.reduce((a,b)=>a+b,0):0;
@@ -119,23 +120,23 @@ function tfDC0(R,I,ctx,pd){ctx=ctx||{};if(!ctx.linePt&&ctx.tx){const lp=tfTxPoin
  const cen=r=>[r[0]+r[2]/2,r[1]+r[3]/2],dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);B.sort((a,b)=>dist(cen(a),org)-dist(cen(b),org));
  const gD=gy>=8?gy*0.62:gy,cD=gy-gD;
  const halls=B.map(b=>{const [x,y,w,hh]=b;return b.v?{hall:[x+gy,y,hw,hh],gen:gD>1?[x,y,gD,hh]:null,chill:cD>1?[x+gD,y,cD,hh]:null,v:1}:{hall:[x,y+gy,w,hw],gen:gD>1?[x,y,w,gD]:null,chill:cD>1?[x,y+gD,w,cD]:null}});halls.forEach(o=>{placed.push(o.hall);if(o.gen)placed.push(o.gen);if(o.chill)placed.push(o.chill)});
- if((!E._pack||E._pondLast)&&pd){pond=tfPond(C,pd,ctx,placed);if(!pond)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`})}
- const n=halls.length,itRaw=n*hallMW,it=capIT!=null?Math.min(itRaw,capIT):itRaw,fac=it*pue;
+ if(!pond&&pd){pond=tfPond(C,pd,ctx,placed);if(!pond)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`})}
+ const n=halls.length,share=o=>hallMW*(o.hall[2]*o.hall[3])/((hw*hl)||1),itRaw=halls.reduce((a,o)=>a+share(o),0),it=capIT!=null?Math.min(itRaw,capIT):itRaw,fac=it*pue;
  const stalls=Math.round(n*(+E.park||0)),pA=stalls*330;let parkR=null;
  if(pA>0){const pw=Math.max(60,Math.min(600,Math.sqrt(pA*2))),ph=pA/pw;parkR=tfPlaceNear(C,pw,ph,ent,placed,lane);if(parkR)placed.push(parkR);else warn.push({k:'park',t:'Parking does not fit'})}
  const ph=T?T.length:Math.max(1,Math.round(+E.phases||1));let phase;
  if(T){let cum=0;const nk=T.map((t,k)=>{cum+=t;const q=cum/hallMW;return k===T.length-1?Math.ceil(q-1e-9):Math.max(k+1,Math.round(q))});phase=halls.map((_,i)=>{const k=nk.findIndex(v=>i<v);return (k<0?ph-1:k)+1})}
  else phase=halls.map((_,i)=>Math.floor(i*ph/Math.max(1,n))+1);
- const phMW=Array.from({length:ph},(_,k)=>Math.min(it,phase.filter(p=>p<=k+1).length*hallMW)).map((v,k,a)=>v-(k?a[k-1]:0));
+ const phMW=Array.from({length:ph},(_,k)=>Math.min(it,halls.reduce((a,o,i)=>a+(phase[i]<=k+1?share(o):0),0))).map((v,k,a)=>v-(k?a[k-1]:0));
  // per-phase program: halls, built IT, target, facility MW, cumulative, grid status, acres, road / MV corridor LF
  const rows=[];let cIT=0,cT=0,prevC=[ent];const gMW=ctx.gridMW!=null&&ctx.gridMW!==''&&isFinite(ctx.gridMW)?+ctx.gridMW:null;
- for(let k=1;k<=ph;k++){const H=halls.filter((_,i)=>phase[i]===k),itB=H.length*hallMW,tg=T?T[k-1]:null;cIT+=itB;cT+=tg||0;const fc=cIT*pue;
+ for(let k=1;k<=ph;k++){const H=halls.filter((_,i)=>phase[i]===k),itB=H.reduce((a,o)=>a+share(o),0),tg=T?T[k-1]:null;cIT+=itB;cT+=tg||0;const fc=cIT*pue;
   const ftp=H.reduce((a,o)=>a+o.hall[2]*o.hall[3]+(o.gen?o.gen[2]*o.gen[3]:0)+lane*(o.hall[2]+o.hall[3]+(o.gen?o.gen[3]:0)),0)+(parkR?parkR[2]*parkR[3]*H.length/Math.max(1,n):0)+(k===1&&subR?subR[2]*subR[3]:0)+(k===1&&pond&&E.swPh!=='phase'?pond[2]*pond[3]:0);
   const cc=H.length?[H.reduce((a,o)=>a+o.hall[0]+o.hall[2]/2,0)/H.length,H.reduce((a,o)=>a+o.hall[1]+o.hall[3]/2,0)/H.length]:null;
   const road=H.reduce((a,o)=>a+o.hall[2]+o.hall[3],0)+(cc?Math.min(...prevC.map(p=>dist(p,cc))):0),util=cc&&subR?dist(cen(subR),cc):0;if(cc)prevC.push(cc);
   rows.push({k,halls:H.length,itB,tgt:tg==null?null:tg,fac:itB*pue,cumIT:cIT,cumFac:fc,short:T?Math.max(0,cT-cIT):0,grid:gMW==null?null:fc<=gMW+1e-6,ac:ftp/43560,road,util})}
  const firstOver=rows.find(r=>r.grid===false);if(firstOver)warn.push({k:'grid',t:`Phase ${firstOver.k} brings the site to ${firstOver.cumFac.toFixed(1)} MW facility, above the ${gMW} MW grid cap: needs a utility upgrade before it can energize`});
- const fp=n*hw*hl,cov=site?fp/site:0,far=site?fp*stE/site:0;
+ const fp=halls.reduce((a,o)=>a+o.hall[2]*o.hall[3],0),cov=site?fp/site:0,far=site?fp*stE/site:0;
  let bind=!stE?'Height':T?(n<want?(n>=covN?'Coverage/FAR':pd&&pond?'Land (setbacks / no-build / detention)':'Land / setbacks / no-build'):firstOver?'Grid cap':'Target MW'):capIT!=null&&itRaw>=capIT-1e-9&&n>=needCap?'Grid cap':n<Math.min(want,needCap)?(n>=covN?'Coverage/FAR':'Land / setbacks / no-build'):'Hall count';
  if(T&&n<want)warn.push({k:'land',t:`Land fits ${n} of ${want} halls: ${(itRaw).toFixed(1)} of ${Tsum.toFixed(1)} MW IT target (${bind})`});
  const roadW=Math.max(lane,26),loops=(useCampus?tfCampusLoops(C,B,roadW):[]).map(L=>({pts:L.pts.map(C.un),w:roadW,turn:L.turn}));

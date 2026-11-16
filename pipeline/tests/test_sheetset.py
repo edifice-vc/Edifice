@@ -405,6 +405,50 @@ return {rows,pdf:pub.pdf,svg,front:Z.front,overlays:Z.overlays,screen:Z.screenOk
         self.assertIn('LAYER', text)
         self.assertIsNone(TOKEN.search(text))
 
+    def test_label_boxes_miss_each_other_halls_and_the_legend(self):
+        # Four synthetic parcels, plus the diagonal sheet at 11x17. Text may sit inside
+        # the legend. It may not intersect another label, a hall roof, or the legend box.
+        r = js(r"""
+function rect(w,h){return [[0,0],[w,0],[w,h],[0,h],[0,0]]}
+function dem(R){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;R.forEach(p=>{x0=Math.min(x0,p[0]);y0=Math.min(y0,p[1]);x1=Math.max(x1,p[0]);y1=Math.max(y1,p[1])});
+ const nx=12,ny=12,dx=(x1-x0)/(nx-1),dy=(y1-y0)/(ny-1),G=[];for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)G.push(980+(x0+i*dx)*0.004-(y0+j*dy)*0.012);
+ return {nx,ny,X0:x0,Y0:y0,dx,dy,G,src:'synthetic'}}
+function solve(R,I,ctx){return tfDC(R,Object.assign({halls:16,hallW:250,hallL:800,stories:1,storyFt:42,wsf:200,pue:1.3,subAc:3,genAc:0.8,cool:'air',setF:50,setS:40,setR:40,lane:30,park:20,phases:2,rot:0,subPos:'auto',sw:'on'},I||{}),ctx||{})}
+function meta(R,name,extra){extra=extra||{};const xmax=Math.max.apply(null,R.map(p=>p[0])),ymax=Math.max.apply(null,R.map(p=>p[1]));
+ const roads=[{name:'KIOWA RD',row:80,L:[[-300,-70],[xmax+300,-70]],src:'TIGER'},{name:'77TH ST',row:60,L:[[-60,-200],[-60,ymax+200]],src:'TIGER'},{name:'77TH ST',row:60,L:[[-200,ymax+50],[xmax+200,ymax+80]],src:'TIGER'}];
+ return {polySrc:'parcel',bsrc:'synthetic',s:{name:name},zone:{has:true,district:'AG',use:'conditional',front:40,side:20,rear:20,cov:40,far:0.5,maxH:75,geomOk:true},
+  ext:{roads,flood:extra.flood||[],streams:[],tx:extra.tx||[{kv:345,row:175,L:[[-200,ymax+120],[xmax+200,ymax+160]],src:'HIFLD',owner:''}],topo:dem(R),places:[{name:'Synthetic town',ring:[[xmax+700,ymax*0.35],[xmax+2300,ymax*0.35],[xmax+2300,ymax*0.35+1200],[xmax+700,ymax*0.35+1200],[xmax+700,ymax*0.35]]}],src:{flood:'FEMA NFHL',tx:'HIFLD',topo:'USGS 3DEP'},errs:{}}}}
+const pond={ol:280,ow:180,ac:1.16,V:1};
+const Rd=[[0,0],[2000,0],[2080,2360],[360,2480],[0,2140],[0,0]];
+const eA=[80,40],eB=[1960,2320];
+const ld=(x,y)=>{const dx=eB[0]-eA[0],dy=eB[1]-eA[1];return Math.abs((x-eA[0])*dy-(y-eA[1])*dx)/Math.hypot(dx,dy)};
+const nbD=(x,y)=>ld(x,y)<90;
+const Rf=rect(2400,1800),flood=[[1500,1100],[2400,1100],[2400,1800],[1500,1800],[1500,1100]];
+const scenes=[
+ {id:'rect',papers:['ARCH_D'],r:solve(rect(2200,1400),{},{pondFix:pond,lowPt:[1900,180],linePt:[1100,1400]})},
+ {id:'lshape',papers:['ARCH_D'],r:solve([[0,0],[2600,0],[2600,780],[820,780],[820,2600],[0,2600],[0,0]],{setF:40,setS:40,setR:40},{pondFix:pond,lowPt:[2400,160],linePt:[200,2600]})},
+ {id:'diagonal',papers:['ARCH_D','TABLOID'],r:solve(Rd,{halls:16,setF:60,setS:40,setR:40},{pondFix:pond,lowPt:[1760,220],linePt:[1800,2400],nb:nbD,nbKind:(x,y)=>nbD(x,y)?1:0,tx:[{L:[[-100,2600],[2300,2550]],kv:345}]})},
+ {id:'flood',papers:['ARCH_D'],r:solve(Rf,{halls:16},{pondFix:pond,lowPt:[300,200],linePt:[2400,900],nb:(x,y)=>tfIn(x,y,flood),nbKind:(x,y)=>tfIn(x,y,flood)?2:0})}
+];
+const faults=[];
+scenes.forEach(sc=>{
+ const m=meta(sc.id==='flood'?Rf:sc.id==='diagonal'?Rd:sc.r.C.Q.map(sc.r.C.un),sc.id);
+ if(sc.id==='flood')m.ext.flood=[{zone:'AE',nb:true,bfe:912,R:[flood]}];
+ sc.papers.forEach(paper=>{const pack=ssCompose(sc.r,m,{paper,mode:'public',date:'2026-11-16'});
+  pack.sheets.forEach(sh=>{const f=ssLabelFaults(sh.ops);if(f.length)faults.push(sc.id+' '+paper+' '+sh.no+': '+f.slice(0,3).join(' / '))})});
+});
+const d=scenes.find(s=>s.id==='diagonal').r;
+const lens=[...new Set(d.halls.map(h=>Math.round(Math.max(h.hall[2],h.hall[3]))))];
+const ori=[...new Set(d.halls.map(h=>h.v?1:0))];
+return {faults,n:d.n,lens,ori,cov:d.k.cov};
+""")
+        self.assertEqual(r['faults'], [], r['faults'])
+        self.assertGreater(r['n'], 6, r)
+        self.assertEqual(r['ori'], [0])
+        self.assertTrue(set(r['lens']) <= {400, 500, 800}, r)
+        self.assertTrue(any(L < 800 for L in r['lens']), r)
+        self.assertGreater(r['cov'], 30, r)
+
 
 if __name__ == '__main__':
     unittest.main()
