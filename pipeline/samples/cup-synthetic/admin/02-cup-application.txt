@@ -1,0 +1,80 @@
+ADMIN — NOT FOR DISTRIBUTION.
+
+Conditional use permit application data sheet
+
+Draft data sheet. The field list follows a typical Kansas county conditional-use form: owner, representative, property, requested action, required documents, acknowledgment. It is not the jurisdiction's official form and generating it does not file anything. Issue date 2026-11-15.
+
+Jurisdiction: Shawnee County, KS [AUTO · deal record county]
+
+Property Owner Information
+
+Every owner of record has to be confirmed by title work. A deal record often names one owner. This sheet does not drop the others; it says they are to be confirmed.
+
+- Applicant type: TBD [TBD · the deal record does not say owner, applicant, or representative]
+- Owner name: Sample Holdings LLC [AUTO · deal record owner field]
+- Owner mailing address: 1 Example Street, Example, KS 66000 [AUTO · deal record owner mailing address]
+- Owner phone: TBD [TBD · deal record owner phone]
+- Owner email: TBD [TBD · deal record owner email]
+- Other owners of record: To be ordered (survey / title commitment) [TO BE ORDERED · title commitment. Do not assume the single name above is the only owner.]
+
+Representative Information
+
+The civil or land-use representative is not stored on the deal. No name is invented.
+
+- Representative first name: TBD [TBD · not in the deal record]
+- Representative last name: TBD [TBD · not in the deal record]
+- Representative address: TBD [TBD · not in the deal record]
+- Representative city: TBD [TBD · not in the deal record]
+- Representative state: TBD [TBD · not in the deal record]
+- Representative zip: TBD [TBD · not in the deal record]
+- Representative phone: TBD [TBD · not in the deal record]
+- Representative email: TBD [TBD · not in the deal record]
+- Representative business: TBD [TBD · not in the deal record]
+
+Property Information
+
+- Property address: 1000 Sample Road, Example, KS, 66000, Shawnee County [AUTO · deal record address. Unplatted land often has no street number; do not invent one.]
+- Parcel IDs (all): SYN-100-200-300; SYN-100-200-301 [AUTO · deal record parcels. Every id is listed, not only the first.]
+- Quick reference numbers (all): QREF-SYN-1; TBD [AUTO · deal record quick ref. A parcel with no quick ref is marked TBD inside the list and is not copied from the parcel id.]
+- Subdivision: TBD [TBD · not on the deal record. Do not enter NA unless the record says the land is unplatted.]
+- Block: TBD [TBD · not on the deal record]
+- Lot: TBD [TBD · not on the deal record]
+- Acreage on the form: 42.50 acres, assessor area [AUTO · deal record acres, labeled assessor area]
+- Surveyed acreage: To be ordered (survey / title commitment) [TO BE ORDERED · boundary / ALTA survey]
+- Existing use: pasture [AUTO · deal record existing use. Confirm in the field.]
+- Existing structures: TBD [TBD · deal record structures. A survey should confirm what is on the ground.]
+- Unique features: Floodplain: 3.5% in the deal-record FEMA summary, zone AE. Screening-grade. Steep slopes are TBD unless a survey measures them. [AUTO · deal record floodplain and, if present, Site Planning SFHA acres]
+
+Requested Action
+
+- Requested action: Conditional use permit [AUTO · zoning record status: conditional]
+- Is this an amendment: TBD [TBD · not on the deal record]
+- Current zoning: I-2 [AUTO · zoning record]
+- Proposed conditional use: Data center [ASSUMED · Site Planning program]
+- Why the current zoning is or is not the right fit: This draft does not argue that the zoning is a poor fit. The district and the use status are the tagged fields above. Whether a conditional use is available, and whether a rezoning is unnecessary, is for the jurisdiction. [ASSUMED · drafted from the tagged zoning fields; not a staff report]
+- How long the property has been in the current zoning: TBD [TBD · not on the deal record]
+- Zoning and use of nearby properties: TBD [TBD · deal record adjoining-use note]
+- Effect on nearby properties: TBD [TBD · not assessed in the deal record. Concept-plan setbacks are in the operations plan. They are not a compatibility finding.]
+- Will the conditional use improve public health, safety, or welfare: TBD [TBD · the deal record does not support a yes or no. Traffic, stormwater, noise, and lighting studies are to be ordered.]
+
+Required Documents
+
+Checked means the file is in this draft packet. A concept plan and these drafts are not the filing-grade set.
+
+Item | Status | In this draft
+Site plan | To be ordered (survey / title commitment) [TO BE ORDERED · Concept plan exists only when Site Planning has an outline. Filing-grade boundary, easements, and right-of-way need a survey and a title commitment.] | No — not a filed exhibit
+Legal description | To be ordered (survey / title commitment) [TO BE ORDERED · The draft in this packet. A licensed surveyor description is still to be ordered.] | No — not a filed exhibit
+Operations plan | To be ordered [TO BE ORDERED · The draft in this packet.] | No — not a filed exhibit
+Recorded deed | To be ordered (survey / title commitment) [TO BE ORDERED · Current vesting deed for every parcel.] | No — not a filed exhibit
+Owner authorization | To be ordered (survey / title commitment) [TO BE ORDERED · Names can be pre-filled. The owner or an authorized officer must sign. This app does not sign.] | No — not a filed exhibit
+Title commitment | To be ordered (survey / title commitment) [TO BE ORDERED · Easements and exceptions of record.] | No — not a filed exhibit
+Boundary / ALTA survey | To be ordered (survey / title commitment) [TO BE ORDERED · Not in the record.] | No — not a filed exhibit
+
+Acknowledgment
+
+- Acknowledgment checkbox: TBD [TBD · not signed. Generating this sheet does not authorize a filing.]
+- Authorized signature: TBD [TBD · the deal app cannot sign]
+- Print name: TBD [TBD · not stored as a filer]
+- Signature date: TBD [TBD · not signed]
+
+Exhibit index: see the operations plan. Letters A through M in that draft are this packet's index, each to be ordered.

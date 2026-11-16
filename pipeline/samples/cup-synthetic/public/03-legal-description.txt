@@ -1,0 +1,50 @@
+DRAFT — NOT A SURVEY. Boundary/ALTA survey by a Kansas PLS to be ordered.
+
+PUBLIC EXPORT. MW, generator counts, water volumes, parcel IDs, and owner names are withheld.
+
+Draft legal description
+
+Project: Sample Ridge [AUTO · deal record name]
+
+Location named on the deal: 1000 Sample Road, Example, KS, 66000, Shawnee County [AUTO · deal record address]
+
+Calls are grid bearings and grid distances on Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet. Vertices are the parcel outline as stored, used as NAD83 geographic positions with no datum shift. Distances are not ground distances.
+
+Point of beginning
+
+Point of beginning: P1, Easting 1,937,063.38 ft, Northing 268,604.77 ft, Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet. This is not a monument and it is not a section corner. [AUTO · first stored vertex, projected to Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet]
+
+Calls
+
+Calls follow stored vertex order and return to P1. Bearings are grid bearings from grid north. Distances are grid distances in US survey feet.
+
+Course 1 (P1 to P2): N 87°20'17" E, 1,808.81 ft [AUTO · Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the description]
+
+Course 2 (P2 to P3): N 23°38'10" E, 949.71 ft [AUTO · Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the description]
+
+Course 3 (P3 to P4): N 66°27'58" W, 1,661.73 ft [AUTO · Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the description]
+
+Course 4 (P4 to P5): S 51°08'59" W, 987.13 ft [AUTO · Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the description]
+
+Course 5 (P5 to P1): S 5°59'03" E, 1,003.81 ft [AUTO · Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet, grid distance, screening-grade until a Kansas PLS signs the description]
+
+Closure of the printed calls: 0.01 ft. Bearings are rounded to the nearest second and distances to 0.01 ft. This is the misclosure of those printed calls, not a field-traverse closure. [AUTO · sum of the printed grid courses]
+
+Area statement
+
+Grid area: Said outline contains 2,638,682 square feet, 60.58 acres, more or less, on the North Zone grid. [AUTO · shoelace of the State Plane grid coordinates. Not a surface area.]
+
+Assessor area, stated separately: 42.50 acres. Not used as the grid area above. [AUTO · deal record acres]
+
+Basis of bearings and grid versus surface
+
+- Basis of bearings: Grid bearings of the Kansas State Plane NAD 83, North Zone, EPSG:3419, US survey feet. Lambert conformal conic, GRS 80, NAD 83. Distances in the calls are grid distances, US survey feet, not ground distances. [AUTO · EPSG:3419, county Shawnee]
+- Combined factor, grid to surface: TBD [TBD · to be confirmed by a Kansas PLS. Ground distance = grid distance / combined factor. Surface distances are not stated.]
+
+Exceptions, deeds, and title
+
+- Assessor or deed aliquot text: Synthetic aliquot only: a portion of Section 99, Township 99 South, Range 99 East. Not a real description. [AUTO · deal record PLSS or deed text. It is not a substitute for the surveyed metes and bounds.]
+- Less-and-except tracts, easements, and reservations: To be ordered (survey / title commitment) [TO BE ORDERED · GIS bands in Site Planning are not recited. Easements of record come from title work.]
+- Recorded vesting deeds: To be ordered (survey / title commitment) [TO BE ORDERED · title commitment and the register of deeds, one current deed per parcel, without unrelated tracts]
+
+DRAFT — NOT A SURVEY. Boundary/ALTA survey by a Kansas PLS to be ordered.
