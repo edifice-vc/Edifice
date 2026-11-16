@@ -352,6 +352,32 @@ test('site_plans_saved: admins create, members read non-restricted only, nobody 
   await assertFails(deleteDoc(doc(as(EDITOR), 'site_plans_saved', 's1__abc123')));
   await assertSucceeds(deleteDoc(doc(A, 'site_plans_saved', 's1__abc123')));
 });
+const planSet = (by, extra = {}) => Object.assign({
+  site_id: 's1',
+  cfg: { projectNo: 'P1', projectName: 'Synthetic', address: 'TBD', client: 'TERRAFICE', civil: 'TBD', designTeam: 'EDIFICE', designSet: 'SCHEMATIC', issuedFor: 'PRELIMINARY', jurisdiction: 'TBD' },
+  rev: [{ n: 0, text: 'Preliminary issue', date: '2026-11-15' }],
+  inputs: { note: '' },
+  restricted: false, by, ts: serverTimestamp()
+}, extra);
+test('site_plan_sets: admins create and append revisions; nobody else reads or writes', async () => {
+  const A = as(ADMIN);
+  await assertSucceeds(setDoc(doc(A, 'site_plan_sets', 's1__ab12'), planSet(ADMIN)));
+  await assertSucceeds(updateDoc(doc(A, 'site_plan_sets', 's1__ab12'), { rev: [{ n: 0, text: 'Preliminary issue', date: '2026-11-15' }, { n: 1, text: 'Added a note', date: '2026-11-16' }], by: ADMIN, ts: serverTimestamp() }));
+  await assertFails(updateDoc(doc(A, 'site_plan_sets', 's1__ab12'), { rev: [{ n: 9, text: 'Replaced history', date: '2026-11-17' }], by: ADMIN, ts: serverTimestamp() }));
+  await assertFails(updateDoc(doc(A, 'site_plan_sets', 's1__ab12'), { cfg: { projectNo: 'P2' }, by: ADMIN, ts: serverTimestamp() }));
+  await assertFails(setDoc(doc(A, 'site_plan_sets', 's1__nope'), planSet(EDITOR)));
+  await assertFails(setDoc(doc(A, 'site_plan_sets', 's2__ab12'), planSet(ADMIN)));
+  await assertFails(setDoc(doc(A, 'site_plan_sets', 's1__ab13'), planSet(ADMIN, { extra: 1 })));
+  await assertFails(setDoc(doc(as(EDITOR), 'site_plan_sets', 's1__ab14'), planSet(EDITOR)));
+  for (const e of [EDITOR, VIEWER, STRANGER]) {
+    await assertFails(getDoc(doc(as(e), 'site_plan_sets', 's1__ab12')));
+    await assertFails(getDocs(collection(as(e), 'site_plan_sets')));
+  }
+  await assertSucceeds(getDoc(doc(A, 'site_plan_sets', 's1__ab12')));
+  await assertFails(deleteDoc(doc(as(EDITOR), 'site_plan_sets', 's1__ab12')));
+  await assertSucceeds(deleteDoc(doc(A, 'site_plan_sets', 's1__ab12')));
+});
+
 test('utilities are admin-read only and never client-written', async () => {
   await env.withSecurityRulesDisabled(async (c) => { await setDoc(doc(c.firestore(), 'utilities', 's1'), { j: '{}', h: 'x', src: 'local-gis', fetched_at: '2026-11-08' }); });
   await assertSucceeds(getDoc(doc(as(ADMIN), 'utilities', 's1')));
