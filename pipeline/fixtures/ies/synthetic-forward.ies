@@ -1,0 +1,14 @@
+IESNA:LM-63-2002
+[TEST] SYNTHETIC asymmetric forward throw. Public-domain test file.
+[MANUFAC] Edifice screening library
+[LUMCAT] SYN-FWD
+[LUMINAIRE] Synthetic quadrant-symmetric forward throw for parser tests
+[OTHER] Not a measured photometric file.
+TILT=NONE
+1 10000 1.0 3 3 1 1 0.5 0.5 0.1
+1.0 1.0 100
+0 45 90
+0 45 90
+8000 6000 0
+8000 3000 0
+8000 1000 0

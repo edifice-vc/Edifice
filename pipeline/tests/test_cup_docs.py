@@ -276,10 +276,12 @@ class CupDocs(unittest.TestCase):
         ui = (ROOT / "pipeline" / "testfit_ui.js").read_text()
         render = (ROOT / "pipeline" / "render.py").read_text()
         self.assertIn('id="tfCup"', ui)
+        self.assertIn('id="tfSet"', ui)
+        self.assertIn("function ssOpen", ui)
         self.assertIn("cupFromPlan", ui)
         self.assertIn("isAdm", ui)
         self.assertNotIn("sheet.js", ui[ui.find("tfCup") - 80:ui.find("tfCup") + 40])
-        i = render.find('"sheet.js", "cup_spcs.js", "cup_docs.js", "testfit_ui.js"')
+        i = render.find('"sheet.js", "sheetset.js", "los.js", "los3d.js", "cup_spcs.js", "cup_docs.js", "testfit_ui.js"')
         self.assertGreater(i, 0)
         # the plan-sheet file is not where this packet is implemented
         self.assertNotIn("cupPacket", (ROOT / "pipeline" / "sheet.js").read_text())
