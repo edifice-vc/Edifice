@@ -90,10 +90,11 @@ def _read(name):
         return f.read()
 
 def _testfit(tpl):
-    """Inline the Site Plan configurator (civil_ref.json, planEditSchema.js, testfit.js, civil.js, testfit_ui.js) at the template marker."""
+    """Inline the Site Plan configurator (civil_ref.json, planEditSchema.js, testfit.js, civil.js, sheet.js, sheetset.js, testfit_ui.js) at the template marker. Screening engines follow the sheet UI so the preview can wrap tfDraw."""
     ref = _read("civil_ref.json").strip()  # public NOAA Atlas 14 grid + FAA runways
-    files = ("planEditSchema.js", "testfit.js", "civil.js", "sheet.js", "testfit_ui.js") + SCREENING_JS
-    js = "const CV_REF=" + ref.replace("</", "<\\/") + ";\n" + "\n".join(_read(f) for f in files)
+    chk = _read("jurisdiction_checklists.json").strip()
+    files = ("planEditSchema.js", "testfit.js", "civil.js", "sheet.js", "sheetset.js", "testfit_ui.js") + SCREENING_JS
+    js = "const CV_REF=" + ref.replace("</", "<\\/") + ";\nconst SS_CHECKLISTS=" + chk.replace("</", "<\\/") + ";\n" + "\n".join(_read(f) for f in files)
     if tpl.count("/*__TESTFIT__*/") != 1:
         sys.exit("[render] template layout changed: cannot find the /*__TESTFIT__*/ marker")
     return tpl.replace("/*__TESTFIT__*/", js)

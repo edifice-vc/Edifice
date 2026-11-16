@@ -326,6 +326,21 @@ async function boot(user, email, me0) {
       if (role !== 'admin') return Promise.reject(new Error('admins only'));
       return setDoc(doc(db, 'site_constraints', siteId), { j: JSON.stringify(obj), restricted: !!restricted, by: email, ts: serverTimestamp() });
     },
+    // Plan-set revision log and design inputs. Admin only. PDFs are not stored here; they download to the browser.
+    // Rules are in firebase/firestore.rules. They are not deployed by the app; see pipeline/deploy_rules.py.
+    planSets: siteId => role !== 'admin' ? Promise.resolve([])
+      : getDocs(query(collection(db, 'site_plan_sets'), where('site_id', '==', siteId)))
+        .then(q => q.docs.map(d => { const x = d.data(); return Object.assign({ id: d.id }, x, { ts: x.ts && x.ts.toDate ? x.ts.toDate().toISOString() : '' }); })
+          .sort((a, b) => String(b.ts).localeCompare(String(a.ts)))),
+    savePlanSet(d) {
+      if (role !== 'admin') return Promise.reject(new Error('admins only'));
+      const id = d.site_id + '__' + Date.now().toString(36);
+      return setDoc(doc(db, 'site_plan_sets', id), { site_id: d.site_id, cfg: d.cfg, rev: d.rev, inputs: d.inputs || { note: '' }, restricted: !!d.restricted, by: email, ts: serverTimestamp() }).then(() => id);
+    },
+    appendPlanSetRev(id, rev) {
+      if (role !== 'admin') return Promise.reject(new Error('admins only'));
+      return updateDoc(doc(db, 'site_plan_sets', id), { rev, by: email, ts: serverTimestamp() });
+    },
     // Zoneomics zoning (licensed, ADMIN-ONLY, never redistributed): one doc read per opened site, never bulk-fetched.
     zoning: siteId => role !== 'admin' ? Promise.resolve(null)
       : getDoc(doc(db, 'zoning', siteId)).then(d => d.exists() ? JSON.parse(d.data().j) : null).catch(() => null),

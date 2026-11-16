@@ -1,0 +1,31 @@
+{
+  "id": "shawnee-county-ks-sec-39.05",
+  "citation": "Shawnee County Zoning Regulations, Article 39, Sec. 39.05(a)(1)-(24)",
+  "note": "Short checklist labels for the auto-check. These are pointers to the code sections, not the regulation text.",
+  "items": [
+    {"n": 1, "title": "Preparer signature block"},
+    {"n": 2, "title": "Title centered at the top"},
+    {"n": 3, "title": "Sheet at least 24 by 36 inches"},
+    {"n": 4, "title": "North arrow, date, and vicinity map"},
+    {"n": 5, "title": "Electronic copy"},
+    {"n": 6, "title": "Boundary dimensions, legal description, written and graphic scale"},
+    {"n": 7, "title": "Contours at 2 feet or closer"},
+    {"n": 8, "title": "Utilities and easements"},
+    {"n": 9, "title": "Drainage arrows, ponds, and a site summary table"},
+    {"n": 10, "title": "Structures with stories, floor area, and entrances"},
+    {"n": 11, "title": "Curb cuts, radii, aisles, parking including accessible stalls, and loading"},
+    {"n": 12, "title": "Screen walls and fences, with height and material"},
+    {"n": 13, "title": "Surfacing"},
+    {"n": 14, "title": "Streets and right-of-way"},
+    {"n": 15, "title": "Landscape schedule"},
+    {"n": 16, "title": "Signage"},
+    {"n": 17, "title": "Parking dimensions"},
+    {"n": 18, "title": "Lighting"},
+    {"n": 19, "title": "Trash screening"},
+    {"n": 20, "title": "Plat restrictions"},
+    {"n": 21, "title": "Floodplain and base flood elevation"},
+    {"n": 22, "title": "On-site sewage"},
+    {"n": 23, "title": "Open space"},
+    {"n": 24, "title": "Drainage report"}
+  ]
+}

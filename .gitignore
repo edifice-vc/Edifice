@@ -19,6 +19,7 @@ node_modules/
 .firebase/
 !pipeline/everstow_score.json
 !pipeline/everstow_permits.json
+!pipeline/jurisdiction_checklists.json
 !sunflower/layers/bgpop.json
 # OSI memory: confidential model, local state and the drop folder never leave the box
 osi/private/
