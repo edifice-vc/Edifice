@@ -46,6 +46,8 @@ function shSlope(G,nx,ny,X0,Y0,dx,dy,keep){let s=0,n=0,mx=0,lo=Infinity,hi=-Infi
 function shWrap(t,n){t=String(t);if(t.length<=n)return [t];const o=[];let cur=t;while(cur.length>n){let k=cur.lastIndexOf(' ',n);if(k<n*.5)k=n;o.push(cur.slice(0,k).replace(/\s+$/,''));cur='  '+cur.slice(k).replace(/^\s+/,'')}if(cur.trim())o.push(cur);return o}
 // Deterministic 0..1 field used for the muted aerial wash. Not a photo.
 function shHash(i,j){const n=Math.sin(i*12.9898+j*78.233)*43758.5453;return n-Math.floor(n)}
+function shSmooth(x,y){const x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0,s=t=>t*t*(3-2*t),u=s(fx),v=s(fy),n=(i,j)=>shHash(((i%2048)+2048)%2048,((j%2048)+2048)%2048);
+ return n(x0,y0)*(1-u)*(1-v)+n(x0+1,y0)*u*(1-v)+n(x0,y0+1)*(1-u)*v+n(x0+1,y0+1)*u*v}
 function shGround(t){const a=[0.86,0.87,0.80],b=[0.74,0.76,0.67];return a.map((v,i)=>v+(b[i]-v)*t)}
 function shHex(rgb){return '#'+rgb.map(v=>Math.round(Math.max(0,Math.min(1,v))*255).toString(16).padStart(2,'0')).join('')}
 // One label per road name unless the same name is a different road, far from the one already kept.

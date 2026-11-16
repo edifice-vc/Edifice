@@ -167,7 +167,7 @@ function ssScaleLabel(scale, scales, paperId) {
 function ssMap(extent, view, scale) {
   const ppf = 72 / scale, gw = extent.w * ppf, gh = extent.h * ppf;
   const ox = view.x + (view.w - gw) / 2, oy = view.y + (view.h - gh) / 2;
-  return {ppf, X: e => ox + (e - extent.x0) * ppf, Y: n => oy + (n - extent.y0) * ppf};
+  return {ppf, ox, oy, X: e => ox + (e - extent.x0) * ppf, Y: n => oy + (n - extent.y0) * ppf, invX: x => extent.x0 + (x - ox) / ppf, invY: y => extent.y0 + (y - oy) / ppf};
 }
 
 function ssDraw() {
@@ -504,62 +504,97 @@ function ssViewTitle(d, paper, chrome, o) {
 function ssHeadTitle(d, paper, chrome, title) {
   d.text(chrome.view.x + chrome.view.w / 2, paper.h - chrome.m - 16, title, {size: 12, pen: 'TEXT', anchor: 'middle', font: 'sans'});
 }
-function ssLegend(d, chrome) {
-  const items = [['Phase 1 hall', [0.5, 0.48, 0.44]], ['Phase 2 hall', [0.84, 0.82, 0.76]], ['Yard / gravel', [0.73, 0.7, 0.63]], ['Chiller yard', [0.76, 0.74, 0.68]], ['Parking', [0.8, 0.79, 0.75]], ['Ring road', [0.82, 0.8, 0.76]], ['Detention', [0.7, 0.84, 0.91]], ['Easement', [0.93, 0.74, 0.78]], ['Security fence', [0.12, 0.12, 0.12]]];
-  const w = 148, h = 16 + items.length * 11, x = chrome.view.x + chrome.view.w - w - 10, y = chrome.view.y + chrome.view.h - h - 10;
+function ssPt(paper, n) {const id = paper && paper.id; if (id === 'TABLOID') return Math.max(9, n); if (id === 'ARCH_E') return Math.max(11, n + 2); return Math.max(10, n + 1)}
+const SS_FACE = ['Gross area', 'Net developable', 'Building area', 'Building floor area', 'Paved area', 'Gravel area', 'Vegetated area', 'Height provided', 'Height limit', 'Parking stalls', 'Impervious', 'Detention storage', 'Floodplain', 'Zoning district'];
+const SS_FILL = {hall1: [0.55, 0.53, 0.49], hall2: [0.8, 0.78, 0.73], yard: [0.84, 0.74, 0.52], chill: [0.72, 0.78, 0.74], park: [0.7, 0.7, 0.68], road: [0.55, 0.53, 0.5], pond: [0.62, 0.78, 0.86], ease: [0.93, 0.74, 0.78], fence: [0.1, 0.1, 0.1]};
+function ssLegend(d, chrome, paper) {
+  const items = [['Phase 1 hall', SS_FILL.hall1], ['Phase 2 hall', SS_FILL.hall2], ['Yard', SS_FILL.yard], ['Chiller yard', SS_FILL.chill], ['Parking', SS_FILL.park], ['Ring road', SS_FILL.road], ['Detention', SS_FILL.pond], ['Easement', SS_FILL.ease], ['Fence', SS_FILL.fence]];
+  const size = ssPt(paper, 7), w = 156, h = 18 + items.length * (size + 4);
+  const x = chrome.view.x + 8, y = chrome.view.y + 8;
   d.rect(x, y, w, h, 'TITLE', {fill: true, fillRgb: [0.985, 0.98, 0.965]});
-  d.text(x + 6, y + h - 12, 'LEGEND', {size: 7, pen: 'TEXT', font: 'sans'});
-  items.forEach((it, i) => {const yy = y + h - 24 - i * 11; d.rect(x + 6, yy, 11, 8, 'BUILDING', {fill: true, fillRgb: it[1]}); d.text(x + 22, yy + 1, it[0], {size: 6.5, pen: 'TEXT'})});
+  d.text(x + 6, y + h - size - 2, 'LEGEND', {size: size + 1, pen: 'TEXT', font: 'sans'});
+  items.forEach((it, i) => {const yy = y + h - (size + 8) - i * (size + 4); d.rect(x + 6, yy, 12, size, 'BUILDING', {fill: true, fillRgb: it[1]}); d.text(x + 24, yy + 1, it[0], {size, pen: 'TEXT'})});
 }
 
-function ssSummaryBlock(d, rows, mode, x, yTop, width) {
-  const shown = rows.filter(r => mode === 'admin' || !r.sensitive);
-  d.text(x, yTop, 'SITE SUMMARY', {size: 9, pen: 'TEXT', font: 'sans'});
-  d.text(x, yTop - 12, 'Sec. 39.05(a)(9)', {size: 7, pen: 'TEXT'});
-  d.text(x, yTop - 23, '[Z]oning  [C]ounty GIS  [F]EMA  [N]HD  [T]IGER  [H]IFLD  [O]SM  [U]SGS  [A]ssumed', {size: 6, pen: 'TEXT'});
-  let y = yTop - 32;
-  d.line(x, y + 8, x + width - 6, y + 8, 'TITLE');
-  shown.forEach(r => {
-    d.line(x, y - 2, x + width - 6, y - 2, 'TITLE');
-    d.text(x + 2, y - 11, r.print, {size: 6.5, pen: 'TEXT', tags: r.sensitive ? [r.sensitive] : []});
-    y -= 13;
-  });
-  d.line(x, y + 2, x + width - 6, y + 2, 'TITLE');
-  return y;
+function ssSummaryBlock(d, rows, mode, x, yTop, width, paper) {
+  const face = new Set(SS_FACE);
+  const shown = rows.filter(r => (mode === 'admin' || !r.sensitive) && face.has(r.label));
+  const size = ssPt(paper, 8), rowH = size * 2 + 8, cols = width > 320 ? 2 : 1;
+  const per = Math.ceil(shown.length / cols) || 1, cw = (width - 8) / cols;
+  d.text(x, yTop, 'SITE SUMMARY', {size: size + 2, pen: 'TEXT', font: 'sans'});
+  d.text(x, yTop - size - 4, 'Sec. 39.05(a)(9)', {size, pen: 'TEXT'});
+  let bottom = yTop;
+  for (let c = 0; c < cols; c++) {
+    let y = yTop - (size + 4) * 2;
+    shown.slice(c * per, (c + 1) * per).forEach(r => {
+      d.line(x + c * cw, y + size + 2, x + (c + 1) * cw - 8, y + size + 2, 'TITLE');
+      d.text(x + c * cw + 2, y, r.label, {size, pen: 'TEXT', font: 'sans'});
+      d.text(x + (c + 1) * cw - 10, y - size - 1, r.value, {size, pen: 'TEXT', anchor: 'end'});
+      y -= rowH;
+    });
+    bottom = Math.min(bottom, y);
+  }
+  return bottom;
 }
 
 function ssVicinity(d, ext, extent, box) {
   const roads = (ext && ext.roads) || [], places = (ext && ext.places) || [];
-  d.rect(box.x, box.y, box.w, box.h, 'VICINITY', {fill: true, fillRgb: [0.97, 0.96, 0.94]});
-  d.text(box.x + 6, box.y + box.h - 11, 'VICINITY', {size: 7, pen: 'TEXT'});
-  d.text(box.x + box.w - 6, box.y + box.h - 11, 'N', {size: 7, pen: 'TEXT', anchor: 'end'});
+  const size = Math.max(8, Math.min(11, box.w / 28));
+  d.rect(box.x, box.y, box.w, box.h, 'VICINITY', {fill: true, fillRgb: [0.93, 0.94, 0.9]});
+  d.text(box.x + 8, box.y + box.h - size - 2, 'VICINITY', {size: size + 1, pen: 'TEXT', font: 'sans'});
   const note = !roads.length ? 'TIGER roads not loaded' : (places.length ? '[T] Census TIGER roads and places' : '[T] Census TIGER roads. City limits: TBD');
-  d.text(box.x + 6, box.y + 6, note.slice(0, 48), {size: 6, pen: 'TEXT'});
-  d.text(box.x + 6, box.y + 16, 'NOT TO SCALE', {size: 6, pen: 'TEXT'});
+  d.text(box.x + 8, box.y + 8, note.slice(0, 56), {size: Math.max(8, size - 1), pen: 'TEXT'});
+  d.text(box.x + 8, box.y + 8 + size + 2, 'NOT TO SCALE', {size: Math.max(8, size - 1), pen: 'TEXT'});
   const pts = [];
   const push = p => {if (p && isFinite(p[0]) && isFinite(p[1])) pts.push(p)};
   roads.forEach(o => (o.L || []).forEach(push));
   places.forEach(o => (o.ring || []).forEach(push));
   extent.ring.forEach(push);
+  const nx = box.x + box.w - 22, ny = box.y + box.h - 36;
+  d.poly([[nx, ny + 18], [nx - 7, ny], [nx + 7, ny]], 'TEXT', {fill: true, fillRgb: [0.1, 0.1, 0.1]});
+  d.text(nx, ny + 22, 'N', {size: size + 2, pen: 'TEXT', anchor: 'middle', font: 'sans'});
   if (pts.length < 2) {d.rect(box.x, box.y, box.w, box.h, 'VICINITY'); return}
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   pts.forEach(p => {x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1])});
-  const pad = Math.max(x1 - x0, y1 - y0) * 0.08 + 20; x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
-  const sc = Math.min((box.w - 12) / (x1 - x0 || 1), (box.h - 28) / (y1 - y0 || 1));
-  const X = e => box.x + 6 + (e - x0) * sc, Y = n => box.y + 20 + (n - y0) * sc;
+  const span = Math.max(x1 - x0, y1 - y0, 400), pad = span * 0.45; x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+  const sc = Math.min((box.w - 16) / (x1 - x0 || 1), (box.h - 36) / (y1 - y0 || 1));
+  const X = e => box.x + 8 + (e - x0) * sc, Y = n => box.y + 28 + (n - y0) * sc;
   d.clip(box.x + 1, box.y + 1, box.w - 2, box.h - 2);
-  places.forEach(o => {const ring = o.ring || []; if (ring.length > 2) d.poly(ring.map(p => [X(p[0]), Y(p[1])]), 'VICINITY', {fill: false})});
-  roads.forEach(o => {const L = o.L || []; if (L.length > 1) d.poly(L.map(p => [X(p[0]), Y(p[1])]), 'ROAD', {open: true})});
-  if (extent.ring.length > 2) d.poly(extent.ring.map(p => [X(p[0]), Y(p[1])]), 'BOUNDARY');
+  places.forEach(o => {
+    const ring = o.ring || [];
+    if (ring.length > 2) d.poly(ring.map(p => [X(p[0]), Y(p[1])]), 'VICINITY', {fill: true, fillRgb: [0.86, 0.88, 0.82]});
+    if (o.name && ring.length) {let sx = 0, sy = 0; ring.forEach(p => {sx += p[0]; sy += p[1]}); d.text(X(sx / ring.length), Y(sy / ring.length), String(o.name).toUpperCase().slice(0, 22), {size, pen: 'TEXT', anchor: 'middle', font: 'sans'})}
+  });
+  roads.forEach(o => {
+    const L = o.L || [];
+    for (let i = 1; i < L.length; i++) d.poly(shBand(L[i - 1], L[i], Math.max(36, (o.row || 60) * 0.35)).map(p => [X(p[0]), Y(p[1])]), 'ROAD', {fill: true, fillRgb: [0.42, 0.42, 0.42]});
+    if (o.name && L.length > 1) {const a = L[0], b = L[L.length - 1], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; d.text(X(mx), Y(my) + size, String(o.name).toUpperCase().slice(0, 18), {size, pen: 'TEXT', anchor: 'middle'})}
+  });
+  if (extent.ring.length > 2) {d.poly(extent.ring.map(p => [X(p[0]), Y(p[1])]), 'BOUNDARY', {fill: true, fillRgb: [0.96, 0.94, 0.9]}); d.poly(extent.ring.map(p => [X(p[0]), Y(p[1])]), 'BOUNDARY')}
   d.unclip();
   d.rect(box.x, box.y, box.w, box.h, 'VICINITY');
 }
 
-function ssWash(d, extent, map) {
-  const nx = 28, ny = 18, cw = extent.w / nx, ch = extent.h / ny;
+function ssShade(topo, x, y) {
+  if (topo && topo.G && topo.nx > 1 && topo.ny > 1 && topo.dx) {
+    const fx = (x - topo.X0) / topo.dx, fy = (y - topo.Y0) / topo.dy;
+    const i = Math.max(0, Math.min(topo.nx - 2, Math.floor(fx))), j = Math.max(0, Math.min(topo.ny - 2, Math.floor(fy)));
+    const u = Math.max(0, Math.min(1, fx - i)), v = Math.max(0, Math.min(1, fy - j)), z = (a, b) => topo.G[b * topo.nx + a];
+    const z00 = z(i, j), z10 = z(i + 1, j), z01 = z(i, j + 1), z11 = z(i + 1, j + 1);
+    if ([z00, z10, z01, z11].every(q => q != null && isFinite(q))) {
+      const zx = ((z10 - z00) * (1 - v) + (z11 - z01) * v) / topo.dx, zy = ((z01 - z00) * (1 - u) + (z11 - z10) * u) / topo.dy;
+      const hill = 0.5 + 0.5 * ((-0.55 * zx + 0.75 * zy) / Math.sqrt(1 + zx * zx + zy * zy));
+      return Math.max(0, Math.min(1, 0.25 + hill * 0.45 + shSmooth(x / 900, y / 900) * 0.08));
+    }
+  }
+  return 0.28 + shSmooth(x / 700, y / 700) * 0.22 + shSmooth(x / 220 + 3, y / 260) * 0.08;
+}
+function ssWash(d, view, map, topo) {
+  if (!view || !map || !map.invX) return;
+  const nx = 110, ny = 72, cw = view.w / nx, ch = view.h / ny;
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
-    const t = shHash(i + 2, j + 4);
-    d.rect(map.X(extent.x0 + i * cw), map.Y(extent.y0 + j * ch), cw * map.ppf + 0.4, ch * map.ppf + 0.4, 'AERIAL', {fill: true, fillRgb: shGround(t)});
+    const px = view.x + (i + 0.5) * cw, py = view.y + (j + 0.5) * ch;
+    d.rect(view.x + i * cw, view.y + j * ch, cw + 0.4, ch + 0.4, 'AERIAL', {fill: true, fillRgb: shGround(ssShade(topo, map.invX(px), map.invY(py)))});
   }
 }
 function ssHatch(d, pts, pen, step) {
@@ -582,12 +617,12 @@ function ssWorldBand(d, pts, halfFt, map, pen, fill) {
 }
 function ssPlan(d, r, meta, map, mode, opt) {
   opt = opt || {};
-  const quiet = !!opt.quiet;
+  const quiet = !!opt.quiet, paper = opt.paper, labelPt = ssPt(paper, 8);
   const ext = meta.ext || {}, un = r.C.un, N = meta.N || {segs: [], polys: []};
   const extent = ssExtent(r);
-  ssWash(d, extent, map);
+  const view = opt.view || {x: map.X(extent.x0), y: map.Y(extent.y0), w: extent.w * map.ppf, h: extent.h * map.ppf};
+  ssWash(d, view, map, ext.topo);
   const ring = extent.ring;
-  if (ring.length > 2) d.poly(ring.map(p => [map.X(p[0]), map.Y(p[1])]), 'AERIAL', {fill: true, fillRgb: [0.96, 0.95, 0.92]});
   const T = ext.topo;
   if (T && T.G && T.G.length === T.nx * T.ny) {
     const slope = shSlope(T.G, T.nx, T.ny, T.X0, T.Y0, T.dx, T.dy);
@@ -602,8 +637,9 @@ function ssPlan(d, r, meta, map, mode, opt) {
   (ext.streams || []).forEach(L => {if (L && L.length > 1) {for (let i = 1; i < L.length; i++) d.poly(shBand(L[i - 1], L[i], ext.streamBuf || 50).map(p => [map.X(p[0]), map.Y(p[1])]), 'STREAM', {fill: true, fillRgb: [0.7, 0.84, 0.92]}); d.poly(L.map(p => [map.X(p[0]), map.Y(p[1])]), 'STREAM', {open: true})}});
   (ext.tx || []).forEach(o => {if (!(o.L && o.L.length > 1)) return; const half = (o.row || 100) / 2; for (let i = 1; i < o.L.length; i++) d.poly(shBand(o.L[i - 1], o.L[i], half).map(p => [map.X(p[0]), map.Y(p[1])]), 'TRANSMISSION', {fill: true, fillRgb: [0.86, 0.78, 0.92]}); d.poly(o.L.map(p => [map.X(p[0]), map.Y(p[1])]), 'TRANSMISSION', {open: true})});
   (ext.roads || []).forEach(o => {if (!(o.L && o.L.length > 1)) return; const half = (o.row || 60) / 2; for (let i = 1; i < o.L.length; i++) d.poly(shBand(o.L[i - 1], o.L[i], half).map(p => [map.X(p[0]), map.Y(p[1])]), 'ROAD', {fill: true, fillRgb: [0.78, 0.76, 0.72]}); d.poly(o.L.map(p => [map.X(p[0]), map.Y(p[1])]), 'ROAD', {open: true})});
-  (r.loops || []).forEach(L => ssWorldBand(d, L.pts, (L.w || 30) / 2, map, 'RING', [0.82, 0.8, 0.76]));
-  if (r.entry && r.entry.spur && r.entry.spur.length > 1) ssWorldBand(d, r.entry.spur, (r.entry.w || 30) / 2, map, 'RING', [0.82, 0.8, 0.76]);
+  (r.aisles || []).forEach(poly => {if (poly && poly.length > 2) d.poly(poly.map(p => [map.X(p[0]), map.Y(p[1])]), 'RING', {fill: true, fillRgb: SS_FILL.road})});
+  (r.loops || []).forEach(L => ssWorldBand(d, L.pts, Math.max(13, (L.w || 26) / 2), map, 'RING', SS_FILL.road));
+  if (r.entry && r.entry.spur && r.entry.spur.length > 1) ssWorldBand(d, r.entry.spur, Math.max(13, (r.entry.w || 26) / 2), map, 'RING', SS_FILL.road);
   const calls = [];
   if (r.pond) {
     const pond = ssRectRing(r.pond, un).map(p => [map.X(p[0]), map.Y(p[1])]);
@@ -614,20 +650,18 @@ function ssPlan(d, r, meta, map, mode, opt) {
   ssBuildings(r).forEach(o => {
     const pts = o.ring.map(p => [map.X(p[0]), map.Y(p[1])]);
     const phase = o.phase || 1;
-    const fill = o.kind === 'BUILDING' ? (phase === 1 ? [0.5, 0.48, 0.44] : [0.84, 0.82, 0.76]) : o.kind === 'YARD' || o.kind === 'CHILLER' ? [0.73, 0.7, 0.63] : o.kind === 'SUBSTATION' ? [0.9, 0.78, 0.42] : [0.8, 0.79, 0.75];
-    const pen = o.kind === 'CHILLER' ? 'YARD' : o.kind;
+    const fill = o.kind === 'BUILDING' ? (phase === 1 ? SS_FILL.hall1 : SS_FILL.hall2) : o.kind === 'YARD' ? SS_FILL.yard : o.kind === 'CHILLER' ? SS_FILL.chill : o.kind === 'SUBSTATION' ? [0.93, 0.78, 0.28] : SS_FILL.park;
+    const pen = o.kind === 'CHILLER' || o.kind === 'YARD' ? 'YARD' : o.kind;
     d.poly(pts, pen, {fill: true, fillRgb: fill});
-    if (!quiet && (o.kind === 'BUILDING' || o.kind === 'YARD' || o.kind === 'CHILLER' || o.kind === 'PARKING')) ssHatch(d, pts, pen, o.kind === 'PARKING' ? 9 : 7);
+    if (!quiet && o.kind === 'BUILDING') ssHatch(d, pts, 'BUILDING', 8);
+    if (!quiet && (o.kind === 'YARD' || o.kind === 'CHILLER')) ssHatch(d, pts, 'YARD', 5);
     if (quiet) return;
     const c = ssCentroid(o.ring);
-    let label = o.name;
-    if (o.kind === 'BUILDING') label = o.name + '  ' + Math.round(o.sf).toLocaleString('en-US') + ' SF';
-    if (o.kind === 'YARD') label = mode === 'admin' ? 'GENERATOR YARD' : 'YARD';
-    if (o.kind === 'CHILLER') label = 'CHILLER YARD';
-    if (o.kind === 'PARKING' && r.stalls != null) label = 'PARKING  ' + Math.round(r.stalls) + ' STALLS [A]';
-    const wide = Math.abs(pts[1][0] - pts[0][0]) > 70 && Math.abs(pts[2][1] - pts[1][1]) > 16;
-    if (wide && o.kind !== 'YARD') d.text(map.X(c[0]), map.Y(c[1]), label, {size: 6.5, pen: 'TEXT', anchor: 'middle', tags: o.kind === 'YARD' && mode === 'admin' ? ['gen'] : []});
-    else calls.push({ax: map.X(c[0]), ay: map.Y(c[1]), text: o.kind === 'YARD' ? (mode === 'admin' ? 'GENERATOR YARD' : 'YARD') : (o.kind === 'BUILDING' ? o.name : label), tags: o.kind === 'YARD' && mode === 'admin' ? ['gen'] : []});
+    if (o.kind === 'SUBSTATION') {d.text(map.X(c[0]), map.Y(c[1]), 'SUBSTATION', {size: labelPt, pen: 'TEXT', anchor: 'middle', font: 'sans'}); return}
+    if (o.kind === 'YARD') {if (mode === 'admin') d.text(map.X(c[0]), map.Y(c[1]), 'GENERATOR YARD', {size: labelPt, pen: 'TEXT', anchor: 'middle', tags: ['gen']}); return}
+    if (o.kind === 'CHILLER') return;
+    if (o.kind === 'PARKING' && r.stalls != null) d.text(map.X(c[0]), map.Y(c[1]), 'PARKING  ' + Math.round(r.stalls) + ' STALLS [A]', {size: labelPt, pen: 'TEXT', anchor: 'middle'});
+    else if (o.kind === 'BUILDING') d.text(map.X(c[0]), map.Y(c[1]), o.name, {size: labelPt, pen: 'TEXT', anchor: 'middle'});
   });
   if (r.C.setRing) {const rg = r.C.setRing; if (rg.segs && rg.segs.length) ssSegs(d, rg.segs.map(s => s.map(un)), map, 'SETBACK'); else if (rg.length > 2) ssRing(d, rg.map(un), map, 'SETBACK', {open: true})}
   if (r.C.rowRing && r.C.rowRing.length > 2) ssRing(d, r.C.rowRing.map(un), map, 'ROW', {open: true});
@@ -646,11 +680,11 @@ function ssPlan(d, r, meta, map, mode, opt) {
   if (!quiet && fence && fence.gate) calls.push({ax: map.X(fence.gate.at[0]), ay: map.Y(fence.gate.at[1]), text: 'GATE'});
   for (let i = 0; i < ring.length; i++) {const a = ring[i], b = ring[(i + 1) % ring.length]; d.line(map.X(a[0]), map.Y(a[1]), map.X(b[0]), map.Y(b[1]), 'BOUNDARY')}
   if (quiet) return;
-  shCourses(ring).forEach(c => {if (c.dist * map.ppf < 36) return; const mx = (c.a[0] + c.b[0]) / 2, my = (c.a[1] + c.b[1]) / 2; d.text(map.X(mx), map.Y(my) + 5, 'L' + c.n + '  ' + c.dist.toFixed(1) + ' FT', {size: 6, pen: 'TEXT', anchor: 'middle'})});
+  shCourses(ring).forEach(c => {if (c.dist * map.ppf < 40) return; const mx = (c.a[0] + c.b[0]) / 2, my = (c.a[1] + c.b[1]) / 2; d.text(map.X(mx), map.Y(my) + 6, 'L' + c.n + '  ' + c.dist.toFixed(0) + ' FT', {size: labelPt, pen: 'TEXT', anchor: 'middle'})});
   shRoadLabels(ext.roads, 450).forEach(o => {
     let ang = Math.atan2(o.b[1] - o.a[1], o.b[0] - o.a[0]) * 180 / Math.PI;
     if (ang > 90) ang -= 180; if (ang < -90) ang += 180;
-    d.text(map.X(o.at[0]), map.Y(o.at[1]) + 8, o.name.toUpperCase() + (o.row ? ' (' + o.row + ' FT ROW [A])' : ''), {size: 7, pen: 'TEXT', anchor: 'middle', angle: ang});
+    d.text(map.X(o.at[0]), map.Y(o.at[1]) + labelPt, o.name.toUpperCase() + (o.row ? ' (' + o.row + ' FT ROW [A])' : ''), {size: labelPt, pen: 'TEXT', anchor: 'middle', angle: ang});
   });
   (r.C.edges || []).forEach(e => {if (!(e[2] > 0)) return; const A = un(e[0]), B = un(e[1]); if (shDist(A, B) * map.ppf < 36) return; const k = e[4] || {}; calls.push({ax: map.X((A[0] + B[0]) / 2), ay: map.Y((A[1] + B[1]) / 2), text: Math.round(e[2]) + ' FT ' + String(k.kind || 'SETBACK').toUpperCase()})});
   if (r.loops && r.loops.length && r.loops[0].turn) calls.push({ax: map.X(r.loops[0].pts[0][0]), ay: map.Y(r.loops[0].pts[0][1]), text: 'FIRE LANE  TURN ' + r.loops[0].turn + ' FT [A]'});
@@ -659,10 +693,10 @@ function ssPlan(d, r, meta, map, mode, opt) {
   ssBuildings(r).forEach(o => o.ring.forEach(p => {const x = map.X(p[0]), y = map.Y(p[1]); hx0 = Math.min(hx0, x); hy0 = Math.min(hy0, y); hx1 = Math.max(hx1, x); hy1 = Math.max(hy1, y)}));
   if (!(hx1 > hx0)) {hx0 = map.X(extent.x0); hx1 = map.X(extent.x1); hy0 = map.Y(extent.y0); hy1 = map.Y(extent.y1)}
   const top = Math.max(hy0, hy1) + 4, bot = Math.min(hy0, hy1) - 4;
-  shPlaceCallouts(calls, {xL: hx0 - 8, xR: hx1 + 8, top: top, bot: bot, dir: -1, step: 12, mid: (hx0 + hx1) / 2}).forEach(p => {
+  shPlaceCallouts(calls, {xL: hx0 - 8, xR: hx1 + 8, top: top, bot: bot, dir: -1, step: labelPt + 5, mid: (hx0 + hx1) / 2}).forEach(p => {
     const stub = p.anchor === 'end' ? -14 : 14;
     d.line(p.x + stub, p.y + 2, p.ax, p.ay, 'TEXT');
-    d.text(p.x, p.y, p.text, {size: 6.5, pen: 'TEXT', anchor: p.anchor, tags: (calls.find(c => c.text === p.text) || {}).tags || []});
+    d.text(p.x, p.y, p.text, {size: labelPt, pen: 'TEXT', anchor: p.anchor, tags: (calls.find(c => c.text === p.text) || {}).tags || []});
   });
 }
 
@@ -706,7 +740,7 @@ function ssCompose(r, meta, opts) {
   ssSheetFrame(dc, paper, chrome, cover, cfg, rev, mode);
   ssSheetFrame(ds, paper, chrome, site, cfg, rev, mode);
   const left = chrome.m + 12, right = chrome.tbX - 12, top = paper.h - chrome.m - 28;
-  const gap = 12, colW = (right - left - gap) / 2;
+  const gap = 12, keyW = (right - left - gap) * 0.58, vicW = (right - left - gap) - keyW, colW = vicW;
   dc.rect(left, top + 8, right - left, 4, 'TITLE', {fill: true, fillRgb: [0.945, 0.294, 0.129]});
   dc.text(left, top - 16, cfg.projectName, {size: paper.id === 'TABLOID' ? 14 : 20, pen: 'TEXT', font: 'sans'});
   dc.text(left, top - 32, (cfg.jurisdiction || 'TBD') + '   |   ' + date + '   |   ' + cfg.issuedFor, {size: 8, pen: 'TEXT'});
@@ -715,15 +749,15 @@ function ssCompose(r, meta, opts) {
   const below = 18 + 8 * 12 + 16 + noteLines * 9 + 18 + 12 * 12 + 28;
   const mapH = Math.max(paper.id === 'TABLOID' ? 120 : 200, Math.min(paper.id === 'TABLOID' ? 200 : 520, top - 64 - below - (chrome.m + 8)));
   const yMap = top - 58 - mapH;
-  ssVicinity(dc, ext, extent, {x: left, y: yMap, w: colW, h: mapH});
-  const key = {x: left + colW + gap, y: yMap, w: colW, h: mapH};
+  ssVicinity(dc, ext, extent, {x: left, y: yMap, w: vicW, h: mapH});
+  const key = {x: left + vicW + gap, y: yMap, w: keyW, h: mapH};
   dc.rect(key.x, key.y, key.w, key.h, 'VICINITY', {fill: true, fillRgb: [0.96, 0.95, 0.93]});
   dc.text(key.x + 8, key.y + key.h - 14, 'KEY PLAN', {size: 8, pen: 'TEXT', font: 'sans'});
   dc.text(key.x + key.w - 8, key.y + key.h - 14, 'NOT TO SCALE', {size: 6, pen: 'TEXT', anchor: 'end'});
   const kScale = ssPickScale(extent.w, extent.h, (key.w - 20) / 72, (key.h - 32) / 72);
   const kMap = ssMap(extent, {x: key.x + 8, y: key.y + 8, w: key.w - 16, h: key.h - 30}, kScale);
   dc.clip(key.x + 2, key.y + 2, key.w - 4, key.h - 22);
-  ssPlan(dc, r, meta, kMap, mode, {quiet: true});
+  ssPlan(dc, r, meta, kMap, mode, {quiet: true, paper, view: {x: key.x + 8, y: key.y + 8, w: key.w - 16, h: key.h - 30}});
   dc.unclip();
   dc.rect(key.x, key.y, key.w, key.h, 'VICINITY');
   let y = yMap - 16;
@@ -746,7 +780,17 @@ function ssCompose(r, meta, opts) {
   y = Math.min(y - pdata.length * 12, iy) - 8;
   dc.text(left, y, 'NOTES', {size: 9, pen: 'TEXT', font: 'sans'});
   y -= 12;
-  notes.concat(assumptions).forEach(t => {dc.text(left, y, String(t).slice(0, 170), {size: 6.5, pen: 'TEXT'}); y -= 9});
+  const notePt = ssPt(paper, 8), floor = chrome.m + chrome.titleBand + 8;
+  const noteItems = notes.concat(assumptions).map(t => ({s: String(t), tags: []})).concat(summary.filter(row => mode === 'admin' || !row.sensitive).map(row => ({s: row.print, tags: row.sensitive ? [row.sensitive] : []})));
+  let noteCols = 2, per = Math.ceil(noteItems.length / noteCols);
+  let lead = per ? (y - floor) / per : notePt + 3;
+  if (lead < 9) {noteCols = 3; per = Math.ceil(noteItems.length / noteCols); lead = per ? (y - floor) / per : 9}
+  lead = Math.max(9, Math.min(notePt + 3, lead));
+  const noteW = (right - left - gap) / noteCols;
+  noteItems.forEach((item, i) => {
+    const col = Math.min(noteCols - 1, Math.floor(i / per)), row = i % per;
+    dc.text(left + col * (noteW + 4), y - row * lead, item.s, {size: Math.min(notePt, lead - 1), pen: 'TEXT', tags: item.tags});
+  });
   y -= 4;
   dc.text(left, y, 'SEC. 39.05(a) REQUIRED CONTENTS', {size: 9, pen: 'TEXT', font: 'sans'});
   y -= 12;
@@ -757,15 +801,13 @@ function ssCompose(r, meta, opts) {
     dc.text(x + 108, yy, it.title.slice(0, 54), {size: 6.5, pen: 'TEXT'});
   });
   // site plan
-  let noteY = ssSummaryBlock(ds, summary, mode, left, top, chrome.summary - 8) - 8;
-  const noteW = Math.max(28, Math.floor((chrome.summary - 16) / 3.6));
-  ssSurveyNotes(r, meta).forEach(t => {shWrap(t, noteW).forEach(line => {ds.text(left, noteY, line, {size: 6, pen: 'TEXT'}); noteY -= 8})});
-  const box = {x: left, y: chrome.m + chrome.titleBand + 8, w: Math.max(80, chrome.summary - 16), h: Math.min(160, Math.max(64, noteY - (chrome.m + chrome.titleBand + 16)))};
+  let noteY = ssSummaryBlock(ds, summary, mode, left, top, chrome.summary - 8, paper) - 10;
+  const box = {x: left, y: chrome.m + chrome.titleBand + 8, w: Math.max(80, chrome.summary - 16), h: Math.min(200, Math.max(80, noteY - (chrome.m + chrome.titleBand + 16)))};
   if (box.h > 56 && box.y + box.h < noteY) ssVicinity(ds, ext, extent, box);
   ds.clip(chrome.view.x, chrome.view.y, chrome.view.w, chrome.view.h - 56);
-  ssPlan(ds, r, meta, map, mode);
+  ssPlan(ds, r, meta, map, mode, {paper, view: chrome.view});
   ds.unclip();
-  ssLegend(ds, chrome);
+  ssLegend(ds, chrome, paper);
   ssViewTitle(ds, paper, chrome, {title: 'SITE PLAN', scale, scaleLabel});
   ds.text(chrome.view.x, chrome.m + chrome.titleBand - 8, 'GRAPHIC SCALE MATCHES 1 IN = ' + ssScaleNum(scale) + ' FT. CONFIRM THE 1.00 INCH BAR BEFORE MEASURING.', {size: 6, pen: 'TEXT'});
   cover.ops = ssScrub(dc.ops, mode, secrets);

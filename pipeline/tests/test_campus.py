@@ -57,7 +57,7 @@ const subC=a.sub?[a.sub[0]+a.sub[2]/2,a.sub[1]+a.sub[3]/2]:null;
 const schemes=tfSchemes(R,Object.assign({},TF_DEF.land,{sw:'off'}),{});
 return {n:a.n,same:JSON.stringify(a.halls.map(h=>h.hall.map(v=>Math.round(v))))===JSON.stringify(b.halls.map(h=>h.hall.map(v=>Math.round(v)))),
  xs:halls.map(h=>h.hall[0]),ys:halls.map(h=>h.hall[1]),loops:a.loops.length,turn:a.turnR,fence:!!(a.fence&&(a.fence.pts||a.fence.segs)),gate:!!(a.fence&&a.fence.gate),
- chill:a.halls.every(h=>h.chill&&touch(h.gen,h.chill)&&touch(h.chill,h.hall)),phases:[...new Set(a.phase)],park:!!a.park,bad,
+ chill:a.halls.every(h=>h.chill&&touch(h.gen,h.chill)&&touch(h.chill,h.hall)),phases:[...new Set(a.phase)],park:!!a.park,bad,ori:[...new Set(a.halls.map(h=>h.v?1:0))],
  subNorth:subC?subC[1]>1000:false,schemes:schemes.map(s=>s.scheme),nSch:schemes.length};
 """
         )
@@ -70,6 +70,7 @@ return {n:a.n,same:JSON.stringify(a.halls.map(h=>h.hall.map(v=>Math.round(v))))=
         self.assertTrue(r["fence"])
         self.assertTrue(r["gate"])
         self.assertTrue(r["chill"])
+        self.assertEqual(len(set(r.get("ori") or [0])), 1)
         self.assertEqual(r["phases"], [1, 2])
         self.assertTrue(r["park"])
         self.assertEqual(r["bad"], 0)
@@ -87,15 +88,18 @@ const r=tfDC(L,I,{});
 let bad=0; const legs=new Set();
 r.halls.forEach(h=>{const [x,y,w,hh]=h.hall;const c=r.C.un([x+w/2,y+hh/2]);legs.add(c[1]<780?'E':'N');
  for(let i=0;i<=4;i++)for(let j=0;j<=4;j++){const p=r.C.un([x+w*i/4,y+hh*j/4]);if(!tfIn(p[0],p[1],L))bad++}});
-const horiz=r.halls.filter(h=>!h.v).map(h=>h.hall[1]), vert=r.halls.filter(h=>h.v).map(h=>h.hall[0]);
-return {n:r.n,bad,legs:[...legs],horiz,vert};
+const ori=new Set(r.halls.map(h=>h.v?1:0));
+const schemes=tfSchemes(L,I,{});
+const both=new Set();schemes.forEach(s=>{const q=tfSolve('land',L,s.p,{});(q.halls||[]).forEach(h=>{const p=q.C.un([h.hall[0]+h.hall[2]/2,h.hall[1]+h.hall[3]/2]);both.add(p[1]<780?'E':'N')})});
+const xs=r.halls.map(h=>h.v?h.hall[0]:h.hall[1]);
+return {n:r.n,bad,legs:[...legs],one:ori.size<=1,both:[...both],xs};
 """
         )
-        self.assertGreaterEqual(r["n"], 3, r)
+        self.assertGreaterEqual(r["n"], 2, r)
         self.assertEqual(r["bad"], 0)
-        self.assertEqual(set(r["legs"]), {"E", "N"})
-        self.assertTrue(grid_ok(r["horiz"]))
-        self.assertTrue(grid_ok(r["vert"]))
+        self.assertTrue(r["one"], r)
+        self.assertEqual(set(r["both"]), {"E", "N"})
+        self.assertTrue(grid_ok(r["xs"]))
 
     def test_diagonal_easement_is_a_hole_in_an_aligned_grid(self):
         r = js(
@@ -109,16 +113,19 @@ const cut=tfDC(R,I,{nb,nbKind:(x,y)=>nb(x,y)?1:0});
 const open=tfDC(R,I,{});
 let hit=0; cut.halls.forEach(h=>[h.hall,h.gen,h.chill].filter(Boolean).forEach(R2=>{const [x,y,w,hh]=R2;
  for(let i=0;i<=4;i++)for(let j=0;j<=4;j++){const p=cut.C.un([x+w*i/4,y+hh*j/4]);if(ld(p[0],p[1])<99)hit++}}));
-const H=cut.halls.filter(h=>!h.v), V=cut.halls.filter(h=>h.v);
-return {cut:cut.n,open:open.n,hit,hx:H.map(h=>h.hall[0]),hy:H.map(h=>h.hall[1]),vx:V.map(h=>h.hall[0]),vy:V.map(h=>h.hall[1]),ease:cut.build.easement};
+const ori=new Set(cut.halls.map(h=>h.v?1:0));
+const xs=cut.halls.map(h=>h.v?h.hall[0]:h.hall[1]), ys=cut.halls.map(h=>h.v?h.hall[1]:h.hall[0]);
+return {cut:cut.n,open:open.n,hit,xs,ys,one:ori.size<=1,ease:cut.build.easement,loops:(cut.loops||[]).length,w:(cut.loops[0]||{}).w};
 """
         )
         self.assertGreater(r["open"], r["cut"], r)
-        self.assertGreater(r["cut"], 0)
+        self.assertGreaterEqual(r["cut"], 6, r)
         self.assertEqual(r["hit"], 0)
         self.assertGreater(r["ease"], 0)
-        self.assertTrue(grid_ok(r["hx"]) and grid_ok(r["hy"]), r)
-        self.assertTrue(grid_ok(r["vx"]) and grid_ok(r["vy"]), r)
+        self.assertTrue(r["one"], r)
+        self.assertTrue(grid_ok(r["xs"]) and grid_ok(r["ys"]), r)
+        self.assertGreaterEqual(r["loops"], 1)
+        self.assertGreaterEqual(r["w"] or 0, 26)
 
     def test_floodplain_and_low_point_pond(self):
         r = js(
