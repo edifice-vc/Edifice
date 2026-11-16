@@ -333,6 +333,66 @@ return {sheets:out.sheets, nos, bad, pdf:out.pdf};
         packed = js("const files=%s; return {n:ssZip(files).length, crc:ssCrc(files[0].text)}" % json.dumps(self.pub['dxf']))
         self.assertGreater(packed['n'], 100)
 
+    def test_zoneomics_rows_tag_z_and_failed_endpoints_are_tbd(self):
+        out = js(r'''
+globalThis.TF_PH=["#F14B21","#3fa7ff","#5ad17a","#c77dff","#ffb000","#00c2c2","#ff6fae","#a0a0a0"];
+const h=Math.sqrt(80*43560)/2,R=[[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]];
+const z={status:'ok',fixture:false,district:'I-2',
+ setbacks_ft:{front:{v:40,src:'synth'},side:{v:20,src:'synth'},rear:{v:15,src:'synth'}},
+ max_height_ft:{v:60,src:'synth'},max_lot_coverage_pct:{v:55,src:'synth'},max_far:{v:0.8,src:'synth'},
+ treatment:{data_center:{status:'conditional'}},
+ overlays:'STR overlay',code_link:'https://example.invalid/code',flum:'Synthetic industrial',
+ parking:{text:'1 stall per hall'},geom_ok:true,screenshot_ok:true,
+ coverage:[
+  {endpoint:'zoneDetail',status:200,fields:'plu,controls,geom,parcels'},
+  {endpoint:'strDetail',status:502,fields:''},
+  {endpoint:'zoneCodeLink',status:200,fields:''},
+  {endpoint:'zoneScreenshot',status:500,fields:''},
+  {endpoint:'flumDetails',status:200,fields:'flum'},
+  {endpoint:'parkingDetail',status:200,fields:''}]};
+const Z=tfZone(z,'land');
+const r=tfDC(R,Object.assign({},TF_DEF.land,{halls:2,setF:10,setS:10,setR:10,sw:'off'}),{gridMW:40,zone:Z});
+const meta={polySrc:'parcel',bsrc:'synthetic',apn:'APN99-12345',owner:'SYNTHOWNER',zone:Z,
+ ext:{roads:[],flood:[],streams:[],tx:[],places:[]}};
+const pub=ssExport(r,meta,{paper:'ARCH_D',mode:'public',date:'2026-11-15'});
+const svg=tfSheet(r,Object.assign({},meta,{exportMode:'public'}),1500,960);
+const rows=pub.summary.map(x=>({label:x.label,value:x.value,tag:x.tag,assumed:x.assumed,print:x.print}));
+return {rows,pdf:pub.pdf,svg,front:Z.front,overlays:Z.overlays,screen:Z.screenOk,geom:Z.geomOk};
+''')
+        rows = {r['label']: r for r in out['rows']}
+        self.assertEqual(rows['Zoning district']['value'], 'I-2')
+        self.assertEqual(rows['Zoning district']['tag'], '[Z]')
+        self.assertFalse(rows['Zoning district']['assumed'])
+        self.assertNotIn('ASSUMED', rows['Zoning district']['print'])
+        self.assertEqual(rows['Overlays']['value'], 'TBD')
+        self.assertEqual(rows['Overlays']['tag'], '[Z]')
+        self.assertEqual(rows['Zoning map']['value'], 'TBD')
+        self.assertEqual(rows['Zoning map']['tag'], '[Z]')
+        self.assertEqual(rows['Zone geometry']['value'], 'on file')
+        self.assertEqual(rows['Zone geometry']['tag'], '[Z]')
+        self.assertEqual(rows['Permitted use']['value'], 'conditional')
+        self.assertEqual(rows['Permitted use']['tag'], '[Z]')
+        self.assertEqual(rows['Coverage limit']['tag'], '[Z]')
+        self.assertEqual(rows['FAR limit']['value'], '0.8')
+        self.assertEqual(rows['FAR limit']['tag'], '[Z]')
+        req = [r for r in out['rows'] if r['label'].startswith('Setback') and r['label'].endswith('required') and r['value'].startswith('40')]
+        self.assertTrue(req, out['rows'])
+        self.assertTrue(all(r['tag'] == '[Z]' and not r['assumed'] for r in req))
+        shown = pdf_text(out['pdf'])
+        for label in ('Zoning district', 'Overlays', 'Zoning map', 'Zone geometry', 'Permitted use'):
+            self.assertIn(rows[label]['print'], shown)
+        self.assertNotIn('strDetail', shown)
+        self.assertNotIn('SYNTHOWNER', shown)
+        self.assertNotIn('APN99-12345', shown)
+        self.assertIn('District I-2 [Z]', out['svg'])
+        self.assertIn('Overlays TBD [Z]', out['svg'])
+        self.assertIn('Zoning map TBD [Z]', out['svg'])
+        self.assertNotIn('SYNTHOWNER', out['svg'])
+        self.assertIsNone(out['overlays'])
+        self.assertFalse(out['screen'])
+        self.assertTrue(out['geom'])
+        self.assertEqual(out['front'], 40)
+
     def test_zip_round_trip(self):
         raw = js("const h=Math.sqrt(10*43560)/2,R=[[-h,-h],[h,-h],[h,h],[-h,h],[-h,-h]]; const r=tfDC(R,Object.assign({},TF_DEF.land,{halls:1,sw:'off'}),{}); const out=ssExport(r,{polySrc:'square',ext:{roads:[],flood:[],places:[]}},{paper:'ARCH_D',mode:'public',date:'2026-11-15'}); return out.zip")
         blob = raw.encode('latin1')

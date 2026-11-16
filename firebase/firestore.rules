@@ -175,7 +175,17 @@ service cloud.firestore {
         && d.by == email() && d.ts == request.time;
     }
     // Zoneomics zoning per site: licensed data, ADMIN-ONLY, never redistributed. Written only by pipeline/zoneomics.py (admin SDK).
-    match /zoning/{id} { allow read: if admin(); allow write: if false; }
+    // raw/{endpoint} is one document per v2 call (body, HTTP status, output_fields used).
+    // This nested match is in the repo and covered by tests. It is NOT deployed. Deploying rules needs Sahil's approval
+    // (python3 pipeline/deploy_rules.py). Until then the Admin SDK can still write; client reads of the subcollection fail closed.
+    match /zoning/{id} {
+      allow read: if admin();
+      allow write: if false;
+      match /raw/{endpoint} {
+        allow read: if admin();
+        allow write: if false;
+      }
+    }
     // Parcel boundaries per active deal (deal parcel + ~1/4-mile neighbours, APN/owner): ADMIN-ONLY, never client-written.
     // Written only by pipeline/parcels.py (admin SDK).
     match /parcels/{id} { allow read: if admin(); allow write: if false; }

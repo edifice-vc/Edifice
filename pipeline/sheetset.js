@@ -233,6 +233,25 @@ function ssCfg(opts, meta, mode) {
   };
 }
 
+function ssZoneBit(zone, key) {
+  const v = zone && zone[key];
+  if (v == null || v === '') return null;
+  return String(v).replace(/\s+/g, ' ').slice(0, 48);
+}
+// Sec. 39.05 rows filled from the cached v2 pull. A missing or failed endpoint is TBD, never a guessed number.
+function ssZoneLines(rows, zone) {
+  const line = (label, value) => rows.push(ssRow(label, value == null ? 'TBD' : value, 'Z', false));
+  line('Zoning district', ssZoneBit(zone, 'district'));
+  line('Permitted use', ssZoneBit(zone, 'use'));
+  line('Coverage limit', zone && zone.cov != null && isFinite(+zone.cov) ? Math.round(+zone.cov) + '%' : null);
+  line('FAR limit', zone && zone.far != null && isFinite(+zone.far) ? String(+zone.far) : null);
+  line('Overlays', ssZoneBit(zone, 'overlays'));
+  line('Zoning code', ssZoneBit(zone, 'code'));
+  line('Parking standard', ssZoneBit(zone, 'parkingText'));
+  line('Future land use', ssZoneBit(zone, 'flum'));
+  line('Zone geometry', zone && zone.geomOk ? 'on file' : null);
+  line('Zoning map', zone && zone.screenOk ? 'on file' : null);
+}
 function ssZoneReq(zone, kind) {
   if (!zone) return null;
   if (kind === 'front' || kind === 'front2') return zone.front;
@@ -281,6 +300,7 @@ function ssSummary(r, meta) {
   });
   rows.push(r.height != null && isFinite(+r.height) ? ssRow('Height provided', Math.round(r.height) + ' ft', 'A', true) : ssRow('Height provided', 'TBD', 'A', true));
   rows.push(zone.maxH == null ? ssRow('Height limit', 'TBD', 'Z', false) : ssRow('Height limit', Math.round(zone.maxH) + ' ft', 'Z', false));
+  ssZoneLines(rows, zone);
   rows.push(r.stories ? ssRow('Stories', String(r.stories), 'A', true) : ssRow('Stories', 'TBD', 'A', true));
   const stalls = r.stalls != null && isFinite(+r.stalls) ? Math.round(r.stalls) : null;
   rows.push(stalls == null ? ssRow('Parking stalls', 'TBD', 'A', true) : ssRow('Parking stalls', String(stalls), 'A', true));

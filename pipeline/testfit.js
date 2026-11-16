@@ -8,7 +8,12 @@ const TF_COOL={air:1,liquid:.85,hybrid:.92};// cooling yard factor on generator/
 function tfZone(z,co){const v=o=>o&&o.v!=null&&isFinite(+o.v)?+o.v:null,sb=(z&&z.setbacks_ft)||{},tr=(z&&z.treatment)||{};
  const use=co==='storage'?(tr.self_storage||{}).status||(z&&z.storage_use)||null:(tr.data_center||{}).status||(z&&z.dc_use)||(tr.industrial||{}).status||null;
  const okU=use==null?null:/^(permitted|allowed|by.?right|yes)/i.test(use)?1:/^(conditional|special|cup|sup)/i.test(use)?0:-1;
- return {front:v(sb.front),side:v(sb.side),rear:v(sb.rear),street2:v(sb.side_street||sb.street_side||sb.corner_side),buf:v(z&&(z.landscape_buffer_ft||z.buffer_ft)),resBuf:v(z&&z.residential_buffer_ft),maxH:v(z&&z.max_height_ft),cov:v(z&&z.max_lot_coverage_pct),far:v(z&&z.max_far),use,okU,district:z&&(z.district||z.zone_code||z.code)||null,has:!!z}}
+ // A coverage row with a non-200 status blanks that endpoint. Records with no coverage table keep their scalars.
+ const row=n=>z&&Array.isArray(z.coverage)&&z.coverage.find(r=>r.endpoint===n);
+ const down=n=>{const r=row(n);return !!r&&r.status!==200};
+ const keep=(n,val)=>down(n)?null:val;
+ return {front:keep('zoneDetail',v(sb.front)),side:keep('zoneDetail',v(sb.side)),rear:keep('zoneDetail',v(sb.rear)),street2:v(sb.side_street||sb.street_side||sb.corner_side),buf:v(z&&(z.landscape_buffer_ft||z.buffer_ft)),resBuf:v(z&&z.residential_buffer_ft),maxH:keep('zoneDetail',v(z&&z.max_height_ft)),cov:keep('zoneDetail',v(z&&z.max_lot_coverage_pct)),far:keep('zoneDetail',v(z&&z.max_far)),use:keep('zoneDetail',use),okU,district:keep('zoneDetail',z&&(z.district||z.zone_code||z.code)||null),has:!!(z&&!down('zoneDetail')),
+  overlays:keep('strDetail',z&&z.overlays||null),code:keep('zoneCodeLink',z&&(z.code_link||z.code)||null),flum:keep('flumDetails',z&&z.flum||null),parkingText:keep('parkingDetail',z&&z.parking&&z.parking.text||null),geomOk:!!(z&&z.geom_ok&&!down('zoneDetail')),screenOk:!!(z&&z.screenshot_ok&&!down('zoneScreenshot'))}}
 // effective inputs: zoning governs where it is stricter (setbacks larger, height/coverage lower); user values otherwise
 function tfEff(I,Z){const E=Object.assign({},I),mx=(a,b)=>b==null?+a||0:Math.max(+a||0,b),mn=(a,b)=>a===''||a==null?b:b==null?+a:Math.min(+a,b);
  if(Z){E.setF=mx(I.setF,Z.front);E.setS=mx(I.setS,Z.side);E.setR=mx(I.setR,Z.rear);if(Z.street2!=null)E.set2=mx(I.setF,Z.street2);if(Z.buf!=null)E.buf=mx(I.buf,Z.buf);if(Z.resBuf!=null)E.resBuf=mx(I.resBuf,Z.resBuf);E.maxH=mn(I.maxH,Z.maxH);E.cov=mn(I.cov,Z.cov);E.far=Z.far}return E}
