@@ -401,3 +401,16 @@ test('zoning (Zoneomics) is admin-read only and never client-written', async () 
   await assertFails(getDocs(collection(as(EDITOR), 'zoning')));
   await assertFails(setDoc(doc(as(ADMIN), 'zoning', 's2'), { j: '{}' }));
 });
+
+test('zoning raw endpoint docs are admin-read only and never client-written', async () => {
+  await env.withSecurityRulesDisabled(async (c) => {
+    await setDoc(doc(c.firestore(), 'zoning', 's1', 'raw', 'zoneDetail'), { status: 200, fields: 'plu', body: { synthetic: true } });
+  });
+  await assertSucceeds(getDoc(doc(as(ADMIN), 'zoning', 's1', 'raw', 'zoneDetail')));
+  for (const e of [EDITOR, VIEWER, STRANGER]) {
+    await assertFails(getDoc(doc(as(e), 'zoning', 's1', 'raw', 'zoneDetail')));
+    await assertFails(getDocs(collection(as(e), 'zoning', 's1', 'raw')));
+  }
+  await assertFails(setDoc(doc(as(ADMIN), 'zoning', 's1', 'raw', 'strDetail'), { status: 502 }));
+  await assertFails(getDocs(collection(as(EDITOR), 'zoning', 's1', 'raw')));
+});
