@@ -906,15 +906,15 @@ function losFromSolve(r, opt) {
     phase: (r.phase && r.phase[i]) || 1,
     label: 'Building'
   })).filter(b => b.ring);
-  const yards = ((r && r.halls) || []).map((h, i) => h.gen ? ({
-    id: 'yard-' + (i + 1),
-    ring: losRingFromRect(h.gen, un),
+  const yards = ((r && r.halls) || []).flatMap((h, i) => ['gen', 'chill'].map(key => h[key] ? ({
+    id: (key === 'chill' ? 'chiller-' : 'yard-') + (i + 1),
+    ring: losRingFromRect(h[key], un),
     heightFt: opt.yardHeightFt != null ? +opt.yardHeightFt : LOS_YARD_FT,
     heightTag: 'A',
     assumed: true,
-    label: 'Yard',
+    label: key === 'chill' ? 'Chiller yard' : 'Yard',
     source: 'ASSUMED · yard equipment height'
-  }) : null).filter(Boolean);
+  }) : null)).filter(Boolean);
   const sub = r && r.sub ? {
     id: 'substation',
     ring: losRingFromRect(r.sub, un),

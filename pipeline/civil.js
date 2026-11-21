@@ -36,7 +36,8 @@ function cvPond(V,D,z,fb){D=+D||5;z=+z||4;fb=fb==null?1:+fb;if(!(V>0))return nul
  return {D,z,fb,bw:w,bl:l,ow,ol,V,area:ow*ol,ac:ow*ol/43560,exc:vol(w)+(w+2*z*D)*(l+2*z*D)*fb}}
 // impervious estimate from a solved layout (rotated-frame rects): roofs, pads, parking, gravel @50%, drives = lane × (w+h) per building
 function cvImp(r){const lane=+(r.E.lane||r.E.aisle||28),a=R=>R?R[2]*R[3]:0,dr=R=>R?lane*(R[2]+R[3]):0;let s=0;
- if(r.co==='land'){r.halls.forEach(h=>{s+=a(h.hall)+a(h.gen)+dr(h.hall)});s+=a(r.park)+.5*a(r.sub)+(r.sub?lane*r.sub[2]:0)}
+ if(r.co==='land'){r.halls.forEach(h=>{s+=a(h.hall)+a(h.gen)+a(h.chill)+dr(h.hall)});s+=a(r.park)+.5*a(r.sub)+(r.sub?lane*r.sub[2]:0);
+  (r.loops||[]).forEach(L=>{if(!L.pts||L.pts.length<2)return;let len=0;for(let i=0;i<L.pts.length;i++){const a=L.pts[i],b=L.pts[(i+1)%L.pts.length];len+=Math.hypot(b[0]-a[0],b[1]-a[1])}s+=len*(L.w||lane)})}
  else{const B=[r.mu,r.office].concat(r.du,r.rv).filter(Boolean);B.forEach(R=>{s+=a(R)+dr(R)*.5})}
  return Math.min(.95,s/Math.max(1,r.site))}
 // DEM helpers. dem: {x0,y0,dx,dy,nx,ny,z:[row-major ft]} in LOCAL ft (unrotated)
@@ -48,7 +49,7 @@ function cvDemStats(d,inside){if(!d)return null;let mn=1e9,mx=-1e9,lo=null,hi=nu
 function cvPad(d,C,R){const [x,y,w,h]=R,n=Math.max(2,Math.ceil(Math.max(w,h)/50)),m=Math.max(2,Math.ceil(Math.min(w,h)/50)),Z=[];
  for(let j=0;j<m;j++)for(let i=0;i<n;i++){const p=C.un([x+w*(i+.5)/n,y+h*(j+.5)/m]),z=cvZ(d,p[0],p[1]);if(z!=null)Z.push(z)}if(!Z.length)return {cut:0,fill:0};
  const pe=Z.reduce((a,b)=>a+b,0)/Z.length,ca=w*h/Z.length;let cut=0,fill=0;Z.forEach(z=>{if(z>pe)cut+=(z-pe)*ca;else fill+=(pe-z)*ca});return {cut,fill,pe}}
-function cvGrade(r,d){if(!d)return null;const B=r.co==='land'?r.halls.flatMap(h=>[h.hall,h.gen]).concat([r.sub,r.park]):[r.mu,r.office].concat(r.du,r.rv);let cut=0,fill=0,da=0;
+function cvGrade(r,d){if(!d)return null;const B=r.co==='land'?r.halls.flatMap(h=>[h.hall,h.gen,h.chill]).concat([r.sub,r.park]):[r.mu,r.office].concat(r.du,r.rv);let cut=0,fill=0,da=0;
  B.filter(Boolean).forEach(R=>{const q=cvPad(d,r.C,R);cut+=q.cut;fill+=q.fill;da+=R[2]*R[3]});const pc=r.pond?r.pond.exc:0,dist=Math.min(r.site,da*1.6+(r.pond?r.pond.area:0)),top=dist*.5;
  return {cutCY:cut/27,fillCY:fill/27,pondCY:pc/27,topCY:top/27,netCY:(cut+pc-fill)/27,distAc:dist/43560}}
 // ---- FAA 14 CFR Part 77 screening. pts: [[lat,lon],...] sample points of the parcel; ground ft MSL
