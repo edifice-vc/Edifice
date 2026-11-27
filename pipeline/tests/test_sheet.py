@@ -93,13 +93,14 @@ if __name__ == '__main__':
 
 @unittest.skipUnless(shutil.which('node'), 'node missing')
 class Packer(unittest.TestCase):
-    def test_l_shaped_parcel_uses_both_legs_and_rotation(self):
-        # L: 2,600 x 700 ft east-west leg + 700 x 2,600 ft north leg; one fixed-angle row pack can't use both legs
-        body = """const L=[[0,0],[2600,0],[2600,700],[700,700],[700,2600],[0,2600],[0,0]];const I=Object.assign({},TF_DEF.land,{halls:40,subAc:0,park:0,setF:50,setS:50,setR:50});
- const fixed=tfDC0(L,Object.assign({},I,{_pack:'rows',rot:0}),{},null),best=tfDC(L,I,{});let bad=0;
+    def test_l_shaped_parcel_one_orientation_per_scheme(self):
+        # One scheme is one hall orientation. The cross-axis scheme uses the other leg of the L.
+        body = """const L=[[0,0],[2600,0],[2600,700],[700,700],[700,2600],[0,2600],[0,0]];const I=Object.assign({},TF_DEF.land,{halls:40,subAc:0,park:0,setF:50,setS:50,setR:50,sw:'off'});
+ const best=tfDC(L,I,{});let bad=0;
  best.halls.forEach(h=>{const [x,y,w,hh]=h.hall;for(let i=0;i<=6;i++)for(let j=0;j<=6;j++){const p=best.C.un([x+w*i/6,y+hh*j/6]);if(!tfIn(p[0],p[1],L))bad++}});
- const legs=new Set(best.halls.map(h=>{const p=best.C.un([h.hall[0]+h.hall[2]/2,h.hall[1]+h.hall[3]/2]);return p[1]<700?'E':'N'}));
- return {f:fixed.n,b:best.n,bad,legs:legs.size,hw:best.halls.every(h=>Math.round(Math.min(h.hall[2],h.hall[3]))===I.hallW&&Math.round(Math.max(h.hall[2],h.hall[3]))===I.hallL)}"""
+ const ori=new Set(best.halls.map(h=>h.v?1:0));
+ const legs=new Set();tfSchemes(L,I,{}).forEach(s=>{const r=tfSolve('land',L,s.p,{});(r.halls||[]).forEach(h=>{const p=r.C.un([h.hall[0]+h.hall[2]/2,h.hall[1]+h.hall[3]/2]);legs.add(p[1]<700?'E':'N')})});
+ return {n:best.n,bad,one:ori.size<=1,legs:legs.size,hw:best.halls.every(h=>{const a=Math.round(Math.min(h.hall[2],h.hall[3])),b=Math.round(Math.max(h.hall[2],h.hall[3]));return a===I.hallW&&(b===I.hallL||((b===400||b===500)&&b<I.hallL))})}"""
         src = SRC + HELP + 'console.log(JSON.stringify((()=>{' + body + '})()))'
         r = json.loads(subprocess.run(['node'], input=src, capture_output=True, text=True, check=True).stdout)
-        self.assertGreater(r['b'], r['f']); self.assertEqual(r['legs'], 2); self.assertEqual(r['bad'], 0); self.assertTrue(r['hw'])
+        self.assertGreater(r['n'], 0); self.assertTrue(r['one']); self.assertEqual(r['legs'], 2); self.assertEqual(r['bad'], 0); self.assertTrue(r['hw'])

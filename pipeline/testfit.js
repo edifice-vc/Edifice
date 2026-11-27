@@ -31,7 +31,7 @@ function tfCtx(R,E,nb){const rot=(+E.rot||0)*Math.PI/180,Q=R.map(p=>tfRot(p,-rot
  const ok=(x,y)=>{if(!tfIn(x,y,Q))return false;for(const [a,b,s] of edges)if(s>0&&tfSD(x,y,a,b)<s)return false;return !nbAt(x,y)};
  const okP=(x,y)=>{if(!tfIn(x,y,Q))return false;for(const [a,b,,h] of edges)if(h>0&&tfSD(x,y,a,b)<h)return false;return !nbAt(x,y)};
  const edgeAt=(x,y)=>{let inRow=false,inSet=false;for(const [a,b,s,,k] of edges){const d=tfSD(x,y,a,b);if(k.row>0&&d<k.row)inRow=true;if(s>0&&d<s)inSet=true}return {inRow,inSet}};
- return {rot,Q,A,ok,okP,edgeAt,edges,bb:[x0,y0,x1,y1],un:p=>tfRot(p,rot),setRing:cvOffset(Q,D),hardRing:H.some(v=>v>0)?cvOffset(Q,H):null,rowRing:W.some(v=>v>0)?cvOffset(Q,W):null}}
+ return {rot,Q,A,ok,okP,nbAt,edgeAt,edges,setD:D,bb:[x0,y0,x1,y1],un:p=>tfRot(p,rot),setRing:cvOffset(Q,D),hardRing:H.some(v=>v>0)?cvOffset(Q,H):null,rowRing:W.some(v=>v>0)?cvOffset(Q,W):null}}
 // axis-aligned rect [x,y,w,h] in the rotated frame: valid if sampled points are buildable and it clears placed rects (+gap)
 function tfRectOK(C,r,placed,gap){const [x,y,w,h]=r;for(const q of placed){const g=q[4]!=null?q[4]:gap;if(x<q[0]+q[2]+g&&x+w+g>q[0]&&y<q[1]+q[3]+g&&y+h+g>q[1])return false}
  const nx=Math.max(1,Math.ceil(w/40)),ny=Math.max(1,Math.ceil(h/40));for(let j=0;j<=ny;j++)for(let i=0;i<=nx;i++)if(!(C.okX||C.ok)(x+w*i/nx,y+h*j/ny))return false;return true}
@@ -46,6 +46,54 @@ function tfRows(C,w,h,gx,gy,max,placed,gap){const [x0,y0,x1,y1]=C.bb;let best=[]
 // first-fit scan (bottom-up, left-right) on a fine lattice: fills each leg of L-shaped / irregular parcels independently
 function tfGreedy(C,w,h,gx,gy,max,placed,gap,rot2){const [x0,y0,x1,y1]=C.bb,st=Math.max(20,Math.min(w,h)/8),out=[],P=placed.slice();
  for(let y=y0;y+h<=y1&&out.length<max;y+=st)for(let x=x0;x+w<=x1&&out.length<max;x+=st){let hit=0;for(const [ww,hh,v] of (rot2?[[w,h,0],[h,w,1]]:[[w,h,0]]))if(y+hh<=y1&&x+ww<=x1){const r=[x,y,ww,hh];if(tfRectOK(C,r,P,Math.max(gap,gx,gy))){if(v)r.v=1;out.push(r);P.push(r);x+=ww;hit=1;break}}}return out}
+// Fire-apparatus inside turning radius, ft. The loop fillet uses this and shrinks only if the pad is smaller.
+const TF_TURN=45;
+// Longest parcel edge, degrees in [0,180). Campus rows follow this axis unless the user set a rotation.
+function tfDominant(R){let best=0,bl=-1;for(let i=1;i<(R||[]).length;i++){const a=R[i-1],b=R[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]);if(l>bl){bl=l;best=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI}}return ((best%180)+180)%180}
+function tfCampusRot(R,I){if(I._lockRot)return ((+I.rot%180)+180)%180;if(I.rot!=null&&I.rot!==''&&+I.rot!==0)return ((+I.rot%180)+180)%180;return tfDominant(R)}
+// Boundary point closest to a transmission polyline. Local feet. Substation placement targets this side.
+function tfTxPoint(R,lines){const polys=(lines||[]).map(o=>o&&(o.L||o)).filter(L=>L&&L.length>1);if(!polys.length||!R||R.length<2)return null;let best=null,bd=1e18;
+ for(let i=1;i<R.length;i++){const a=R[i-1],b=R[i];for(let t=0;t<=6;t++){const p=[a[0]+(b[0]-a[0])*t/6,a[1]+(b[1]-a[1])*t/6];for(const L of polys)for(let k=1;k<L.length;k++){const d=tfSD(p[0],p[1],L[k-1],L[k]);if(d<bd){bd=d;best=p}}}}return best}
+// Rounded rectangle, y-up, CCW, open ring. Radius is clamped so the fillet fits the pad.
+function tfFillet(x,y,w,h,rad){rad=Math.max(0,Math.min(+rad||0,w/2-1,h/2-1));if(!(rad>1)||!(w>2)||!(h>2))return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+ const n=4,pts=[],arc=(cx,cy,a0,a1)=>{for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;pts.push([cx+rad*Math.cos(a),cy+rad*Math.sin(a)])}};
+ arc(x+w-rad,y+rad,-Math.PI/2,0);arc(x+w-rad,y+h-rad,0,Math.PI/2);arc(x+rad,y+h-rad,Math.PI/2,Math.PI);arc(x+rad,y+rad,Math.PI,Math.PI*1.5);return pts}
+function tfLoopOk(C,pts){let cx=0,cy=0;pts.forEach(p=>{cx+=p[0];cy+=p[1]});cx/=pts.length;cy/=pts.length;
+ return pts.every(p=>{const bad=q=>!tfIn(q[0],q[1],C.Q)||(C.nbAt&&C.nbAt(q[0],q[1]));if(!bad(p))return true;const dx=cx-p[0],dy=cy-p[1],l=Math.hypot(dx,dy)||1,q=[p[0]+dx/l*10,p[1]+dy/l*10];return !bad(q)&&!(C.nbAt&&C.nbAt(p[0],p[1]))})}
+// One aligned grid. Every accepted block shares one origin and one pitch, so rows stay orthogonal
+// even where no-build (easement, flood, stream, power, existing building) punches a hole.
+function tfCampusFill(C,spec,aisle,maxN,placed){const [x0,y0,x1,y1]=C.bb,margin=2,pitchX=spec.bw+aisle,pitchY=spec.bh+aisle;
+ const sx=Math.max(10,Math.round(pitchX/12)),sy=Math.max(10,Math.round(pitchY/8));let best=[];
+ for(let oy=0;oy<pitchY;oy+=sy)for(let ox=0;ox<pitchX;ox+=sx){const out=[],PP=placed.map(r=>r.slice());
+  for(let y=y0+margin+oy;y+spec.bh<=y1-margin+0.1&&out.length<maxN;y+=pitchY)for(let x=x0+margin+ox;x+spec.bw<=x1-margin+0.1&&out.length<maxN;x+=pitchX){const r=[x,y,spec.bw,spec.bh];
+   if(tfRectOK(C,r,PP,aisle)){if(spec.v)r.v=1;out.push(r);const q=r.slice();q[4]=aisle;PP.push(q)}}
+  if(out.length>best.length)best=out}return best}
+// One orientation. Full-length halls first, then 500 ft and 400 ft remnants of the same width and direction.
+function tfCampusGrid(C,bw,bh,aisle,maxN,placed){const specs=[{bw,bh,v:0},{bw:bh,bh:bw,v:1}];let best=[],spec=specs[0];
+ specs.forEach(sp=>{const got=tfCampusFill(C,sp,aisle,maxN,placed);if(got.length>best.length){best=got;spec=sp}});
+ const P=placed.map(r=>r.slice());best.forEach(r=>{const q=r.slice();q[4]=aisle;P.push(q)});
+ const long=spec.v?spec.bh:spec.bw;
+ [500,400].filter(L=>L<long-40).forEach(L=>{if(P.length>=maxN+placed.length)return;const sp=spec.v?{bw:spec.bw,bh:L,v:1}:{bw:L,bh:spec.bh,v:0};
+  tfCampusFill(C,sp,aisle,maxN-(P.length-placed.length),P).forEach(r=>{r.short=L;const q=r.slice();q[4]=aisle;P.push(q);best.push(r)})});
+ return best}
+// Halls whose pads nearly touch stay one cluster. A wide easement or an L notch splits the rest.
+function tfClusters(blocks,gap){const n=blocks.length,p=blocks.map((_,i)=>i),find=i=>p[i]===i?i:(p[i]=find(p[i]));
+ const near=(a,b)=>a[0]<b[0]+b[2]+gap&&a[0]+a[2]+gap>b[0]&&a[1]<b[1]+b[3]+gap&&a[1]+a[3]+gap>b[1];
+ for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)if(near(blocks[i],blocks[j])&&find(i)!==find(j))p[find(i)]=find(j);
+ const m=new Map();blocks.forEach((b,i)=>{const k=find(i);if(!m.has(k))m.set(k,[]);m.get(k).push(b)});return [...m.values()]}
+function tfCampusLoop(C,blocks,aisle){if(!blocks||!blocks.length)return null;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;blocks.forEach(b=>{x0=Math.min(x0,b[0]);y0=Math.min(y0,b[1]);x1=Math.max(x1,b[0]+b[2]);y1=Math.max(y1,b[1]+b[3])});
+ let e=Math.max(aisle*0.55,14),rad=TF_TURN;for(let k=0;k<18;k++){const w=x1-x0+2*e,h=y1-y0+2*e,rr=Math.min(Math.max(0,rad),w/3,h/3),pts=tfFillet(x0-e,y0-e,w,h,rr);
+  if(w>30&&h>30&&tfLoopOk(C,pts))return {pts,w:aisle,turn:Math.round(Math.max(rr,0)*10)/10};e=Math.max(4,e*0.72);rad=rad>8?rad*0.72:0}return null}
+function tfAisleRects(blocks,aisle){const out=[];for(let i=0;i<blocks.length;i++)for(let j=i+1;j<blocks.length;j++){const a=blocks[i],b=blocks[j],ax2=a[0]+a[2],ay2=a[1]+a[3];
+ if(Math.abs(a[1]-b[1])<2&&Math.abs(a[3]-b[3])<2){const L=ax2<=b[0]?a:b,R=L===a?b:a,gap=R[0]-(L[0]+L[2]);if(gap>4&&gap<aisle*1.8)out.push([L[0]+L[2],L[1],gap,L[3]])}
+ if(Math.abs(a[0]-b[0])<2&&Math.abs(a[2]-b[2])<2){const B=ay2<=b[1]?a:b,T=B===a?b:a,gap=T[1]-(B[1]+B[3]);if(gap>4&&gap<aisle*1.8)out.push([B[0],B[1]+B[3],B[2],gap])}}return out}
+function tfCampusLoops(C,blocks,aisle){const groups=tfClusters(blocks,aisle*2.2),loops=[];groups.forEach(g=>{const L=tfCampusLoop(C,g,aisle);if(L)loops.push(L)});return loops}
+// Perimeter fence just inside the structural setback, so the gold setback line and the fence both read.
+function tfFenceRing(C){if(!C.setD||!C.Q||C.Q.length<4)return null;const ring=cvOffset(C.Q,C.setD.map(d=>(+d||0)+8));if(!ring)return null;
+ if(ring.segs&&ring.segs.length&&!(ring.length>3&&tfIn(ring[0][0],ring[0][1],C.Q)))return {segs:ring.segs};return {pts:ring.slice(0,-1),segs:ring.segs||null}}
+function tfGateAt(C){const f=(C.edges||[]).find(e=>e[4]&&e[4].kind==='front')||(C.edges||[])[0];if(!f)return null;
+ const mx=(f[0][0]+f[1][0])/2,my=(f[0][1]+f[1][1])/2,c=[(C.bb[0]+C.bb[2])/2,(C.bb[1]+C.bb[3])/2];let nx=c[0]-mx,ny=c[1]-my,l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
+ const inset=Math.max(18,(+f[2]||0)*0.45);return {at:[mx+nx*inset,my+ny*inset],edge:[mx,my],ang:Math.atan2(f[1][1]-f[0][1],f[1][0]-f[0][0]),w:36}}
 const tfCorner=(C,pos)=>{const dir={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0],NE:[1,1],NW:[-1,1],SE:[1,-1],SW:[-1,-1]}[pos];if(!dir)return null;
  const [x0,y0,x1,y1]=C.bb,c=C.un([(x0+x1)/2,(y0+y1)/2]),r=Math.hypot(x1-x0,y1-y0);return tfRot([c[0]+dir[0]*r,c[1]+dir[1]*r],-C.rot)};
 // ---- data center solve. ctx: {gridMW (site cap, null=unknown), nb, nbKind, zone(tfZone), linePt, lowPt (local ft), faa (cvFAA), cv:{pf,hsg,dem}}
@@ -53,44 +101,54 @@ const tfCorner=(C,pos)=>{const dir={N:[0,1],S:[0,-1],E:[1,0],W:[-1,0],NE:[1,1],N
 function tfHLim(E,faa){const z=E.maxH===''||E.maxH==null?null:+E.maxH,f=faa&&faa.cap!=null?faa.cap:null;if(z==null&&f==null)return {lim:null,why:''};return f!=null&&(z==null||f<z)?{lim:f,why:'FAA Part 77'}:{lim:z,why:'zoning'}}
 function tfPond(C,pd,ctx,placed){if(!pd)return null;const C2=Object.assign({},C,{okX:C.okP}),tgt=ctx.lowPt?tfRot(ctx.lowPt,-C.rot):[(C.bb[0]+C.bb[2])/2,C.bb[1]];let best=null,bd=1e18;
  for(const [w,h] of [[pd.ol,pd.ow],[pd.ow,pd.ol]]){const r=tfPlaceNear(C2,w,h,tgt,placed,30);if(r){const d=Math.hypot(r[0]+r[2]/2-tgt[0],r[1]+r[3]/2-tgt[1]);if(d<bd){bd=d;best=r}}}if(best){best.push(30);placed.push(best)}return best}
-function tfDC0(R,I,ctx,pd){ctx=ctx||{};const Z=ctx.zone||null,E=tfEff(I,Z),C=tfCtx(R,E,ctx.nb),site=C.A,warn=[],sf=+E.storyFt||42,HL=tfHLim(E,ctx.faa);
+function tfDC0(R,I,ctx,pd){ctx=ctx||{};if(!ctx.linePt&&ctx.tx){const lp=tfTxPoint(R,ctx.tx);if(lp)ctx=Object.assign({},ctx,{linePt:lp})}
+ const Z=ctx.zone||null,E=tfEff(I,Z),C=tfCtx(R,E,ctx.nb),site=C.A,warn=[],sf=+E.storyFt||42,HL=tfHLim(E,ctx.faa);
  const st=Math.max(1,Math.round(+E.stories||1)),h=st*sf;let stE=st;if(HL.lim!=null&&h>HL.lim){stE=Math.max(1,Math.floor(HL.lim/sf));warn.push({k:'height',t:`Design height ${h} ft exceeds the ${Math.round(HL.lim)} ft ${HL.why} limit${stE*sf>HL.lim?' · '+stE*sf+' ft hall needs a height variance':' · capped at '+stE+' storey'}`})}
  const placed=[],lane=+E.lane||30,sub=+E.subAc>0?Math.sqrt(+E.subAc*43560):0;let subR=null;
- let pond=E._pondLast?null:tfPond(C,pd,ctx,placed);if(pd&&!pond&&!E._pondLast)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`});
- if(sub){const tgt=E.subPos&&E.subPos!=='auto'?tfCorner(C,E.subPos):ctx.linePt?tfRot(ctx.linePt,-C.rot):[C.bb[2],C.bb[1]];subR=tfPlaceNear(C,sub,sub,tgt,placed,lane);if(subR){subR.push(lane);placed.push(subR)}else warn.push({k:'sub',t:'No room for the substation'})}
+ let pond=pd&&!E._pondLast?tfPond(C,pd,ctx,placed):null;if(pd&&!pond&&E._pack&&!E._pondLast)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`});
+ if(sub){let tgt;if(E.subPos&&E.subPos!=='auto')tgt=tfCorner(C,E.subPos);else{const aim=ctx.linePt?tfRot(ctx.linePt,-C.rot):[C.bb[2],C.bb[1]],corners=[[C.bb[0],C.bb[1]],[C.bb[2],C.bb[1]],[C.bb[2],C.bb[3]],[C.bb[0],C.bb[3]]];tgt=corners[0];let bd=1e18;corners.forEach(c=>{const d=Math.hypot(c[0]-aim[0],c[1]-aim[1]);if(d<bd){bd=d;tgt=c}})}
+  subR=tfPlaceNear(C,sub,sub,tgt,placed,lane);if(subR){subR.push(lane);placed.push(subR)}else warn.push({k:'sub',t:'No room for the substation'})}
  const hw=+E.hallW,hl=+E.hallL,gy=(+E.genAc||0)*43560/hl*(TF_COOL[E.cool]||1),bw=hl,bh=hw+gy,pue=+E.pue||1.3;
  const capIT=ctx.gridMW!=null&&ctx.gridMW!==''&&isFinite(ctx.gridMW)?ctx.gridMW/pue:null,wsf=+E.wsf||((+E.hallMW||0)>0?(+E.hallMW)*1e6/((+E.hallW||hw)*(+E.hallL||hl)*Math.max(1,+E.stories||1)):200),hallMW=hw*hl*stE*wsf/1e6;
  const T=cvPhaseTargets(E),Tsum=T?T.reduce((a,b)=>a+b,0):0;
  let want=T&&hallMW>0?Math.ceil(Tsum/hallMW-1e-9):Math.max(0,Math.round(+E.halls||0));const needCap=capIT!=null&&hallMW>0?Math.ceil(capIT/hallMW-1e-9):want,tgtN=T?want:Math.min(want,needCap);
  let covN=1e9;if(E.cov!==''&&E.cov!=null)covN=Math.floor(site*(+E.cov)/100/(hw*hl));if(E.far!=null&&E.far!=='')covN=Math.min(covN,Math.floor(site*(+E.far)/(hw*hl*Math.max(1,stE))));
- const B=stE?(E._pack==='greedy'||E._pack==='mixed'?tfGreedy:tfRows)(C,bw,bh,lane,lane,Math.min(tgtN,covN),placed,lane,E._pack==='mixed'):[];
+ const capN=Math.min(tgtN,covN),useCampus=!E._pack;
+ const B=stE?(useCampus?tfCampusGrid(C,bw,bh,lane,capN,placed):(E._pack==='greedy'||E._pack==='mixed'?tfGreedy:tfRows)(C,bw,bh,lane,lane,capN,placed,lane,E._pack==='mixed')):[];
  // order halls outward from the substation (else the front entry) so phase 1 is compact and later phases extend away from it
  const ent=(()=>{const f=C.edges.find(e=>e[4].kind==='front');if(!f)return [(C.bb[0]+C.bb[2])/2,C.bb[1]];return [(f[0][0]+f[1][0])/2,(f[0][1]+f[1][1])/2]})(),org=subR?[subR[0]+subR[2]/2,subR[1]+subR[3]/2]:ent;
  const cen=r=>[r[0]+r[2]/2,r[1]+r[3]/2],dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);B.sort((a,b)=>dist(cen(a),org)-dist(cen(b),org));
- const halls=B.map(b=>{const [x,y,w,hh]=b;return b.v?{hall:[x+gy,y,hw,hh],gen:gy>0?[x,y,gy,hh]:null,v:1}:{hall:[x,y+gy,w,hw],gen:gy>0?[x,y,w,gy]:null}});halls.forEach(o=>{placed.push(o.hall);if(o.gen)placed.push(o.gen)});
- if(E._pondLast&&pd){pond=tfPond(C,pd,ctx,placed);if(!pond)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`})}
- const n=halls.length,itRaw=n*hallMW,it=capIT!=null?Math.min(itRaw,capIT):itRaw,fac=it*pue;
+ const gD=gy>=8?gy*0.62:gy,cD=gy-gD;
+ const halls=B.map(b=>{const [x,y,w,hh]=b;return b.v?{hall:[x+gy,y,hw,hh],gen:gD>1?[x,y,gD,hh]:null,chill:cD>1?[x+gD,y,cD,hh]:null,v:1}:{hall:[x,y+gy,w,hw],gen:gD>1?[x,y,w,gD]:null,chill:cD>1?[x,y+gD,w,cD]:null}});halls.forEach(o=>{placed.push(o.hall);if(o.gen)placed.push(o.gen);if(o.chill)placed.push(o.chill)});
+ if(!pond&&pd){pond=tfPond(C,pd,ctx,placed);if(!pond)warn.push({k:'pond',t:`Detention pond (${(pd.ac).toFixed(1)} ac) does not fit outside setbacks/no-build`})}
+ const n=halls.length,share=o=>hallMW*(o.hall[2]*o.hall[3])/((hw*hl)||1),itRaw=halls.reduce((a,o)=>a+share(o),0),it=capIT!=null?Math.min(itRaw,capIT):itRaw,fac=it*pue;
  const stalls=Math.round(n*(+E.park||0)),pA=stalls*330;let parkR=null;
  if(pA>0){const pw=Math.max(60,Math.min(600,Math.sqrt(pA*2))),ph=pA/pw;parkR=tfPlaceNear(C,pw,ph,ent,placed,lane);if(parkR)placed.push(parkR);else warn.push({k:'park',t:'Parking does not fit'})}
  const ph=T?T.length:Math.max(1,Math.round(+E.phases||1));let phase;
  if(T){let cum=0;const nk=T.map((t,k)=>{cum+=t;const q=cum/hallMW;return k===T.length-1?Math.ceil(q-1e-9):Math.max(k+1,Math.round(q))});phase=halls.map((_,i)=>{const k=nk.findIndex(v=>i<v);return (k<0?ph-1:k)+1})}
  else phase=halls.map((_,i)=>Math.floor(i*ph/Math.max(1,n))+1);
- const phMW=Array.from({length:ph},(_,k)=>Math.min(it,phase.filter(p=>p<=k+1).length*hallMW)).map((v,k,a)=>v-(k?a[k-1]:0));
+ const phMW=Array.from({length:ph},(_,k)=>Math.min(it,halls.reduce((a,o,i)=>a+(phase[i]<=k+1?share(o):0),0))).map((v,k,a)=>v-(k?a[k-1]:0));
  // per-phase program: halls, built IT, target, facility MW, cumulative, grid status, acres, road / MV corridor LF
  const rows=[];let cIT=0,cT=0,prevC=[ent];const gMW=ctx.gridMW!=null&&ctx.gridMW!==''&&isFinite(ctx.gridMW)?+ctx.gridMW:null;
- for(let k=1;k<=ph;k++){const H=halls.filter((_,i)=>phase[i]===k),itB=H.length*hallMW,tg=T?T[k-1]:null;cIT+=itB;cT+=tg||0;const fc=cIT*pue;
+ for(let k=1;k<=ph;k++){const H=halls.filter((_,i)=>phase[i]===k),itB=H.reduce((a,o)=>a+share(o),0),tg=T?T[k-1]:null;cIT+=itB;cT+=tg||0;const fc=cIT*pue;
   const ftp=H.reduce((a,o)=>a+o.hall[2]*o.hall[3]+(o.gen?o.gen[2]*o.gen[3]:0)+lane*(o.hall[2]+o.hall[3]+(o.gen?o.gen[3]:0)),0)+(parkR?parkR[2]*parkR[3]*H.length/Math.max(1,n):0)+(k===1&&subR?subR[2]*subR[3]:0)+(k===1&&pond&&E.swPh!=='phase'?pond[2]*pond[3]:0);
   const cc=H.length?[H.reduce((a,o)=>a+o.hall[0]+o.hall[2]/2,0)/H.length,H.reduce((a,o)=>a+o.hall[1]+o.hall[3]/2,0)/H.length]:null;
   const road=H.reduce((a,o)=>a+o.hall[2]+o.hall[3],0)+(cc?Math.min(...prevC.map(p=>dist(p,cc))):0),util=cc&&subR?dist(cen(subR),cc):0;if(cc)prevC.push(cc);
   rows.push({k,halls:H.length,itB,tgt:tg==null?null:tg,fac:itB*pue,cumIT:cIT,cumFac:fc,short:T?Math.max(0,cT-cIT):0,grid:gMW==null?null:fc<=gMW+1e-6,ac:ftp/43560,road,util})}
  const firstOver=rows.find(r=>r.grid===false);if(firstOver)warn.push({k:'grid',t:`Phase ${firstOver.k} brings the site to ${firstOver.cumFac.toFixed(1)} MW facility, above the ${gMW} MW grid cap: needs a utility upgrade before it can energize`});
- const fp=n*hw*hl,cov=site?fp/site:0,far=site?fp*stE/site:0;
+ const fp=halls.reduce((a,o)=>a+o.hall[2]*o.hall[3],0),cov=site?fp/site:0,far=site?fp*stE/site:0;
  let bind=!stE?'Height':T?(n<want?(n>=covN?'Coverage/FAR':pd&&pond?'Land (setbacks / no-build / detention)':'Land / setbacks / no-build'):firstOver?'Grid cap':'Target MW'):capIT!=null&&itRaw>=capIT-1e-9&&n>=needCap?'Grid cap':n<Math.min(want,needCap)?(n>=covN?'Coverage/FAR':'Land / setbacks / no-build'):'Hall count';
  if(T&&n<want)warn.push({k:'land',t:`Land fits ${n} of ${want} halls: ${(itRaw).toFixed(1)} of ${Tsum.toFixed(1)} MW IT target (${bind})`});
- const circ=[{id:'lane',ok:lane>=26,t:`Fire lane ${lane} ft (IFC aerial access ≥ 26 ft)`},{id:'hose',ok:hw<=300,t:`Hall depth ${hw} ft (≤ 300 ft keeps every wall within 150 ft hose reach of a lane)`}];
+ const roadW=Math.max(lane,26),loops=(useCampus?tfCampusLoops(C,B,roadW):[]).map(L=>({pts:L.pts.map(C.un),w:roadW,turn:L.turn}));
+ const aisles=useCampus?tfAisleRects(B,roadW).map(R=>{const [x,y,w,h]=R;return [[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(C.un)}):[];
+ const fenceSrc=useCampus?tfFenceRing(C):null,gate0=useCampus?tfGateAt(C):null;
+ const fence=fenceSrc?{pts:fenceSrc.pts?fenceSrc.pts.map(C.un):null,segs:fenceSrc.segs?fenceSrc.segs.map(s=>s.map(C.un)):null,gate:gate0?{at:C.un(gate0.at),edge:C.un(gate0.edge),ang:gate0.ang+C.rot,w:gate0.w}:null}:null;
+ const entry=gate0&&fence&&fence.gate?{gate:fence.gate.at,spur:[fence.gate.at,C.un(gate0.edge)],w:lane}:null;
+ const turnR=loops.length?Math.min(...loops.map(L=>L.turn)):TF_TURN;
+ const circ=[{id:'lane',ok:lane>=26,t:`Fire lane ${lane} ft (IFC aerial access ≥ 26 ft)`},{id:'hose',ok:hw<=300,t:`Hall depth ${hw} ft (≤ 300 ft keeps every wall within 150 ft hose reach of a lane)`},{id:'turn',ok:!loops.length||turnR+0.1>=28,t:`Fire-truck turning radius ${turnR} ft on the loop [A]`}];
  if(Z&&Z.okU===-1)warn.push({k:'use',t:`Zoning ${Z.district||''}: data center ${String(Z.use||'not listed').replace(/_/g,' ')}`});else if(Z&&Z.okU===0)warn.push({k:'use',t:`Zoning ${Z.district||''}: data center ${Z.use} (discretionary)`});
  const score=it-(warn.length*.5)-circ.filter(c=>!c.ok).length;
- return {co:'land',C,E,halls,sub:subR,park:parkR,pond,stalls,n,want,needCap,capIT,it,itRaw,fac,hallMW,fp,cov,far,height:stE*sf,stories:stE,hlim:HL,phase,phMW,rows,T,Tsum,ent,bind,warn,circ,site,score,
+ return {co:'land',C,E,halls,sub:subR,park:parkR,pond,stalls,n,want,needCap,capIT,it,itRaw,fac,hallMW,fp,cov,far,height:stE*sf,stories:stE,hlim:HL,phase,phMW,rows,T,Tsum,ent,bind,warn,circ,site,score,loops,aisles,fence,entry,turnR,campus:useCampus?{axis:Math.round((+E.rot||0)*10)/10,aisle:roadW,one:true}:null,
   k:{it:+it.toFixed(2),fac:+fac.toFixed(2),halls:n,cov:+(cov*100).toFixed(1),far:+far.toFixed(3),stalls,itLand:+itRaw.toFixed(2)}}}
 // civil wrapper: size the pond from the first layout's impervious cover, place it at the DEM low point, re-solve (≤2 passes)
 function tfCivil(co,solve0,R,I,ctx){ctx=ctx||{};const cv=ctx.cv||{},on=I.sw!=='off'&&cv.pf;if(!on){const r=solve0(R,I,ctx,null);return tfCivilAttach(r,ctx,null)}
@@ -109,10 +167,20 @@ function tfCivilAttach(r,ctx,sw,pd){const cv=ctx.cv||{};r.sw=sw;r.pd=pd||null;r.
 function tfAngles(R,rot0){const E=[];for(let i=1;i<R.length;i++){const a=R[i-1],b=R[i],l=Math.hypot(b[0]-a[0],b[1]-a[1]);if(l>50)E.push([l,Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI])}
  E.sort((p,q)=>q[0]-p[0]);const out=[],n=a=>((a%180)+180)%180,add=a=>{a=n(a);if(!out.some(b=>Math.min(Math.abs(a-b),180-Math.abs(a-b))<2))out.push(a)};
  add(rot0);add(rot0+90);E.slice(0,4).forEach(([,a])=>{add(a);add(a+90)});return out}
-function tfDCbest(R,I,ctx,pd){if(I._pack||I.rotLock)return tfDC0(R,I,ctx,pd);let best=null;
- for(const pl of pd?[0,1]:[0])for(const a of tfAngles(R,+I.rot||0))for(const pk of ['rows','greedy','mixed']){const r=tfDC0(R,Object.assign({},I,{rot:a,_pack:pk,_pondLast:pl}),ctx,pd);r.pack={rot:Math.round(a*10)/10,mode:pk,pondLast:!!pl};
-  if(pl&&!r.pond)continue; // halls-first is only valid if the detention pond still fits
-  if(!best||r.n>best.n||(r.n===best.n&&r.score>best.score+1e-9))best=r;if(best.n>=Math.min(best.want,best.needCap))return best}return best}
+function tfDCbest(R,I,ctx,pd){if(I._pack||I.rotLock)return tfDC0(R,I,ctx,pd);
+ const rot=tfCampusRot(R,I),r=tfDC0(R,Object.assign({},I,{rot,_campus:1}),ctx,pd);r.pack={rot:Math.round(rot*10)/10,mode:'campus',pondLast:!!I._pondLast};return r}
+// Two or three campus schemes: long axis, a 250x800 module, and the cross axis. Deterministic.
+function tfSchemes(R,I,ctx){I=I||{};const ring=tfIsParts(R)?R[0]:R,dom=tfDominant(ring);
+ const specs=[{scheme:'A',label:'Dominant axis',rot:dom,hallW:+I.hallW||250,hallL:+I.hallL||1000},{scheme:'B',label:'250 x 800 module',rot:dom,hallW:250,hallL:800},{scheme:'C',label:'Cross axis',rot:(dom+90)%180,hallW:+I.hallW||250,hallL:+I.hallL||1000}];
+ const out=[],seen=new Set();
+ for(const s of specs){if(s.scheme==='B'&&Math.abs((+I.hallW||250)-s.hallW)<1&&Math.abs((+I.hallL||1000)-s.hallL)<1)continue;
+  const p=Object.assign({},I,{rot:s.rot,_lockRot:1,hallW:s.hallW,hallL:s.hallL,halls:Math.max(+I.halls||0,40)});
+  const r=tfSolve('land',R,p,ctx),key=[r.n,Math.round((r.pack&&r.pack.rot)||0),s.hallW,s.hallL].join('|');if(seen.has(key))continue;seen.add(key);
+  out.push({p:Object.assign({},p,{halls:r.n}),k:r.k,score:(r.it||0)*100-(r.n||0)*.1-(r.warn||[]).length,warn:(r.warn||[]).length,bind:r.bind,scheme:s.scheme,label:s.label});
+  if(out.length>=3)break}
+ if(out.length<2){const p=Object.assign({},I,{rot:dom,_lockRot:1,halls:Math.max(+I.halls||0,40),hallL:Math.max(400,Math.round((+I.hallL||1000)*0.6))});
+  const r=tfSolve('land',R,p,ctx);out.push({p:Object.assign({},p,{halls:r.n}),k:r.k,score:(r.it||0)*100,warn:(r.warn||[]).length,bind:r.bind,scheme:'B',label:'Short module'})}
+ return out.slice(0,3)}
 function tfDC(R,I,ctx){return tfCivil('land',tfDCbest,R,I,ctx)}
 // ---- self-storage solve
 function tfST(R,I,ctx){return tfCivil('storage',tfST0,R,I,ctx)}
@@ -159,7 +227,7 @@ function tfMergeParts(co,rs,parts,I,ctx){
  const abs=(r,rect)=>{if(!rect)return null;const [x,y,w,h]=rect,c=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]].map(r.C.un);
   const xs=c.map(p=>p[0]),ys=c.map(p=>p[1]);return [Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys)]};
  const halls=[],phase=[],warn=[],circ=[];let sub=null,park=null,pond=null,site=0,it=0,itRaw=0,fac=0,fp=0,n=0,stalls=0;
- const idC={rot:0,un:p=>p,Q:null,A:0,ok:()=>true,okP:()=>true,edgeAt:()=>({inRow:false,inSet:false}),edges:[],bb:[0,0,0,0],setRing:null,hardRing:null,rowRing:null};
+ const idC={rot:0,un:p=>p,Q:null,A:0,ok:()=>true,okP:()=>true,nbAt:()=>false,edgeAt:()=>({inRow:false,inSet:false}),edges:[],setD:null,bb:[0,0,0,0],setRing:null,hardRing:null,rowRing:null};
  rs.forEach((r,i)=>{site+=r.site||0;idC.A=site;(r.warn||[]).forEach(w=>warn.push(Object.assign({},w,{t:`Part ${i+1}: ${w.t}`})));(r.circ||[]).forEach(c=>circ.push(c));
   if(co==='land'){(r.halls||[]).forEach((h,k)=>{halls.push({hall:abs(r,h.hall),gen:h.gen?abs(r,h.gen):null,v:h.v,part:i});phase.push((r.phase&&r.phase[k])||1)});
    if(!sub&&r.sub)sub=abs(r,r.sub);if(!park&&r.park)park=abs(r,r.park);if(!pond&&r.pond)pond=abs(r,r.pond);
@@ -177,12 +245,13 @@ function tfMergeParts(co,rs,parts,I,ctx){
   k:{it:+it.toFixed(2),fac:+fac.toFixed(2),halls:n,cov:+(cov*100).toFixed(1),far:+far.toFixed(3),stalls,itLand:+itRaw.toFixed(2)}};
  // attach civil from first part that has it; recompute buildable as sum
  out.build={gross:site/43560,net:rs.reduce((a,r)=>a+((r.build&&r.build.net)||0),0),row:0,road:0,setback:0,easement:0,stream:0,power:0,flood:0,bld:0,excl:0,pond:pond?pond[2]*pond[3]/43560:0};
- out.sw=r0.sw;out.pd=r0.pd;out.grade=null;out.hgt=r0.hgt;out.pack={parts:rs.map((r,i)=>({i,n:r.n,rot:r.pack&&r.pack.rot,mode:r.pack&&r.pack.mode}))};
+ out.sw=r0.sw;out.pd=r0.pd;out.grade=null;out.hgt=r0.hgt;out.loops=rs.flatMap(r=>r.loops||[]);out.fence=rs.map(r=>r.fence).find(Boolean)||null;out.entry=(rs.map(r=>r.entry).find(Boolean))||null;out.turnR=r0.turnR||TF_TURN;out.campus=r0.campus||null;out.pack={parts:rs.map((r,i)=>({i,n:r.n,rot:r.pack&&r.pack.rot,mode:r.pack&&r.pack.mode}))};
  if(out.k){out.k.netAc=+out.build.net.toFixed(1);if(out.sw)out.k.detAcFt=+out.sw.Vac.toFixed(2);if(pond)out.k.pondAc=+(pond[2]*pond[3]/43560).toFixed(2)}
  return out}
 // option generator: sweep orientation and prototype sizes; rank by the company KPI
-function tfGen(co,R,I,ctx){if(ctx&&ctx.cv&&ctx.cv.pf&&I.sw!=='off'&&!ctx.pondFix){const b=tfSolve(co,R,I,ctx);ctx=Object.assign({},ctx,{pondFix:b.pd})}const O=[],seen=new Set(),rots=[0,15,30,45,60,75,90,105,120,135,150,165];
- const vs=co==='storage'?[{mode:'hy'},{mode:'du'},{mode:'mu'},{mode:'hy',stories:Math.max(1,(+I.stories||3)-1)}]:[{},{hallW:200,hallL:800},{hallW:300,hallL:1200},{hallW:250,hallL:600}];
+function tfGen(co,R,I,ctx){if(co!=='storage'){if(ctx&&ctx.cv&&ctx.cv.pf&&I.sw!=='off'&&!ctx.pondFix){const b=tfSolve(co,R,I,ctx);ctx=Object.assign({},ctx,{pondFix:b.pd})}return tfSchemes(R,I,ctx).sort((a,b)=>b.score-a.score)}
+ if(ctx&&ctx.cv&&ctx.cv.pf&&I.sw!=='off'&&!ctx.pondFix){const b=tfSolve(co,R,I,ctx);ctx=Object.assign({},ctx,{pondFix:b.pd})}const O=[],seen=new Set(),rots=[0,15,30,45,60,75,90,105,120,135,150,165];
+ const vs=[{mode:'hy'},{mode:'du'},{mode:'mu'},{mode:'hy',stories:Math.max(1,(+I.stories||3)-1)}];
  for(const v of vs)for(const rot of rots){const p=Object.assign({},I,v,{rot});if(co==='land')p.halls=Math.max(+I.halls||0,40);const r=tfSolve(co,R,p,ctx);
   const key=JSON.stringify(r.k);if(seen.has(key))continue;seen.add(key);if(co==='land')p.halls=r.n;O.push({p,k:r.k,score:co==='storage'?r.k.nrsf-r.warn.length*500:r.it*100-r.n*.1,warn:r.warn.length,bind:r.bind})}
  return O.sort((a,b)=>b.score-a.score).slice(0,8)}
