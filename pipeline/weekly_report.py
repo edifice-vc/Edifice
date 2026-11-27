@@ -216,7 +216,7 @@ def main():
     md += [f"{n}. {site_line(x)}" for n, x in enumerate(cheap, 1)] or ["- None"]
     md += [""]
     if fails: md += ["## Source problems this run", ""] + [f"- {f}" for f in fails] + [""]
-    md += ["_Scores are screening estimates from public GIS (HIFLD lines, EIA pipelines, OSM substations) and LOIS listing data; confirm capacity with the utility._"]
+    md += ["_Scores are screening estimates from public GIS (HIFLD and OpenStreetMap transmission lines, EIA pipelines, OSM substations) and LOIS listing data; confirm capacity with the utility. OSM lines are unverified._"]
     text = "\n".join(md)
     base = os.path.join(a.out, f"weekly-{today}")
     open(base + ".md", "w", encoding="utf-8").write(text)

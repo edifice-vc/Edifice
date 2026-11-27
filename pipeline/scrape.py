@@ -10,7 +10,8 @@ Sources
        - Kansas Dept of Commerce org (statewide)       59eaba35bec80e09b4bbf1d7
        - Evergy Economic Development org               59eaba35bec80e09b4bbf368
        - Greater Wichita Partnership org               59eaba35bec80e09b4bbefdb
-  3. HIFLD Electric Power Transmission Lines          services1.arcgis.com (ArcGIS REST)
+  3. Transmission lines: sunflower/layers/lines.geojson (HIFLD + OSM power=line).
+     Live HIFLD is only the fallback when that merged layer is missing.
   4. EIA Natural Gas Interstate & Intrastate Pipelines services2.arcgis.com (ArcGIS REST)
   5. OpenStreetMap substations via Overpass API       overpass-api.de (fallback: HIFLD line end-points)
   6. Curated local economic-development contacts      private contacts file (encrypted in repo)
@@ -19,7 +20,7 @@ import argparse, datetime as dt, hashlib, html, json, math, os, re, sys, time, u
 from collections import defaultdict
 import requests
 from pyproj import Transformer
-from shapely.geometry import LineString, MultiLineString, Point
+from shapely.geometry import LineString, MultiLineString, Point, shape
 from shapely.strtree import STRtree
 from pricing import price_info  # asking price / $ per acre (listing-stated only)
 import floodplain              # FEMA NFHL 100-yr floodplain share (penalty)
@@ -165,17 +166,49 @@ def parse_kv(v):
     return max(nums) if nums else None
 
 def line_kv(a):
-    v = a.get("VOLTAGE")
-    if v is not None and v > 0:
-        return float(v)
-    c = str(a.get("VOLT_CLASS") or "")
-    m = re.match(r"(\d+)", c)
-    if "UNDER 100" in c.upper():
-        return 69.0  # HIFLD 'UNDER 100' is mostly 69 kV in KS; treated conservatively
-    return float(m.group(1)) if m else None
+    """HIFLD kV. NOT AVAILABLE and negative voltages are unknown, not a class guess."""
+    import map_layers
+    return map_layers.hifld_voltage(a.get("VOLTAGE"), a.get("VOLT_CLASS"))
 
 # ---------------------------------------------------------------- geometry
 TO_M = Transformer.from_crs("EPSG:4326", "EPSG:5070", always_xy=True)  # CONUS Albers, metres
+
+LAYER_LINES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sunflower", "layers", "lines.geojson")
+
+def proj_geom(g):
+    if g is None or g.is_empty:
+        return None
+    if g.geom_type == "LineString":
+        return proj_paths([list(g.coords)])
+    if g.geom_type == "MultiLineString":
+        return proj_paths([list(p.coords) for p in g.geoms])
+    return None
+
+def load_merged_lines():
+    """Distance metrics use the committed merged transmission layer (HIFLD + OSM)."""
+    if not os.path.exists(LAYER_LINES):
+        return None
+    fc = json.load(open(LAYER_LINES))
+    rows = []
+    for f in fc.get("features") or []:
+        if not f.get("geometry"):
+            continue
+        pr = f.get("properties") or {}
+        kv = pr.get("voltage_kv", pr.get("kv"))
+        try:
+            kv = float(kv) if kv not in (None, "") else None
+        except (TypeError, ValueError):
+            kv = None
+        if kv is not None and kv <= 0:
+            kv = None
+        g = proj_geom(shape(f["geometry"]))
+        if g is None:
+            continue
+        owner = clean(pr.get("operator") or pr.get("o"))
+        if owner.upper() == "NOT AVAILABLE":
+            owner = ""
+        rows.append((g, kv, owner, pr.get("source") or "HIFLD"))
+    return rows
 
 def proj_paths(paths):
     parts = []
@@ -323,7 +356,7 @@ def ramp(d, full, zero):
     return (zero - d) / (zero - full)
 
 SCORING = {
-    "transmission": {"max": 30, "rule": "30 × voltage weight × distance factor, best line within 10 mi. Weight: 345 kV+ 1.0, 230 kV 0.85, 138-161 kV 0.7, 115 kV 0.6, 69 kV 0.4. Distance factor: 1.0 at ≤1 mi, falling linearly to 0 at 10 mi."},
+    "transmission": {"max": 30, "rule": "30 × voltage weight × distance factor, best line within 10 mi (HIFLD and OpenStreetMap power=line, merged; OSM marked unverified). Weight: 345 kV+ 1.0, 230 kV 0.85, 138-161 kV 0.7, 115 kV 0.6, 69 kV 0.4. Distance factor: 1.0 at ≤1 mi, falling linearly to 0 at 10 mi."},
     "substation": {"max": 15, "rule": "15 × voltage weight × distance factor, best substation. Same weights; factor 1.0 at ≤2 mi, 0 at 15 mi. OSM voltage tag (unknown voltage = weight 0.25)."},
     "gas": {"max": 20, "rule": "Max of: EIA interstate/intrastate pipeline (20 at ≤1 mi, linear to 0 at 15 mi) and listed on-site gas service (6\"+ line 12, 4\"+ 9, any listed gas provider 5)."},
     "scale": {"max": 15, "rule": "Acres: 500+ 15, 250+ 12, 150+ 9, 100+ 6, 50+ 3, else 1. Acreage over 20,000 is treated as a data-entry error and scored 6."},
@@ -335,11 +368,13 @@ SCORING = {
 def score(rec):
     p = rec["power"]; g = rec["gasline"]; parts = {}
     # transmission: best over candidate classes
-    best_t, why_t = 0.0, "No HIFLD transmission line within 10 mi"
+    best_t, why_t = 0.0, "No transmission line within 10 mi"
     for c in p.get("lines_by_class", []):
         v = 30 * kv_weight(c["kv"]) * ramp(c["mi"], 1, 10)
         if v > best_t:
-            best_t, why_t = v, f"{c['kv']:.0f} kV line {c['mi']:.1f} mi away" + (f" ({c['owner']})" if c.get("owner") else "")
+            src = c.get("source")
+            tag = " [OSM, unverified]" if src == "OSM" else (f" [{src}]" if src else "")
+            best_t, why_t = v, f"{c['kv']:.0f} kV line {c['mi']:.1f} mi away" + (f" ({c['owner']})" if c.get("owner") else "") + tag
     parts["transmission"] = (best_t, why_t)
     best_s, why_s = 0.0, "No substation found nearby"
     for c in p.get("subs_by_class", []):
@@ -408,13 +443,29 @@ def attach_contacts(rec, curated):
     rec["contacts"] = out
 
 # ---------------------------------------------------------------- geodata
+def _hifld_tx(cache_dir):
+    return cached(cache_dir, "hifld_tx.json", lambda: arcgis_all(HIFLD_TX, "VOLTAGE,VOLT_CLASS,OWNER,STATUS,SUB_1,SUB_2"))
+
 def load_geo(cache_dir):
-    """Public GIS layers (HIFLD lines, EIA gas, OSM substations) as nearest-feature trees. Updates STATUS."""
+    """Public GIS layers as nearest-feature trees. Line distance uses the merged HIFLD+OSM layer. Updates STATUS."""
+    merged = None
     try:
-        tx = cached(cache_dir, "hifld_tx.json", lambda: arcgis_all(HIFLD_TX, "VOLTAGE,VOLT_CLASS,OWNER,STATUS,SUB_1,SUB_2"))
-        STATUS["HIFLD transmission lines (ArcGIS)"] = {"ok": True, "detail": f"{len(tx)} line features in KS bbox", "url": HIFLD_TX}
+        merged = load_merged_lines()
+        if merged is not None and not merged:
+            merged = None
     except Exception as e:
-        tx = []; STATUS["HIFLD transmission lines (ArcGIS)"] = {"ok": False, "detail": str(e)[:200], "url": HIFLD_TX}
+        log(f"WARN merged transmission layer unreadable ({e}); falling back to live HIFLD")
+        merged = None
+    tx = []
+    if merged:
+        n_osm = sum(1 for row in merged if row[3] == "OSM")
+        STATUS["Transmission lines (merged layer)"] = {"ok": True, "detail": f"{len(merged)} features ({n_osm} OSM, {len(merged) - n_osm} HIFLD) from sunflower/layers/lines.geojson", "url": "sunflower/layers/lines.geojson"}
+    else:
+        try:
+            tx = _hifld_tx(cache_dir)
+            STATUS["HIFLD transmission lines (ArcGIS)"] = {"ok": True, "detail": f"{len(tx)} line features in KS bbox (merged layer missing)", "url": HIFLD_TX}
+        except Exception as e:
+            tx = []; STATUS["HIFLD transmission lines (ArcGIS)"] = {"ok": False, "detail": str(e)[:200], "url": HIFLD_TX}
     try:
         gas = cached(cache_dir, "eia_gas.json", lambda: arcgis_all(EIA_GAS, "TYPEPIPE,Operator,Status"))
         STATUS["EIA natural gas pipelines (ArcGIS)"] = {"ok": True, "detail": f"{len(gas)} pipeline features", "url": EIA_GAS}
@@ -426,6 +477,12 @@ def load_geo(cache_dir):
     except Exception as e:
         STATUS["OpenStreetMap substations (Overpass)"] = {"ok": False, "detail": f"{str(e)[:150]} — using HIFLD line end-points", "url": OVERPASS[0]}
         subs = []
+        if not tx:
+            try:
+                tx = _hifld_tx(cache_dir)
+            except Exception as e2:
+                log(f"WARN HIFLD endpoint fallback failed ({e2})")
+                tx = []
         for f in tx:  # fallback: named end-points of HIFLD lines approximate substations
             kv = line_kv(f["a"])
             for path, nm in ((f["paths"][0][0], f["a"].get("SUB_1")), (f["paths"][-1][-1], f["a"].get("SUB_2"))):
@@ -434,13 +491,15 @@ def load_geo(cache_dir):
 
     # build nearest-trees by voltage class
     line_classes = [69, 115, 138, 230, 345]
-    tx_geo = []
-    for f in tx:
-        if str(f["a"].get("STATUS", "")).upper() not in ("", "IN SERVICE", "NOT AVAILABLE"):
-            continue
-        g = proj_paths(f["paths"]); kv = line_kv(f["a"])
-        if g is not None: tx_geo.append((g, kv, clean(f["a"].get("OWNER"))))
-    line_trees = {c: Nearest([g for g, kv, _ in tx_geo if kv and kv >= c], [(kv, o) for g, kv, o in tx_geo if kv and kv >= c]) for c in line_classes}
+    tx_geo = list(merged) if merged else []
+    if not merged:
+        for f in tx:
+            if str(f["a"].get("STATUS", "")).upper() not in ("", "IN SERVICE", "NOT AVAILABLE"):
+                continue
+            g = proj_paths(f["paths"]); kv = line_kv(f["a"])
+            if g is not None: tx_geo.append((g, kv, clean(f["a"].get("OWNER")), "HIFLD"))
+    line_trees = {c: Nearest([g for g, kv, _, _ in tx_geo if kv and kv >= c],
+                             [(kv, o, src) for g, kv, o, src in tx_geo if kv and kv >= c]) for c in line_classes}
     gas_geo = [(proj_paths(f["paths"]), f["a"]) for f in gas]
     gas_tree = Nearest([g for g, _ in gas_geo if g is not None], [a for g, a in gas_geo if g is not None])
     sub_pts = []
@@ -467,7 +526,7 @@ def geo_apply(r, G):
     for c in line_classes:
         mi, meta = line_trees[c].query(pt)
         if mi is not None:
-            r["power"]["lines_by_class"].append({"class": c, "kv": meta[0], "owner": meta[1], "mi": round(mi, 2)})
+            r["power"]["lines_by_class"].append({"class": c, "kv": meta[0], "owner": meta[1], "source": meta[2] if len(meta) > 2 else "", "mi": round(mi, 2)})
     for c in line_classes:
         mi, s = sub_trees[c].query(pt)
         if mi is not None:

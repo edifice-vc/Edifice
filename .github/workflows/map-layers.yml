@@ -1,0 +1,51 @@
+name: Refresh map layers
+
+# Public GIS overlays only (sunflower/layers). Weekly, or on demand.
+# Overpass or ArcGIS failures keep the last committed file (map_layers.py logs a warning).
+# Does not touch site data, Firestore, encrypted inputs, or the SPP substation layer.
+on:
+  schedule:
+    - cron: "30 12 * * 1"   # Mondays 12:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: map-layers
+  cancel-in-progress: false
+
+jobs:
+  layers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install deps
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Rebuild public map layers
+        run: python3 -W ignore pipeline/map_layers.py
+
+      - name: Commit layers
+        run: |
+          git config user.name "edifice-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sunflower/layers/lines.geojson sunflower/layers/gas.geojson sunflower/layers/subs.geojson sunflower/layers/aadt.geojson
+          git reset -q -- 'gha-creds-*.json' pipeline/*.enc 2>/dev/null || true
+          if git diff --cached --quiet; then echo "No layer changes"; exit 0; fi
+          git commit -m "Refresh map layers $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do
+            git push && exit 0
+            echo "push rejected (attempt $i); rebasing on origin/main"
+            git pull --rebase origin main || { git rebase --abort; exit 1; }
+            sleep $((i * 5))
+          done
+          exit 1

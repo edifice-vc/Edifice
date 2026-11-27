@@ -71,7 +71,7 @@ console.log(JSON.stringify({
 
 class SourceWiring(unittest.TestCase):
     def test_shx_loads_buildings(self):
-        self.assertIn('v===5', UI)
+        self.assertIn('v===6', UI)
         self.assertIn('bldBuf:50', UI)
         self.assertIn('MSBFP2', UI)
         self.assertIn('USA_Structures_View', UI)
